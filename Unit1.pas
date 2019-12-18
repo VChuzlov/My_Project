@@ -30,7 +30,7 @@ var
 
 begin
   MatBal.Create;
-  MatBal.MatBalCalculation(Fl, Fv, Wl, Wv, 60, 100, 10, 15, L, V);
+  //MatBal.MatBalCalculation(Fl, Fv, Wl, Wv, 60, 100, 10, 15, L, V);
   ShowMessage('Success !!!')
 end;
 
