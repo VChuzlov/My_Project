@@ -12,7 +12,7 @@ type
 
   TPhase_Eq_Calc = class
 
-    procedure WilsonCorrelation(CritT, CritP, omega: arrComp; T, P: double; var K: arrComp);
+    //procedure WilsonCorrelation(CritT, CritP, omega: arrComp; T, P: double; var K: arrComp);
     procedure PhaseEqCalculation;
 
     private
@@ -29,7 +29,7 @@ type
 
 implementation
 
-
+ {
 procedure TPhase_Eq_Calc.WilsonCorrelation(CritT: arrComp; CritP: arrComp;
   omega: arrComp; T: Double; P: Double; var K: arrComp);
 const
@@ -56,7 +56,7 @@ begin
       K[i]:= Ps[i] / P;
     end;
 end;
-
+         }
 procedure TPhase_Eq_Calc.PhaseEqCalculation;
 begin
   //

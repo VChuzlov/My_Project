@@ -2,7 +2,7 @@ unit UMaterialBalance;
 
 interface
 uses
-  UPhase_Equilibrium;
+  UPhase_Equilibrium, dialogs;
 
 const
   NTrays = 12;
@@ -10,10 +10,15 @@ const
 
 type
   arrTrays = array[1..NTrays] of double;
+  TArrOfDouble = array of double;
+  TArrOfArrOfDouble = array of array of double;
 
   TMatBalance = Class
     procedure RelativeFugasity(T: double; var alpha: arrComp);
-    procedure OveralMatBalance(Fl, Fv, Wl, Wv: arrTrays; var L, V: arrTrays);
+    procedure WilsonCorrelation(CritT, CritP, omega: arrComp; NTrays: integer;
+      Tj, Pj: TArrOfDouble; var Kji: TArrOfArrOfDouble);
+    procedure OveralMatBalance(NTrays, FeedTray: integer; F, D, RefluxRate, Tcond,
+      Treb, Pcond, Preb: double; xf: arrComp; var Res: TArrOfDouble);
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
       var L, V: arrTrays);
   private
@@ -49,61 +54,91 @@ begin
     alpha[i]:= P[i] / min;
 end;
 
-procedure TMatBalance.OveralMatBalance(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
-  Wv: arrTrays; var L: arrTrays; var V: arrTrays);
+procedure TMatBalance.WilsonCorrelation(CritT: arrComp; CritP: arrComp; omega: arrComp;
+  NTrays: Integer; Tj: TArrOfDouble; Pj: TArrOfDouble; var Kji: TArrOfArrOfDouble);
 var
-  i: integer;
-  dV: arrTrays; // V[i] - V[i+1]
+  i, j: integer;
+  Ps: TArrOfArrOfDouble;
 begin
-  L[1] := 1000;
-  L[NTrays] := 900;
-  for i := 2 to NTrays-1 do
-    L[i] := L[i-1] + (L[1] - L[NTrays]) / NTrays;
-  for i := 2 to NTrays-1 do
-    dV[i] := L[i-1] - L[i] + Fl[i] + Fv[i] - Wl[i-1] - Wv[i+1];
-  dV[1] :=  Fl[1] + Fv[1] - Wv[2] - L[1];
-  dV[NTrays] := L[NTrays-1] - Wl[NTrays-1] + Fl[NTrays] + Fv[NTrays] - L[NTrays];
-  V[NTrays] := dV[NTrays];
-  for i := NTrays-1 downto 1 do
-    V[i] := dV[i] + dV[i+1];
+  SetLength(Ps, NTrays+2, NComp);
+
+  for j := 0 to NTrays+1 do
+    begin
+      Tj[j] := Tj[j] + 273.15;
+      Pj[j] := Pj[j] * 10;
+    end;
+  for j := 0 to NTrays+1 do
+    for i := 1 to NComp do
+      begin
+        Ps[j, i-1] := CritP[i] * exp(5.372697 * (1 + omega[i]) * (1 - (CritT[i] + 273.15) / Tj[j]));
+        Kji[j, i-1] := Ps[j, i] / Pj[j];
+      end;
+end;
+
+procedure TMatBalance.OveralMatBalance(NTrays, FeedTray: integer; F: Double; D: Double; RefluxRate: Double; Tcond: Double;
+  Treb: Double; Pcond: Double; Preb: Double; xf: arrComp; var Res: TArrOfDouble);
+const
+  Tcc: arrComp = (-82.45, 32.28, 96.75, 134.9, 152, 196.5, 187.2, 234.7, 267);
+// Критическое давление
+  Pcc: arrComp = (4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737);
+// Ацентрический фактор
+  omega: arrComp = (0.0115, 0.0986, 0.1524, 0.1848, 0.201, 0.2539, 0.2222, 0.3007, 0.3498);
+var
+  i: integer; // компонент
+  j: integer; // тарелка
+  Tj, Pj: TArrOfDouble;
+  Lj, Vj: TArrOfDouble;
+  Kji: TArrOfArrOfDouble;
+  Aji: TArrOfArrOfDouble;
+  xD: arrComp;
+  xB: arrComp;
+  di: arrComp;
+  bi: arrComp;
+  RefluxRatio: double;
+begin
+  SetLength(Lj, NTrays+2);
+  SetLength(Vj, NTrays+2);
+  SetLength(Tj, NTrays+2);
+  SetLength(Pj, NTrays+2);
+  SetLength(Tj, NTrays+2);
+  SetLength(Pj, NTrays+2);
+  SetLength(Kji, NTrays+2, NComp);
+  SetLength(Aji, NTrays+2, NComp);
+  Lj[0] := RefluxRate;
+  Lj[NTrays+1] := F - D;
+  for j := 2 to NTrays+1 do
+    if j <> FeedTray then
+      Lj[j-1] := Lj[j-2]
+    else
+      Lj[j-1] := Lj[j-2] + F;
+  Vj[0] := 0; // Полный конденсатор
+  Vj[1] := D + RefluxRate;
+  for j := 2 to NTrays+1 do
+    Vj[j]:= Vj[j-1];
+  Tj[0] := Tcond;
+  Tj[NTrays+1] := TReb;
+  Pj[0] := Pcond;
+  Pj[NTrays+1] := Preb;
+  for j := 2 to NTrays+1 do
+    begin
+      Tj[j-1] := Tj[j-2] + (Tj[NTrays+1] - Tj[0]) / NTrays;
+      Pj[j-1] := Pj[j-2] + (Pj[NTrays+1] - Pj[0]) / NTrays;
+    end;
+  RefluxRatio := Lj[0] / D;
+  WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji);
+  for j := 1 to FeedTray-2 do
+    for i := 1 to NComp do
+      Aji[j, i-1] := Lj[j] {/ (Kji[j, i-1] * Vj[j])};
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
   Wv: arrTrays; T1: Double; TN: Double; P1: Double; PN: Double; var L: arrTrays; var V: arrTrays);
 var
-  i: integer;
-  Tprofile: arrTrays;
-  Pprofile: arrTrays;
-  Kij: array [1..NTrays, 1..NComp] of double;
-  j: Integer;
-  PhaseCalc: TPhase_Eq_Calc;
+  xf: arrComp;
+  Res: TArrOfDouble;
+
 begin
-  for i := 1 to NTrays do
-    begin
-      Fl[i] := 0;
-      Fv[i] := 0;
-      Wl[i] := 0;
-      Wv[i] := 0;
-    end;
-  Fl[FeedTray] := 1000;
-  Wl[1]:= 500;
-  Wl[NTrays] := 500;
-  OveralMatBalance(Fl, Fv, Wl, Wv, L, V);
-  TProfile[1] := T1;
-  TProfile[NTrays] := TN;
-  PProfile[1] := P1;
-  PProfile[NTrays] := PN;
-  for i := 2 to NTrays-1 do
-    begin
-      TProfile[i]:= TProfile[i-1] + (TProfile[1] - TProfile[NTrays]) / NTrays;
-      PProfile[i]:= PProfile[i-1] + (PProfile[1] - PProfile[NTrays]) / NTrays;
-    end;
-  PhaseCalc:= TPhase_Eq_Calc.Create;
-
-  for i := 1 to NTrays do
-    for j := 1 to NComp do
-      PhaseCalc.WilsonCorrelation(PhaseCalc.CritT, PhaseCalc.CritP, PhaseCalc.omega, TProfile[j], PProfile[j], PhaseCalc.K);
-
+  OveralMatBalance(10, 5, 13.8, 4.5, 13.5, 60, 100, 0.19, 0.20, xf, Res);
 end;
 
 end.
