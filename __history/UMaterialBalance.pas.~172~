@@ -2,7 +2,7 @@ unit UMaterialBalance;
 
 interface
 uses
-  UPhase_Equilibrium;
+  UPhase_Equilibrium, dialogs;
 
 const
   NTrays = 12;
@@ -67,12 +67,11 @@ begin
       Tj[j] := Tj[j] + 273.15;
       Pj[j] := Pj[j] * 10;
     end;
-  for j := 0 to NTrays+1
- do
+  for j := 0 to NTrays+1 do
     for i := 1 to NComp do
       begin
-        Ps[j, i-1]:= CritP[i] * exp(5.372697 * (1 + omega[i]) * (1 - CritT[i] / Tj[j]));
-        Kji[j, i-1]:= Ps[j, i] / Pj[j];
+        Ps[j, i-1] := CritP[i] * exp(5.372697 * (1 + omega[i]) * (1 - (CritT[i] + 273.15) / Tj[j]));
+        Kji[j, i-1] := Ps[j, i-1] / Pj[j];
       end;
 end;
 
@@ -91,11 +90,18 @@ var
   Lj, Vj: TArrOfDouble;
   Kji: TArrOfArrOfDouble;
   Aji: TArrOfArrOfDouble;
+  Sji: TArrOfArrOfDouble;
   xD: arrComp;
   xB: arrComp;
   di: arrComp;
   bi: arrComp;
   RefluxRatio: double;
+  B: double;
+  vji_di: TArrOfArrOfDouble;
+  lji_di: TArrOfArrOfDouble;
+  lji_bi: TArrOfArrOfDouble;
+  vji_bi: TArrOfArrOfDouble;
+  bi__di: arrComp;
 begin
   SetLength(Lj, NTrays+2);
   SetLength(Vj, NTrays+2);
@@ -104,7 +110,12 @@ begin
   SetLength(Tj, NTrays+2);
   SetLength(Pj, NTrays+2);
   SetLength(Kji, NTrays+2, NComp);
-  SetLength(Aji, NTrays+2, NComp);
+  SetLength(Sji, NTrays+2, NComp);
+  SetLength(Aji, FeedTray-1, NComp);
+  SetLength(vji_di, FeedTray-1, NComp);
+  SetLength(lji_di, FeedTray-1, NComp);
+  SetLength(vji_bi, NTrays+21, NComp);
+  SetLength(lji_bi, NTrays+2, NComp);
   Lj[0] := RefluxRate;
   Lj[NTrays+1] := F - D;
   for j := 2 to NTrays+1 do
@@ -113,8 +124,9 @@ begin
     else
       Lj[j-1] := Lj[j-2] + F;
   Vj[0] := 0; // Полный конденсатор
-  for j := 2 to NTrays+2 do
-    Vj[j-1] := Vj[j-2];
+  Vj[1] := D + RefluxRate;
+  for j := 2 to NTrays+1 do
+    Vj[j]:= Vj[j-1];
   Tj[0] := Tcond;
   Tj[NTrays+1] := TReb;
   Pj[0] := Pcond;
@@ -125,10 +137,37 @@ begin
       Pj[j-1] := Pj[j-2] + (Pj[NTrays+1] - Pj[0]) / NTrays;
     end;
   RefluxRatio := Lj[0] / D;
+  B := F - D;
   WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji);
+ // Расчет укрепляющей секции
   for j := 1 to FeedTray-2 do
     for i := 1 to NComp do
       Aji[j, i-1] := Lj[j] / (Kji[j, i-1] * Vj[j]);
+
+  for i := 1 to NComp do
+    vji_di[1, i-1] := Lj[0] / D + 1;
+
+  for j := 2 to FeedTray-1 do
+    for i := 1 to NComp do
+      begin
+        lji_di[j-1, i-1] := Aji[j-1, i] * vji_di[j-1, i-1];
+        vji_di[j, i-1] := lji_di[j-1, i-1] + 1;
+      end;
+  // Расчет исчерпывающей секции
+  for i := 1 to NComp do
+    begin
+      Sji[NTrays+1, i-1] := Kji[NTrays+1, i-1] * Vj[NTrays+1] / B;
+      lji_bi[NTrays, i-1] := Sji[NTrays+1, i-1] + 1;
+    end;
+  for j := NTrays downto FeedTray do
+    for i := 1 to NComp do
+      begin
+        Sji[j, i-1] := Kji[j, i-1] * Vj[j] / Lj[j];
+        vji_bi[j, i-1] := Sji[j, i-1] * lji_bi[j, i-1];
+        lji_bi[j-1, i-1] := vji_bi[j, i-1] + 1;
+      end;
+  for i := 1 to NComp do
+    bi__di[i] := vji_di[1, i-1] / vji_bi[i, i-1];
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
