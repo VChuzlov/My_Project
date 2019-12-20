@@ -2,10 +2,10 @@ unit UMaterialBalance;
 
 interface
 uses
-  UPhase_Equilibrium, Dialogs;
+  UPhase_Equilibrium, Dialogs, System.SysUtils, Math;
 
 const
-  NTrays = 12;
+  NTrays = 10;
   FeedTray = 5;
 
 type
@@ -14,10 +14,11 @@ type
   TArrOfArrOfDouble = array of array of double;
 
   TMatBalance = Class
-    function TettaCorrection: double;
+    function TettaCorrection(bi__di: arrComp; F, D: double; xf: arrComp): double;
     procedure RelativeFugasity(T: double; var alpha: arrComp);
     procedure WilsonCorrelation(CritT, CritP, omega: arrComp; NTrays: integer;
       Tj, Pj: TArrOfDouble; var Kji: TArrOfArrOfDouble);
+    function Kji_Recalc(Tj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfArrOfDouble;
     procedure OveralMatBalance(NTrays, FeedTray: integer; F, D, RefluxRate, Tcond,
       Treb, Pcond, Preb: double; xf: arrComp; var Res: TArrOfDouble);
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
@@ -72,8 +73,68 @@ begin
     for i := 1 to NComp do
       begin
         Ps[j, i-1] := CritP[i] * exp(5.372697 * (1 + omega[i]) * (1 - (CritT[i] + 273.15) / Tj[j]));
-        Kji[j, i-1] := Ps[j, i-1] / Pj[j];
+        Kji[j, i-1] := Ps[j, i-1] / 100 / Pj[j];
       end;
+end;
+
+function TMatBalance.TettaCorrection(bi__di: arrComp; F, D: Double; xf: arrComp): double;
+const
+  eps = 1e-5;
+var
+  i: integer;
+  x0: double;
+  n: integer;
+  function g(x: double): double;
+  var
+    i: integer;
+  begin
+    Result := 0;
+    for i := 1 to NComp do
+      Result := Result + F * xf[i] / (1 + x * (bi__di[i]));
+    Result := Result - D;
+  end;
+  function g1(x: double): double;
+  var
+    i: integer;
+  begin
+    Result := 0;
+    for i := 1 to NComp do
+      Result := Result - bi__di[i] * F * xf[i] / sqr(1 + x * (bi__di[i]));
+  end;
+begin
+  Result := 0;
+  n := 0;
+  repeat
+    n:= n + 1;
+    x0 := Result;
+    Result := x0 - g(x0) / g1(x0);
+    if n >= 20e3 then
+      begin
+        ShowMessage('Tetta-Method - Can not solve!');
+        break
+      end;
+  until abs(Result - x0) <= eps;
+end;
+
+function TMatBalance.Kji_Recalc(Tj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfArrOfDouble;
+var
+  i, j, k: integer;
+  alpha: arrComp;
+  s: double;
+  Kj: TArrOfDouble;
+
+begin
+  SetLength(Kj, NTrays+2);
+  for j := 0 to NTrays+1 do
+    begin
+      s:= 0;
+      RelativeFugasity(Tj[j], alpha);
+      for i := 1 to NComp do
+        s := s + xji[j, i-1] * alpha[i];
+      Kj[j] := 1 / s;
+      for k := 1 to NComp do
+        Result[j, k-1] := alpha[k] * Kj[j];
+    end;
 end;
 
 procedure TMatBalance.OveralMatBalance(NTrays, FeedTray: integer; F: Double; D: Double; RefluxRate: Double; Tcond: Double;
@@ -103,6 +164,13 @@ var
   lji_bi: TArrOfArrOfDouble;
   vji_bi: TArrOfArrOfDouble;
   bi__di: arrComp;
+  lji: TArrOfArrOfDouble;
+  vji: TArrOfArrOfDouble;
+  sd, sb, sl, sv: double;
+  xji: TArrOfArrOfDouble;
+  yji: TArrOfArrOfDouble;
+  RecalcKji: TArrOfArrOfDouble;
+
 begin
   SetLength(Lj, NTrays+2);
   SetLength(Vj, NTrays+2);
@@ -117,6 +185,12 @@ begin
   SetLength(lji_di, NTrays+2, NComp);
   SetLength(vji_bi, NTrays+2, NComp);
   SetLength(lji_bi, NTrays+2, NComp);
+  SetLength(vji, NTrays+2, NComp);
+  SetLength(lji, NTrays+2, NComp);
+  SetLength(xji, NTrays+2, NComp);
+  SetLength(yji, NTrays+2, NComp);
+  SetLength(RecalcKji, NTrays+2, NComp);
+
   Lj[0] := RefluxRate;
   Lj[NTrays+1] := F - D;
   for j := 2 to NTrays+1 do
@@ -132,10 +206,10 @@ begin
   Tj[NTrays+1] := TReb;
   Pj[0] := Pcond;
   Pj[NTrays+1] := Preb;
-  for j := 2 to NTrays+1 do
+  for j := 1 to NTrays do
     begin
-      Tj[j-1] := Tj[j-2] + (Tj[NTrays+1] - Tj[0]) / NTrays;
-      Pj[j-1] := Pj[j-2] + (Pj[NTrays+1] - Pj[0]) / NTrays;
+      Tj[j] := Tj[j-1] + (Tj[NTrays+1] - Tj[0]) / (NTrays + 1);
+      Pj[j] := Pj[j-1] + (Pj[NTrays+1] - Pj[0]) / (NTrays + 1);
     end;
   RefluxRatio := Lj[0] / D;
   B := F - D;
@@ -172,7 +246,62 @@ begin
       bi__di[i] := vji_di[FeedTray-1, i-1] / vji_bi[FeedTray-1, i-1];
       di[i] := F * xf[i] / (1 + lji_di[0, i]);
     end;
-
+  //ShowMessage('tetta = ' + FloatToStr(RoundTo(TettaCorrection(bi__di, F, D, xf), -8)));
+  sd := 0;
+  sb := 0;
+  for i := 1 to NComp do
+    begin
+      di[i] := F * xf[i] / (1 + TettaCorrection(bi__di, F, D, xf) * bi__di[i]);
+      sd := sd + di[i];
+      bi[i] := TettaCorrection(bi__di, F, D, xf) * bi__di[i] * di[i];
+      sb := sb + bi[i];
+    end;
+  D := sd;
+  B := sb;
+  // Расчет новых профилей колонны по пару и жидкости
+  for j := 1 to FeedTray-1 do
+    begin
+      sl := 0;
+      sv := 0;
+      for i := 1 to NComp do
+        begin
+          vji[j, i-1] := vji_di[j, i-1] * di[i];
+          sv := sv + vji[j, i-1];
+          lji[j, i-1] := lji_di[j, i-1] * di[i];
+          sl := sl + lji[j, i-1];
+        end;
+      Vj[j] := sv;
+      Lj[j] := sl;
+    end;
+  for j := FeedTray-1 to NTrays do
+    begin
+      sl := 0;
+      sv := 0;
+      for i := 1 to NComp do
+        begin
+          vji[j, i-1] := vji_bi[j, i-1] * bi[i];
+          sv := sv + vji[j, i-1];
+          lji[j, i-1] := lji_bi[j, i-1] * bi[i];
+          sl := sl + lji[j, i-1];
+        end;
+      Vj[j] := sv;
+      Lj[j] := sl;
+    end;
+  // Расчет составов
+  for i := 1 to NComp do
+    begin
+      xD[i] := di[i] / D;
+      xB[i] := bi[i] / B;
+      for j := 1 to NTrays+1 do
+        begin
+          xji[j, i-1] := lji[j, i-1] / Lj[j];
+          yji[j, i-1] := vji[j, i-1] / Vj[j];
+        end;
+      xji[0, i-1] := xD[i];
+      xji[NTrays+1, i-1] := xB[i];
+    end;
+  // Расчет новых значений Kji
+  RecalcKji := Kji_Recalc(Tj, xji);
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
