@@ -17,8 +17,9 @@ type
     function TettaCorrection(bi__di: arrComp; F, D: double; xf: arrComp): double;
     procedure RelativeFugasity(T: double; var alpha: arrComp);
     procedure WilsonCorrelation(CritT, CritP, omega: arrComp; NTrays: integer;
-      Tj, Pj: TArrOfDouble; var Kji: TArrOfArrOfDouble);
-    function Kji_Recalc(Tj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfArrOfDouble;
+      Tj, Pj: TArrOfDouble; var Kji, alpha: TArrOfArrOfDouble);
+    function Kji_Recalc(Tj, Pj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfDouble;
+    function Tj_Recalc(Kj: TArrOfDouble; Tj, Pj: TArrOfDouble): TArrOfDouble;
     procedure OveralMatBalance(NTrays, FeedTray: integer; F, D, RefluxRate, Tcond,
       Treb, Pcond, Preb: double; xf: arrComp; var Res: TArrOfDouble);
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
@@ -26,6 +27,13 @@ type
   private
     { Private declarations }
   public
+    const
+      // Критическая температура
+      Tcc: arrComp = (-82.45, 32.28, 96.75, 134.9, 152, 196.5, 187.2, 234.7, 267);
+      // Критическое давление
+      Pcc: arrComp = (4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737);
+      // Ацентрический фактор
+      omega: arrComp = (0.0115, 0.0986, 0.1524, 0.1848, 0.201, 0.2539, 0.2222, 0.3007, 0.3498);
     { Public declarations }
   End;
 
@@ -57,24 +65,28 @@ begin
 end;
 
 procedure TMatBalance.WilsonCorrelation(CritT: arrComp; CritP: arrComp; omega: arrComp;
-  NTrays: Integer; Tj: TArrOfDouble; Pj: TArrOfDouble; var Kji: TArrOfArrOfDouble);
+  NTrays: Integer; Tj: TArrOfDouble; Pj: TArrOfDouble; var Kji, alpha: TArrOfArrOfDouble);
 var
-  i, j: integer;
+  i, j, k: integer;
   Ps: TArrOfArrOfDouble;
+  min: double;
+
 begin
   SetLength(Ps, NTrays+2, NComp);
-
   for j := 0 to NTrays+1 do
     begin
-      Tj[j] := Tj[j] + 273.15;
-      Pj[j] := Pj[j] * 10;
+      min := 1e6;
+      for i := 1 to NComp do
+        begin
+          Ps[j, i-1] := CritP[i] / 100 * exp(5.372697 * (1 + omega[i]) * (1 - (CritT[i] + 273.15) / Tj[j]));
+          Kji[j, i-1] := Ps[j, i-1] {/ 100} / Pj[j];
+          if min > Ps[j, i-1] then
+            min := Ps[j, i-1];
+        end;
+      for k := 1 to NComp do
+        alpha[j, k-1] := Ps[j, k-1] / min;
     end;
-  for j := 0 to NTrays+1 do
-    for i := 1 to NComp do
-      begin
-        Ps[j, i-1] := CritP[i] * exp(5.372697 * (1 + omega[i]) * (1 - (CritT[i] + 273.15) / Tj[j]));
-        Kji[j, i-1] := Ps[j, i-1] / 100 / Pj[j];
-      end;
+
 end;
 
 function TMatBalance.TettaCorrection(bi__di: arrComp; F, D: Double; xf: arrComp): double;
@@ -116,38 +128,103 @@ begin
   until abs(Result - x0) <= eps;
 end;
 
-function TMatBalance.Kji_Recalc(Tj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfArrOfDouble;
+function TMatBalance.Kji_Recalc(Tj, Pj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfDouble;
 var
   i, j, k: integer;
-  alpha: arrComp;
+  alpha: TArrOfArrOfDouble;
   s: double;
   Kj: TArrOfDouble;
+  kji: TArrOfArrOfDouble;
 
 begin
   SetLength(Kj, NTrays+2);
+  SetLength(Kji, NTrays+2, NComp);
+  SetLength(alpha, NTrays+2, NComp);
   for j := 0 to NTrays+1 do
     begin
       s:= 0;
-      RelativeFugasity(Tj[j], alpha);
+      //RelativeFugasity(Tj[j], alpha);
+      WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kji, alpha);
       for i := 1 to NComp do
-        s := s + xji[j, i-1] * alpha[i];
+        s := s + xji[j, i-1] * alpha[j, i-1];
       Kj[j] := 1 / s;
+      Result[j] := Kj[j]
+      {
       for k := 1 to NComp do
-        Result[j, k-1] := alpha[k] * Kj[j];
+        Result[j, k-1] := alpha[j, k-1] * Kj[j];   }
+    end;
+end;
+
+function TMatBalance.Tj_Recalc(Kj: TArrOfDouble; Tj, Pj: TArrOfDouble): TArrOfDouble;
+const
+  T0 = 100;
+  Tk = 900;
+  h =  2.7315;
+var
+  i, j, k: integer;
+  rTj: TArrOfDouble;
+  deltaj: TArrOfDouble;
+  deltaji: TArrOfArrOfDouble;
+  rKji: TArrOfArrOfDouble;
+  alpha: TArrOfArrOfDouble; // относительная летучесть
+  temp: TArrOfDouble; // переменная - буфер
+begin
+  SetLength(rKji, NTrays+2, NComp);
+  SetLength(deltaji, NTrays+2, NComp);
+  SetLength(alpha, NTrays+2, NComp);
+  SetLength(deltaj, NTrays+2);
+  SetLength(temp, NTrays+2);
+  SetLength(rTj, NTrays+2);
+  for j := 0 to NTrays+1 do
+    begin
+      for i := 0 to NComp-1 do
+        deltaji[j, i] := 0;
+      rTj[j] := T0;
+    end;
+  k := 1;
+  WilsonCorrelation(Tcc, Pcc, omega, NTrays, rTj, Pj, rKji, alpha);
+  for j := 0 to NTrays+1 do
+    begin
+      deltaj[j] := 0;
+      for i := 0 to NComp-1 do
+        begin
+          deltaji[j, i] := rKji[j, i] / alpha[j, i];
+          deltaj[j] := {deltaj[j] +} deltaji[j, i] - Kj[j];
+        end;
+      temp[j] := deltaj[j];
+    end;
+  for j := 0 to NTrays+1 do
+    begin
+      deltaj[j] := 0;
+      while (rTj[j] >= T0) and (rTj[j] <= Tk) do
+        begin
+          rTj[j] := rTj[j] + h * k;
+          WilsonCorrelation(Tcc, Pcc, omega, NTrays, rTj, Pj, rKji, alpha);
+          for i := 0 to NComp-1 do
+            begin
+              deltaji[j, i] := rKji[j, i] / alpha[j, i];
+              deltaj[j] := {deltaji[j, i]} deltaji[j, i] - Kj[j];
+            end;
+          if temp[j] > deltaj[j] then
+            begin
+              temp[j] := deltaj[j];
+              Result[j] := rTj[j];
+            end
+          else
+            Result[j] := Tj[j];
+        end;
     end;
 end;
 
 procedure TMatBalance.OveralMatBalance(NTrays, FeedTray: integer; F: Double; D: Double; RefluxRate: Double; Tcond: Double;
   Treb: Double; Pcond: Double; Preb: Double; xf: arrComp; var Res: TArrOfDouble);
 const
-  Tcc: arrComp = (-82.45, 32.28, 96.75, 134.9, 152, 196.5, 187.2, 234.7, 267);
-// Критическое давление
-  Pcc: arrComp = (4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737);
-// Ацентрический фактор
-  omega: arrComp = (0.0115, 0.0986, 0.1524, 0.1848, 0.201, 0.2539, 0.2222, 0.3007, 0.3498);
+
+  PhaseConst_Error = 1000;
 var
   i: integer; // компонент
   j: integer; // тарелка
+  k: integer; // iteration
   Tj, Pj: TArrOfDouble;
   Lj, Vj: TArrOfDouble;
   Kji: TArrOfArrOfDouble;
@@ -170,6 +247,10 @@ var
   xji: TArrOfArrOfDouble;
   yji: TArrOfArrOfDouble;
   RecalcKji: TArrOfArrOfDouble;
+  Error_Kji: double;
+  RecalcTj: TArrOfDouble;
+  alpha: TArrOfArrOfDouble;
+  Kj: TArrOfDouble;
 
 begin
   SetLength(Lj, NTrays+2);
@@ -190,7 +271,10 @@ begin
   SetLength(xji, NTrays+2, NComp);
   SetLength(yji, NTrays+2, NComp);
   SetLength(RecalcKji, NTrays+2, NComp);
-
+  SetLength(RecalcTj, NTrays+2);
+  SetLength(alpha, NTrays+2, NComp);
+  SetLength(Kj, NTrays+2);
+  k := 0;
   Lj[0] := RefluxRate;
   Lj[NTrays+1] := F - D;
   for j := 2 to NTrays+1 do
@@ -213,7 +297,14 @@ begin
     end;
   RefluxRatio := Lj[0] / D;
   B := F - D;
-  WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji);
+  for j := 0 to NTrays+1 do
+    begin
+      Tj[j] := Tj[j] + 273.15;
+      Pj[j] := Pj[j] * 10;
+    end;
+  //Repeat
+  k := k + 1;
+  WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji, alpha);
  // Расчет укрепляющей секции
   for j := 1 to FeedTray-2 do
     for i := 1 to NComp do
@@ -300,8 +391,27 @@ begin
       xji[0, i-1] := xD[i];
       xji[NTrays+1, i-1] := xB[i];
     end;
-  // Расчет новых значений Kji
-  RecalcKji := Kji_Recalc(Tj, xji);
+
+   // Расчет новых значений Kji
+  {RecalcKji}
+  Kj := Kji_Recalc(Tj, Pj, xji);
+  RecalcTj := Tj_Recalc({RecalcKji}Kj, Tj, Pj);
+  for j := 0 to NTrays+1 do
+    Tj[j] := RecalcTj[j];
+
+  for j := 0 to NTrays+1 do
+    for i := 0 to NComp-1 do
+      RecalcKji[j, i] := alpha[j, i] * Kj[j];
+
+  Error_Kji := 0;
+  for j := 0 to NTrays+1 do
+    for i := 0 to NComp-1 do
+      Error_Kji := Error_Kji + sqr(Kji[j, i] - RecalcKji[j, i]);
+
+  for j := 0 to NTrays+1 do
+    for i := 0 to NComp-1 do
+      Kji[j, i] := RecalcKji[j, i];
+  //until Error_Kji <= PhaseConst_Error;
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
