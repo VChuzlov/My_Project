@@ -195,12 +195,14 @@ begin
         end;
       temp[j] := deltaj[j];
     end;
-  s := 0;
+
   for j := 0 to NTrays+1 do
     begin
       deltaj[j] := 0;
+
       while (rTj[j] >= T0) and (rTj[j] <= Tk) do
         begin
+          s := 0;
           rTj[j] := rTj[j] + h * k;
           WilsonCorrelation(Tcc, Pcc, omega, NTrays, rTj, Pj, rKji, alpha);
           for i := 0 to NComp-1 do
@@ -208,7 +210,7 @@ begin
               deltaji[j, i] := rKji[j, i] / alpha[j, i];
               deltaj[j] := {deltaji[j, i]} deltaji[j, i] - Kj[j];
             end;
-          //s := s +
+          s := s + (Kj[j] + deltaji[j, 1]) / Kj[j];
           if temp[j] > deltaj[j] then
             begin
               temp[j] := deltaj[j];
@@ -216,7 +218,9 @@ begin
             end
           else
             Result[j] := Tj[j];
+          err := sqrt(s) / (NTrays + 2);
         end;
+
     end;
 end;
 
@@ -314,11 +318,13 @@ begin
     end;
   RefluxRatio := Lj[0] / D;
   B := F - D;
+
   for j := 0 to NTrays+1 do
     begin
       Tj[j] := Tj[j] + 273.15;
       Pj[j] := Pj[j] * 10;
     end;
+
   Repeat
   k := k + 1;
   WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji, alpha);

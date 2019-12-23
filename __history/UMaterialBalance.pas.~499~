@@ -168,6 +168,8 @@ var
   rKji: TArrOfArrOfDouble;
   alpha: TArrOfArrOfDouble; // относительна€ летучесть
   temp: TArrOfDouble; // переменна€ - буфер
+  err: double;
+  s: double;
 begin
   SetLength(rKji, NTrays+2, NComp);
   SetLength(deltaji, NTrays+2, NComp);
@@ -193,9 +195,11 @@ begin
         end;
       temp[j] := deltaj[j];
     end;
+
   for j := 0 to NTrays+1 do
     begin
       deltaj[j] := 0;
+      s := 0;
       while (rTj[j] >= T0) and (rTj[j] <= Tk) do
         begin
           rTj[j] := rTj[j] + h * k;
@@ -205,6 +209,7 @@ begin
               deltaji[j, i] := rKji[j, i] / alpha[j, i];
               deltaj[j] := {deltaji[j, i]} deltaji[j, i] - Kj[j];
             end;
+          s := s + (Kj[j] + deltaji[j, 1]) / Kj[j];
           if temp[j] > deltaj[j] then
             begin
               temp[j] := deltaj[j];
@@ -213,6 +218,7 @@ begin
           else
             Result[j] := Tj[j];
         end;
+      err := s
     end;
 end;
 
@@ -310,11 +316,13 @@ begin
     end;
   RefluxRatio := Lj[0] / D;
   B := F - D;
+
   for j := 0 to NTrays+1 do
     begin
       Tj[j] := Tj[j] + 273.15;
       Pj[j] := Pj[j] * 10;
     end;
+
   Repeat
   k := k + 1;
   WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji, alpha);
@@ -431,9 +439,10 @@ begin
       else
         begin
           Kji[j, i] := sqrt(Kji[j, i] * RecalcKji[j, i]);
+          k := 1;
         end;
 
-  until {Error_Kji <= PhaseConst_Error} {abs(rError_Kji - Error_Kji) <= 1} getE(Kji, RecalcKji) <= 1e-4;
+  until {Error_Kji <= PhaseConst_Error} abs(rError_Kji - Error_Kji) <= 1 {getE(Kji, RecalcKji) <= 1};
 
 end;
 
