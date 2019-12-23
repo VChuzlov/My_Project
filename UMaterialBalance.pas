@@ -91,7 +91,7 @@ end;
 
 function TMatBalance.TettaCorrection(bi__di: arrComp; F, D: Double; xf: arrComp): double;
 const
-  eps = 1e-5;
+  eps = 1e-3;
 var
   i: integer;
   x0: double;
@@ -168,6 +168,8 @@ var
   rKji: TArrOfArrOfDouble;
   alpha: TArrOfArrOfDouble; // относительная летучесть
   temp: TArrOfDouble; // переменная - буфер
+  err: double;
+  s: double;
 begin
   SetLength(rKji, NTrays+2, NComp);
   SetLength(deltaji, NTrays+2, NComp);
@@ -193,6 +195,7 @@ begin
         end;
       temp[j] := deltaj[j];
     end;
+  s := 0;
   for j := 0 to NTrays+1 do
     begin
       deltaj[j] := 0;
@@ -205,6 +208,7 @@ begin
               deltaji[j, i] := rKji[j, i] / alpha[j, i];
               deltaj[j] := {deltaji[j, i]} deltaji[j, i] - Kj[j];
             end;
+          //s := s +
           if temp[j] > deltaj[j] then
             begin
               temp[j] := deltaj[j];
@@ -248,9 +252,22 @@ var
   yji: TArrOfArrOfDouble;
   RecalcKji: TArrOfArrOfDouble;
   Error_Kji: double;
+  rError_Kji: double;
   RecalcTj: TArrOfDouble;
   alpha: TArrOfArrOfDouble;
   Kj: TArrOfDouble;
+
+  function getE(Kji, rKji: TArrOfArrOfDouble): double;
+  var
+    i, j: integer;
+    s: double;
+  begin
+    s := 0;
+    for j := 0 to NTrays+1 do
+      for i := 0 to NComp-1 do
+        s := s + (rKji[j, i] + Kji[j, i]) / Kji[j, i];
+    Result := sqrt(s) / (NComp * (NTrays+2))
+  end;
 
 begin
   SetLength(Lj, NTrays+2);
@@ -302,7 +319,7 @@ begin
       Tj[j] := Tj[j] + 273.15;
       Pj[j] := Pj[j] * 10;
     end;
-  //Repeat
+  Repeat
   k := k + 1;
   WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji, alpha);
  // Расчет укрепляющей секции
@@ -403,15 +420,26 @@ begin
     for i := 0 to NComp-1 do
       RecalcKji[j, i] := alpha[j, i] * Kj[j];
 
+  rError_Kji := Error_Kji;
   Error_Kji := 0;
   for j := 0 to NTrays+1 do
     for i := 0 to NComp-1 do
-      Error_Kji := Error_Kji + sqr(Kji[j, i] - RecalcKji[j, i]);
+      Error_Kji := Error_Kji + abs(Kji[j, i] - RecalcKji[j, i]);
+
+  ShowMessage(FloatToStr(getE(Kji, RecalcKji)));
 
   for j := 0 to NTrays+1 do
     for i := 0 to NComp-1 do
-      Kji[j, i] := RecalcKji[j, i];
-  //until Error_Kji <= PhaseConst_Error;
+      if k <= 5 then
+        Kji[j, i] := RecalcKji[j, i]
+      else
+        begin
+          Kji[j, i] := sqrt(Kji[j, i] * RecalcKji[j, i]);
+          k := 1;
+        end;
+
+  until {Error_Kji <= PhaseConst_Error} abs(rError_Kji - Error_Kji) <= 1 {getE(Kji, RecalcKji) <= 1};
+
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
