@@ -12,12 +12,16 @@ type
   arrTrays = array[1..NTrays] of double;
   TArrOfDouble = array of double;
   TArrOfArrOfDouble = array of array of double;
+  fu = function(temp, pres, Tc, Pc, om: double): double;
 
   TMatBalance = Class
     function TettaCorrection(bi__di: arrComp; F, D: double; xf: arrComp): double;
     procedure RelativeFugasity(T: double; var alpha: arrComp);
     procedure WilsonCorrelation(CritT, CritP, omega: arrComp; NTrays: integer;
       Tj, Pj: TArrOfDouble; var Kji, alpha: TArrOfArrOfDouble);
+    function Wilson(Tj: double; Pj: double; Tc, Pc, om: double): double;
+    function dihotomy(f: fu; a, b: double; Pj: double): double;
+    function getTj_0(Fj: arrTrays; zf: TArrOfArrOfDouble): arrTrays;
     function Kji_Recalc(Tj, Pj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfDouble;
     function Tj_Recalc(Kj: TArrOfDouble; Tj, Pj: TArrOfDouble): TArrOfDouble;
     procedure OveralMatBalance(NTrays, FeedTray: integer; F, D, RefluxRate, Tcond,
@@ -86,7 +90,60 @@ begin
       for k := 1 to NComp do
         alpha[j, k-1] := Ps[j, k-1] / min;
     end;
+end;
 
+function TMatBalance.Wilson(Tj: Double; Pj: Double; Tc: Double; Pc: Double; om: Double): double;
+var
+  Ps: double;
+  i: integer;
+begin
+  Ps := Pc / 100 * exp(5.372697 * (1 + om) * (1 - (Tc + 273.15) / Tj));
+  Result := Ps / Pj;
+
+end;
+
+function TMatBalance.dihotomy(f: fu; a: Double; b: Double; Pj: Double): double;
+const
+  eps = 1e-5;
+var
+  temp: double;
+  pres, Tc, Pc, om: double;
+begin
+  if f(temp, pres, Tc, Pc, om) * f(temp, pres, Tc, Pc, om) < 0 then
+    begin
+      repeat
+        temp := (a + b) / 2;
+        if f(temp, pres, Tc, Pc, om) * f(temp, pres, Tc, Pc, om) < 0 then
+          b := temp
+        else
+          a := temp;
+      until (abs(a - b) <= eps) or (f(temp, pres, Tc, Pc, om) = 0);
+    result := temp;
+    end
+  else
+    ShowMessage('Dihotomy, No roots');
+end;
+
+function TMatBalance.getTj_0(Fj: arrTrays; zf: TArrOfArrOfDouble): arrTrays;
+var
+  i, j: integer;
+  s, s1: double;
+  Tave: double;
+  Tmin: double;
+  Ti_sat: double;
+
+  function f(temp, pres, Tc, Pc, om: double): double;
+  var
+    i: integer;
+    Ki: double;
+  begin
+    s1 := 0;
+    Ki := Wilson(temp, pres, Tc, Pc, om);
+    Result := Ki - 1;
+  end;
+
+begin
+  //
 end;
 
 function TMatBalance.TettaCorrection(bi__di: arrComp; F, D: Double; xf: arrComp): double;
@@ -432,7 +489,7 @@ begin
     for i := 0 to NComp-1 do
       Error_Kji := Error_Kji + abs(Kji[j, i] - RecalcKji[j, i]);
 
-  ShowMessage(FloatToStr(getE(Kji, RecalcKji)));
+  //ShowMessage(FloatToStr(getE(Kji, RecalcKji)));
 
   for j := 0 to NTrays+1 do
     for i := 0 to NComp-1 do
