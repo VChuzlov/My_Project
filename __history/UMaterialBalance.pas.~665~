@@ -5,7 +5,7 @@ uses
   UPhase_Equilibrium, Dialogs, System.SysUtils, Math;
 
 const
-  NTrays = 10;
+  NTrays = 12;
   FeedTray = 5;
 
 type
@@ -20,7 +20,7 @@ type
     procedure WilsonCorrelation(CritT, CritP, omega: arrComp; NTrays: integer;
       Tj, Pj: TArrOfDouble; var Kji, alpha: TArrOfArrOfDouble);
     function Wilson(Tj: double; Pj: double; Tc, Pc, om: double): double;
-    function dihotomy(f: fu; a, b: double; Pj: double): double;
+    function dihotomy(a, b: double; Pj: double; Tc, Pc, om: double): double;
     function getTj_0(Fj: arrTrays; zf: TArrOfArrOfDouble): arrTrays;
     function Kji_Recalc(Tj, Pj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfDouble;
     function Tj_Recalc(Kj: TArrOfDouble; Tj, Pj: TArrOfDouble): TArrOfDouble;
@@ -33,7 +33,7 @@ type
   public
     const
       // Критическая температура
-      Tcc: arrComp = (-82.45, 32.28, 96.75, 134.9, 152, 196.5, 187.2, 234.7, 267);
+      Tcc: arrComp = (-82.45, 32.28, 96.75, 134.9, 152, 187.2, 196.5, 234.7, 267);
       // Критическое давление
       Pcc: arrComp = (4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737);
       // Ацентрический фактор
@@ -98,26 +98,34 @@ var
   i: integer;
 begin
   Ps := Pc / 100 * exp(5.372697 * (1 + om) * (1 - (Tc + 273.15) / Tj));
-  Result := Ps / Pj;
-
+  Result := Ps / (Pj * 10);
 end;
 
-function TMatBalance.dihotomy(f: fu; a: Double; b: Double; Pj: Double): double;
+function TMatBalance.dihotomy(a: Double; b: Double; Pj: Double; Tc, Pc, om: double): double;
 const
   eps = 1e-5;
 var
   temp: double;
-  pres, Tc, Pc, om: double;
+  function f(temp, pres, Tc, Pc, om: double): double;
+  var
+    i: integer;
+    Ki: double;
+  begin
+    //s1 := 0;
+    Ki := Wilson(temp, pres, Tc, Pc, om);
+    Result := Ki - 1;
+  end;
 begin
-  if f(temp, pres, Tc, Pc, om) * f(temp, pres, Tc, Pc, om) < 0 then
+  temp := (a + b) / 2;
+  if f(a, Pj, Tc, Pc, om) * f(b, Pj, Tc, Pc, om) < 0 then
     begin
       repeat
         temp := (a + b) / 2;
-        if f(a) * f(temp, pres, Tc, Pc, om) < 0 then
+        if f(a, Pj, Tc, Pc, om) * f(temp, Pj, Tc, Pc, om) < 0 then
           b := temp
         else
           a := temp;
-      until (abs(a - b) <= eps) or (f(temp, pres, Tc, Pc, om) = 0);
+      until (abs(a - b) <= eps) or (f(temp, Pj, Tc, Pc, om) = 0);
     result := temp;
     end
   else
@@ -125,25 +133,46 @@ begin
 end;
 
 function TMatBalance.getTj_0(Fj: arrTrays; zf: TArrOfArrOfDouble): arrTrays;
+type
+  fu = function(temp, pres, Tc, Pc, om: double): double;
 var
   i, j: integer;
-  s, s1: double;
+  sj, s1, s2: double;
+  s_Fj: double;
+  s_j: arrTrays;
   Tave: double;
   Tmin: double;
-  Ti_sat: double;
+  Ti_sat: arrComp;
+  //f: fu;
+  temp, pres, Tc, Pc, om: double;
+begin
+  sj := 0;
+  s1 := 0; // Sum[Ti_sat * Sum(zfij * Fj)]
+  s2 := 0;
+  for i := 1 to NComp do
+    Ti_sat[i] := dihotomy(90, 900, 0.195, Tcc[i], Pcc[i], omega[i]);
 
-  function f(temp, pres, Tc, Pc, om: double): double;
-  var
-    i: integer;
-    Ki: double;
+  s_Fj := 0;
+  sj := 0;
+  s2 := 0;
+  for j := 1 to NTrays do
   begin
-    s1 := 0;
-    Ki := Wilson(temp, pres, Tc, Pc, om);
-    Result := Ki - 1;
+    s_Fj := s_Fj + Fj[j];
+    for i := 1 to NComp do
+      begin
+        sj := sj + Fj[j] * zf[i-1, j-1];
+        s2 := s2 + Fj[j] * zf[i-1, j-1];
+      end;
+    s_j[j] := s_j[j] + s2;
+    s2 := 0;
   end;
 
-begin
-  //
+  Tave := s1 / s_Fj;
+  for i := 1 to NComp do
+    s2 := s2 + abs(Ti_sat[i] - Tave) {* si[i]};
+  Tmin := Tave - s2 / s_Fj;
+  for j := 1 to NTrays do
+    Result[j] := Tmin + 2 * (j - 1) / NTrays * (Tave - Tmin);
 end;
 
 function TMatBalance.TettaCorrection(bi__di: arrComp; F, D: Double; xf: arrComp): double;
@@ -508,20 +537,31 @@ end;
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
   Wv: arrTrays; T1: Double; TN: Double; P1: Double; PN: Double; var L: arrTrays; var V: arrTrays);
 var
-  xf: arrComp;
+  zf: TArrOfArrOfDouble;
   Res: TArrOfDouble;
-
+  Fj: arrTrays;
+  Tj_0: arrTrays;
+  i, j: Integer;
 begin
-  xf[1] := 2.22222222222222e-002;
-  xf[2] := 4.44444444444444e-002;
-  xf[3] := 6.66666666666667e-002;
-  xf[4] := 8.88888888888889e-002;
-  xf[5] := 0.111111111111111;
-  xf[6] := 0.133333333333333;
-  xf[7] := 0.155555555555556;
-  xf[8] := 0.177777777777778;
-  xf[9] := 0.200000000000000;
-  OveralMatBalance(10, 5, 13.8, 4.5, 13.5, 60, 100, 0.19, 0.20, xf, Res);
+  SetLength(zf, NComp, NTrays);
+
+  zf[0, FeedTray-1] := 2.22222222222222e-002;
+  zf[1, FeedTray-1] := 4.44444444444444e-002;
+  zf[2, FeedTray-1] := 6.66666666666667e-002;
+  zf[3, FeedTray-1] := 8.88888888888889e-002;
+  zf[4, FeedTray-1] := 0.111111111111111;
+  zf[5, FeedTray-1] := 0.133333333333333;
+  zf[6, FeedTray-1] := 0.155555555555556;
+  zf[7, FeedTray-1] := 0.177777777777778;
+  zf[8, FeedTray-1] := 0.200000000000000;
+
+  for j := 1 to NTrays do
+    Fj[j] := 0;
+  Fj[FeedTray] := 13.8;
+
+  //OveralMatBalance(10, 5, 13.8, 4.5, 13.5, 60, 100, 0.19, 0.20, zf, Res);
+
+  Tj_0 := getTj_0(Fj, zf);
 end;
 
 end.

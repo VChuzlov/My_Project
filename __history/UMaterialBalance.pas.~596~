@@ -1,4 +1,4 @@
-unit UMaterialBalance;
+п»їunit UMaterialBalance;
 
 interface
 uses
@@ -12,7 +12,7 @@ type
   arrTrays = array[1..NTrays] of double;
   TArrOfDouble = array of double;
   TArrOfArrOfDouble = array of array of double;
-  fu = function(x: double): double;
+  fu = function(temp, pres, Tc, Pc, om: double): double;
 
   TMatBalance = Class
     function TettaCorrection(bi__di: arrComp; F, D: double; xf: arrComp): double;
@@ -32,11 +32,11 @@ type
     { Private declarations }
   public
     const
-      // Критическая температура
+      // РљСЂРёС‚РёС‡РµСЃРєР°СЏ С‚РµРјРїРµСЂР°С‚СѓСЂР°
       Tcc: arrComp = (-82.45, 32.28, 96.75, 134.9, 152, 196.5, 187.2, 234.7, 267);
-      // Критическое давление
+      // РљСЂРёС‚РёС‡РµСЃРєРѕРµ РґР°РІР»РµРЅРёРµ
       Pcc: arrComp = (4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737);
-      // Ацентрический фактор
+      // РђС†РµРЅС‚СЂРёС‡РµСЃРєРёР№ С„Р°РєС‚РѕСЂ
       omega: arrComp = (0.0115, 0.0986, 0.1524, 0.1848, 0.201, 0.2539, 0.2222, 0.3007, 0.3498);
     { Public declarations }
   End;
@@ -99,7 +99,6 @@ var
 begin
   Ps := Pc / 100 * exp(5.372697 * (1 + om) * (1 - (Tc + 273.15) / Tj));
   Result := Ps / Pj;
-
 end;
 
 function TMatBalance.dihotomy(f: fu; a: Double; b: Double; Pj: Double): double;
@@ -107,16 +106,18 @@ const
   eps = 1e-5;
 var
   temp: double;
+  pres, Tc, Pc, om: double;
 begin
-  if f(a) * f(b) < 0 then
+  temp := (a + b) / 2;
+  if f(temp, pres, Tc, Pc, om) * f(temp, pres, Tc, Pc, om) < 0 then
     begin
       repeat
         temp := (a + b) / 2;
-        if f(a) * f(temp) < 0 then
+        if f(temp, pres, Tc, Pc, om) * f(temp, pres, Tc, Pc, om) < 0 then
           b := temp
         else
           a := temp;
-      until (abs(a - b) <= eps) or (f(temp) = 0);
+      until (abs(a - b) <= eps) or (f(temp, pres, Tc, Pc, om) = 0);
     result := temp;
     end
   else
@@ -129,10 +130,21 @@ var
   s, s1: double;
   Tave: double;
   Tmin: double;
-  Ti_sat: double;
+  Ti_sat: arrComp;
+  f: fu;
+  function fu(temp, pres, Tc, Pc, om: double): double;
+  var
+    i: integer;
+    Ki: double;
+  begin
+    s1 := 0;
+    Ki := Wilson(temp, pres, Tc, Pc, om);
+    Result := Ki - 1;
+  end;
 
 begin
-  //
+  for i := 1 to NComp do
+    Ti_sat[i] := dihotomy(f, 100, 900, 0.195);
 end;
 
 function TMatBalance.TettaCorrection(bi__di: arrComp; F, D: Double; xf: arrComp): double;
@@ -212,8 +224,8 @@ var
   deltaj: TArrOfDouble;
   deltaji: TArrOfArrOfDouble;
   rKji: TArrOfArrOfDouble;
-  alpha: TArrOfArrOfDouble; // относительная летучесть
-  temp: TArrOfDouble; // переменная - буфер
+  alpha: TArrOfArrOfDouble; // РѕС‚РЅРѕСЃРёС‚РµР»СЊРЅР°СЏ Р»РµС‚СѓС‡РµСЃС‚СЊ
+  temp: TArrOfDouble; // РїРµСЂРµРјРµРЅРЅР°СЏ - Р±СѓС„РµСЂ
   err: double;
   s: double;
 begin
@@ -276,8 +288,8 @@ const
 
   PhaseConst_Error = 1000;
 var
-  i: integer; // компонент
-  j: integer; // тарелка
+  i: integer; // РєРѕРјРїРѕРЅРµРЅС‚
+  j: integer; // С‚Р°СЂРµР»РєР°
   k: integer; // iteration
   Tj, Pj: TArrOfDouble;
   Lj, Vj: TArrOfDouble;
@@ -349,7 +361,7 @@ begin
       Lj[j-1] := Lj[j-2]
     else
       Lj[j-1] := Lj[j-2] + F;
-  Vj[0] := 0; // Полный конденсатор
+  Vj[0] := 0; // РџРѕР»РЅС‹Р№ РєРѕРЅРґРµРЅСЃР°С‚РѕСЂ
   Vj[1] := D + RefluxRate;
   for j := 2 to NTrays+1 do
     Vj[j]:= Vj[j-1];
@@ -374,7 +386,7 @@ begin
   Repeat
   k := k + 1;
   WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji, alpha);
- // Расчет укрепляющей секции
+ // Р Р°СЃС‡РµС‚ СѓРєСЂРµРїР»СЏСЋС‰РµР№ СЃРµРєС†РёРё
   for j := 1 to FeedTray-2 do
     for i := 1 to NComp do
       Aji[j, i-1] := Lj[j] / (Kji[j, i-1] * Vj[j]);
@@ -388,7 +400,7 @@ begin
         lji_di[j-1, i-1] := Aji[j-1, i] * vji_di[j-1, i-1];
         vji_di[j, i-1] := lji_di[j-1, i-1] + 1;
       end;
-  // Расчет исчерпывающей секции
+  // Р Р°СЃС‡РµС‚ РёСЃС‡РµСЂРїС‹РІР°СЋС‰РµР№ СЃРµРєС†РёРё
   for i := 1 to NComp do
     begin
       Sji[NTrays+1, i-1] := Kji[NTrays+1, i-1] * Vj[NTrays+1] / B;
@@ -418,7 +430,7 @@ begin
     end;
   D := sd;
   B := sb;
-  // Расчет новых профилей колонны по пару и жидкости
+  // Р Р°СЃС‡РµС‚ РЅРѕРІС‹С… РїСЂРѕС„РёР»РµР№ РєРѕР»РѕРЅРЅС‹ РїРѕ РїР°СЂСѓ Рё Р¶РёРґРєРѕСЃС‚Рё
   for j := 1 to FeedTray-1 do
     begin
       sl := 0;
@@ -447,7 +459,7 @@ begin
       Vj[j] := sv;
       Lj[j] := sl;
     end;
-  // Расчет составов
+  // Р Р°СЃС‡РµС‚ СЃРѕСЃС‚Р°РІРѕРІ
   for i := 1 to NComp do
     begin
       xD[i] := di[i] / D;
@@ -461,7 +473,7 @@ begin
       xji[NTrays+1, i-1] := xB[i];
     end;
 
-   // Расчет новых значений Kji
+   // Р Р°СЃС‡РµС‚ РЅРѕРІС‹С… Р·РЅР°С‡РµРЅРёР№ Kji
   {RecalcKji}
   Kj := Kji_Recalc(Tj, Pj, xji);
   RecalcTj := Tj_Recalc({RecalcKji}Kj, Tj, Pj);
@@ -497,7 +509,7 @@ end;
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
   Wv: arrTrays; T1: Double; TN: Double; P1: Double; PN: Double; var L: arrTrays; var V: arrTrays);
 var
-  xf: arrComp;
+  zf: arrComp;
   Res: TArrOfDouble;
 
 begin
@@ -511,6 +523,7 @@ begin
   xf[8] := 0.177777777777778;
   xf[9] := 0.200000000000000;
   OveralMatBalance(10, 5, 13.8, 4.5, 13.5, 60, 100, 0.19, 0.20, xf, Res);
+  getTj_0(Fj, zf);
 end;
 
 end.
