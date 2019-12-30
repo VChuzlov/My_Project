@@ -15,17 +15,17 @@ type
   fu = function(temp, pres, Tc, Pc, om: double): double;
 
   TMatBalance = Class
-    function TettaCorrection(bi__di: arrComp; F, D: double; xf: arrComp): double;
-    procedure RelativeFugasity(T: double; var alpha: arrComp);
     procedure WilsonCorrelation(CritT, CritP, omega: arrComp; NTrays: integer;
-      Tj, Pj: TArrOfDouble; var Kji, alpha: TArrOfArrOfDouble);
+      Tj, Pj: arrTrays; var Kij: TArrOfArrOfDouble);
     function Wilson(Tj: double; Pj: double; Tc, Pc, om: double): double;
     function dihotomy(a, b: double; Pj: double; Tc, Pc, om: double): double;
     function getTj_0(Fj: arrTrays; zf: TArrOfArrOfDouble): arrTrays;
-    function Kji_Recalc(Tj, Pj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfDouble;
-    function Tj_Recalc(Kj: TArrOfDouble; Tj, Pj: TArrOfDouble): TArrOfDouble;
-    procedure OveralMatBalance(NTrays, FeedTray: integer; F, D, RefluxRate, Tcond,
-      Treb, Pcond, Preb: double; xf: arrComp; var Res: TArrOfDouble);
+    procedure InitGuessLV(Fj, Uj, Wj: arrTrays; WD, LD, L0: double; var Lj0, Vj0: arrTrays);
+    procedure Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
+    procedure CalculateLiquidMoleFractions(Fj, Lj, Vj, Uj, Wj: arrTrays; zij, Kij: TArrOfArrOfDouble;
+      var xij: TArrOfArrOfDouble);
+    procedure NormalizeOfxij(xij: TArrOfArrOfDouble; var norm_xij: TArrOfArrOfDouble);
+    procedure Secant(Tj: arrTrays; xij, Kij: TArrOfArrOfDouble; var rTj: arrTrays);
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
       var L, V: arrTrays);
   private
@@ -43,52 +43,21 @@ type
 
 implementation
 
-procedure TMatBalance.RelativeFugasity(T{K}: Double; var alpha: arrComp);
-const
-  a: arrComp = (31.35,	44.0103,	52.3785,	58.7845,	66.945,	66.7563,	63.3315,	70.4265,	78.3285);
-  b: arrComp = (-1307.52,	-2568.82,	-3490.55,	-4136.68,	-4604.09,	-5059.18,	-5117.78,	-6055.6,	-6947);
-  c: arrComp = (0,	0,	0,	0,	0,	0,	0,	0,	0);
-  d: arrComp = (-3.26134,	-4.97635,	-6.10875,	-7.01666,	-8.25491,	-8.08935,	-7.48305,	-8.37865,	-9.44866);
-  e: arrComp = (0.000029418,	0.0000146447,	0.0000111869,	0.0000103662,	0.0000115706,	0.00000925395,	0.00000776606,
-                0.00000661666,	0.00000647481);
-  f: arrComp = (2,	2,	2,	2,	2,	2,	2,	2,	2);
-var
-  i: integer;
-  P: arrComp;
-  min: double;
-
-begin
-  for i := 1 to NComp do
-    P[i]:= a[i] + b[i] / (T + c[i]) + d[i] * ln(T) + e[i] * exp(f[i] * ln(T));
-  min:= P[1];
-  for i := 2 to NComp do
-    if min > P[i] then
-      min:= P[i];
-  for i := 1 to NComp do
-    alpha[i]:= P[i] / min;
-end;
-
 procedure TMatBalance.WilsonCorrelation(CritT: arrComp; CritP: arrComp; omega: arrComp;
-  NTrays: Integer; Tj: TArrOfDouble; Pj: TArrOfDouble; var Kji, alpha: TArrOfArrOfDouble);
+  NTrays: Integer; Tj: arrTrays; Pj: arrTrays; var Kij: TArrOfArrOfDouble);
 var
   i, j, k: integer;
   Ps: TArrOfArrOfDouble;
-  min: double;
 
 begin
-  SetLength(Ps, NTrays+2, NComp);
-  for j := 0 to NTrays+1 do
+  SetLength(Ps, NComp, NTrays);
+  for j := 0 to NTrays-1 do
     begin
-      min := 1e6;
       for i := 1 to NComp do
         begin
-          Ps[j, i-1] := CritP[i] / 100 * exp(5.372697 * (1 + omega[i]) * (1 - (CritT[i] + 273.15) / Tj[j]));
-          Kji[j, i-1] := Ps[j, i-1] {/ 100} / Pj[j];
-          if min > Ps[j, i-1] then
-            min := Ps[j, i-1];
+          Ps[i-1, j] := CritP[i] / 100 * exp(5.372697 * (1 + omega[i]) * (1 - (CritT[i] + 273.15) / Tj[j+1]));
+          Kij[i-1, j] := Ps[i-1, j] / (Pj[j+1] * 10);
         end;
-      for k := 1 to NComp do
-        alpha[j, k-1] := Ps[j, k-1] / min;
     end;
 end;
 
@@ -178,363 +147,144 @@ begin
     Result[j] := Tmin + 2 * (j - 1) / NTrays * (Tave - Tmin);
 end;
 
-function TMatBalance.TettaCorrection(bi__di: arrComp; F, D: Double; xf: arrComp): double;
-const
-  eps = 1e-3;
+procedure TMatBalance.InitGuessLV(Fj: arrTrays; Uj: arrTrays; Wj: arrTrays;
+  WD: Double; LD: Double; L0: Double; var Lj0: arrTrays; var Vj0: arrTrays);
 var
-  i: integer;
-  x0: double;
-  n: integer;
-  function g(x: double): double;
-  var
-    i: integer;
-  begin
-    Result := 0;
-    for i := 1 to NComp do
-      Result := Result + F * xf[i] / (1 + x * (bi__di[i]));
-    Result := Result - D;
-  end;
-  function g1(x: double): double;
-  var
-    i: integer;
-  begin
-    Result := 0;
-    for i := 1 to NComp do
-      Result := Result - bi__di[i] * F * xf[i] / sqr(1 + x * (bi__di[i]));
-  end;
+  i, j: integer;
+  rD, rB: double;
+  dj: arrTrays;
+  qj: arrTrays; // feed quality
 begin
-  Result := 0;
-  n := 0;
-  repeat
-    n:= n + 1;
-    x0 := Result;
-    Result := x0 - g(x0) / g1(x0);
-    if n >= 20e3 then
-      begin
-        ShowMessage('Tetta-Method - Can not solve!');
-        break
-      end;
-  until abs(Result - x0) <= eps;
-end;
-
-function TMatBalance.Kji_Recalc(Tj, Pj: TArrOfDouble; xji: TArrOfArrOfDouble): TArrOfDouble;
-var
-  i, j, k: integer;
-  alpha: TArrOfArrOfDouble;
-  s: double;
-  Kj: TArrOfDouble;
-  kji: TArrOfArrOfDouble;
-
-begin
-  SetLength(Kj, NTrays+2);
-  SetLength(Kji, NTrays+2, NComp);
-  SetLength(alpha, NTrays+2, NComp);
-  for j := 0 to NTrays+1 do
-    begin
-      s:= 0;
-      //RelativeFugasity(Tj[j], alpha);
-      WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kji, alpha);
-      for i := 1 to NComp do
-        s := s + xji[j, i-1] * alpha[j, i-1];
-      Kj[j] := 1 / s;
-      Result[j] := Kj[j]
-      {
-      for k := 1 to NComp do
-        Result[j, k-1] := alpha[j, k-1] * Kj[j];   }
-    end;
-end;
-
-function TMatBalance.Tj_Recalc(Kj: TArrOfDouble; Tj, Pj: TArrOfDouble): TArrOfDouble;
-const
-  T0 = 100;
-  Tk = 900;
-  h =  2.7315;
-var
-  i, j, k: integer;
-  rTj: TArrOfDouble;
-  deltaj: TArrOfDouble;
-  deltaji: TArrOfArrOfDouble;
-  rKji: TArrOfArrOfDouble;
-  alpha: TArrOfArrOfDouble; // относительная летучесть
-  temp: TArrOfDouble; // переменная - буфер
-  err: double;
-  s: double;
-begin
-  SetLength(rKji, NTrays+2, NComp);
-  SetLength(deltaji, NTrays+2, NComp);
-  SetLength(alpha, NTrays+2, NComp);
-  SetLength(deltaj, NTrays+2);
-  SetLength(temp, NTrays+2);
-  SetLength(rTj, NTrays+2);
-  for j := 0 to NTrays+1 do
-    begin
-      for i := 0 to NComp-1 do
-        deltaji[j, i] := 0;
-      rTj[j] := T0;
-    end;
-  k := 1;
-  WilsonCorrelation(Tcc, Pcc, omega, NTrays, rTj, Pj, rKji, alpha);
-  for j := 0 to NTrays+1 do
-    begin
-      deltaj[j] := 0;
-      for i := 0 to NComp-1 do
-        begin
-          deltaji[j, i] := rKji[j, i] / alpha[j, i];
-          deltaj[j] := {deltaj[j] +} deltaji[j, i] - Kj[j];
-        end;
-      temp[j] := deltaj[j];
-    end;
-
-  for j := 0 to NTrays+1 do
-    begin
-      deltaj[j] := 0;
-
-      while (rTj[j] >= T0) and (rTj[j] <= Tk) do
-        begin
-          s := 0;
-          rTj[j] := rTj[j] + h * k;
-          WilsonCorrelation(Tcc, Pcc, omega, NTrays, rTj, Pj, rKji, alpha);
-          for i := 0 to NComp-1 do
-            begin
-              deltaji[j, i] := rKji[j, i] / alpha[j, i];
-              deltaj[j] := {deltaji[j, i]} deltaji[j, i] - Kj[j];
-            end;
-          s := s + (Kj[j] + deltaji[j, 1]) / Kj[j];
-          if temp[j] > deltaj[j] then
-            begin
-              temp[j] := deltaj[j];
-              Result[j] := rTj[j];
-            end
-          else
-            Result[j] := Tj[j];
-          err := sqrt(s) / (NTrays + 2);
-        end;
-
-    end;
-end;
-
-procedure TMatBalance.OveralMatBalance(NTrays, FeedTray: integer; F: Double; D: Double; RefluxRate: Double; Tcond: Double;
-  Treb: Double; Pcond: Double; Preb: Double; xf: arrComp; var Res: TArrOfDouble);
-const
-
-  PhaseConst_Error = 1000;
-var
-  i: integer; // компонент
-  j: integer; // тарелка
-  k: integer; // iteration
-  Tj, Pj: TArrOfDouble;
-  Lj, Vj: TArrOfDouble;
-  Kji: TArrOfArrOfDouble;
-  Aji: TArrOfArrOfDouble;
-  Sji: TArrOfArrOfDouble;
-  xD: arrComp;
-  xB: arrComp;
-  di: arrComp;
-  bi: arrComp;
-  RefluxRatio: double;
-  B: double;
-  vji_di: TArrOfArrOfDouble;
-  lji_di: TArrOfArrOfDouble;
-  lji_bi: TArrOfArrOfDouble;
-  vji_bi: TArrOfArrOfDouble;
-  bi__di: arrComp;
-  lji: TArrOfArrOfDouble;
-  vji: TArrOfArrOfDouble;
-  sd, sb, sl, sv: double;
-  xji: TArrOfArrOfDouble;
-  yji: TArrOfArrOfDouble;
-  RecalcKji: TArrOfArrOfDouble;
-  Error_Kji: double;
-  rError_Kji: double;
-  RecalcTj: TArrOfDouble;
-  alpha: TArrOfArrOfDouble;
-  Kj: TArrOfDouble;
-
-  function getE(Kji, rKji: TArrOfArrOfDouble): double;
-  var
-    i, j: integer;
-    s: double;
-  begin
-    s := 0;
-    for j := 0 to NTrays+1 do
-      for i := 0 to NComp-1 do
-        s := s + (rKji[j, i] + Kji[j, i]) / Kji[j, i];
-    Result := sqrt(s) / (NComp * (NTrays+2))
-  end;
-
-begin
-  SetLength(Lj, NTrays+2);
-  SetLength(Vj, NTrays+2);
-  SetLength(Tj, NTrays+2);
-  SetLength(Pj, NTrays+2);
-  SetLength(Tj, NTrays+2);
-  SetLength(Pj, NTrays+2);
-  SetLength(Kji, NTrays+2, NComp);
-  SetLength(Sji, NTrays+2, NComp);
-  SetLength(Aji, NTrays+2, NComp);
-  SetLength(vji_di, NTrays+2, NComp);
-  SetLength(lji_di, NTrays+2, NComp);
-  SetLength(vji_bi, NTrays+2, NComp);
-  SetLength(lji_bi, NTrays+2, NComp);
-  SetLength(vji, NTrays+2, NComp);
-  SetLength(lji, NTrays+2, NComp);
-  SetLength(xji, NTrays+2, NComp);
-  SetLength(yji, NTrays+2, NComp);
-  SetLength(RecalcKji, NTrays+2, NComp);
-  SetLength(RecalcTj, NTrays+2);
-  SetLength(alpha, NTrays+2, NComp);
-  SetLength(Kj, NTrays+2);
-  k := 0;
-  Lj[0] := RefluxRate;
-  Lj[NTrays+1] := F - D;
-  for j := 2 to NTrays+1 do
-    if j <> FeedTray then
-      Lj[j-1] := Lj[j-2]
-    else
-      Lj[j-1] := Lj[j-2] + F;
-  Vj[0] := 0; // Полный конденсатор
-  Vj[1] := D + RefluxRate;
-  for j := 2 to NTrays+1 do
-    Vj[j]:= Vj[j-1];
-  Tj[0] := Tcond;
-  Tj[NTrays+1] := TReb;
-  Pj[0] := Pcond;
-  Pj[NTrays+1] := Preb;
+  Lj0[1] := Fj[1] + L0 - Uj[1];
+  Vj0[1] := 0;
+  for j := 2 to NTrays do
+    Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
+  for j := 1 to NTrays do
+    Vj0[j] := WD + LD + L0 - Wj[j];
   for j := 1 to NTrays do
     begin
-      Tj[j] := Tj[j-1] + (Tj[NTrays+1] - Tj[0]) / (NTrays + 1);
-      Pj[j] := Pj[j-1] + (Pj[NTrays+1] - Pj[0]) / (NTrays + 1);
+      dj[j] := (Uj[j] + Wj[j]) / (Vj0[j] + Lj0[j]);
+      qj[j] := 1;
     end;
-  RefluxRatio := Lj[0] / D;
-  B := F - D;
+  for j := NTrays-1 downto 2 do
+    Vj0[j] := ((1 - qj[j]) * Fj[j] + Vj0[j+1]) / (dj[j] + 1);
+  for j := 2 to NTrays-1 do
+    Lj0[j] := (Fj[j] + Vj0[j+1] + Lj0[j-1]) / (dj[j] + 1) - Vj0[j];
+end;
 
-  for j := 0 to NTrays+1 do
+procedure TMatBalance.Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
+var
+  i, j, k: integer;
+  d, buf: double;
+begin
+  for k := 1 to NTrays do
     begin
-      Tj[j] := Tj[j] + 273.15;
-      Pj[j] := Pj[j] * 10;
-    end;
-
-  Repeat
-  k := k + 1;
-  WilsonCorrelation(Tcc, Pcc, omega, Ntrays, Tj, Pj, Kji, alpha);
- // Расчет укрепляющей секции
-  for j := 1 to FeedTray-2 do
-    for i := 1 to NComp do
-      Aji[j, i-1] := Lj[j] / (Kji[j, i-1] * Vj[j]);
-
-  for i := 1 to NComp do
-    vji_di[1, i-1] := Lj[0] / D + 1;
-
-  for j := 2 to FeedTray-1 do
-    for i := 1 to NComp do
-      begin
-        lji_di[j-1, i-1] := Aji[j-1, i] * vji_di[j-1, i-1];
-        vji_di[j, i-1] := lji_di[j-1, i-1] + 1;
-      end;
-  // Расчет исчерпывающей секции
-  for i := 1 to NComp do
-    begin
-      Sji[NTrays+1, i-1] := Kji[NTrays+1, i-1] * Vj[NTrays+1] / B;
-      lji_bi[NTrays, i-1] := Sji[NTrays+1, i-1] + 1;
-    end;
-  for j := NTrays downto FeedTray-1 do
-    for i := 1 to NComp do
-      begin
-        Sji[j, i-1] := Kji[j, i-1] * Vj[j] / Lj[j];
-        vji_bi[j, i-1] := Sji[j, i-1] * lji_bi[j, i-1];
-        lji_bi[j-1, i-1] := vji_bi[j, i-1] + 1;
-      end;
-  for i := 1 to NComp do
-    begin
-      bi__di[i] := vji_di[FeedTray-1, i-1] / vji_bi[FeedTray-1, i-1];
-      di[i] := F * xf[i] / (1 + lji_di[0, i]);
-    end;
-  //ShowMessage('tetta = ' + FloatToStr(RoundTo(TettaCorrection(bi__di, F, D, xf), -8)));
-  sd := 0;
-  sb := 0;
-  for i := 1 to NComp do
-    begin
-      di[i] := F * xf[i] / (1 + TettaCorrection(bi__di, F, D, xf) * bi__di[i]);
-      sd := sd + di[i];
-      bi[i] := TettaCorrection(bi__di, F, D, xf) * bi__di[i] * di[i];
-      sb := sb + bi[i];
-    end;
-  D := sd;
-  B := sb;
-  // Расчет новых профилей колонны по пару и жидкости
-  for j := 1 to FeedTray-1 do
-    begin
-      sl := 0;
-      sv := 0;
-      for i := 1 to NComp do
+      if arr[k-1, k-1] = 0 then
         begin
-          vji[j, i-1] := vji_di[j, i-1] * di[i];
-          sv := sv + vji[j, i-1];
-          lji[j, i-1] := lji_di[j, i-1] * di[i];
-          sl := sl + lji[j, i-1];
-        end;
-      Vj[j] := sv;
-      Lj[j] := sl;
-    end;
-  for j := FeedTray-1 to NTrays do
-    begin
-      sl := 0;
-      sv := 0;
-      for i := 1 to NComp do
-        begin
-          vji[j, i-1] := vji_bi[j, i-1] * bi[i];
-          sv := sv + vji[j, i-1];
-          lji[j, i-1] := lji_bi[j, i-1] * bi[i];
-          sl := sl + lji[j, i-1];
-        end;
-      Vj[j] := sv;
-      Lj[j] := sl;
-    end;
-  // Расчет составов
-  for i := 1 to NComp do
-    begin
-      xD[i] := di[i] / D;
-      xB[i] := bi[i] / B;
-      for j := 1 to NTrays+1 do
-        begin
-          xji[j, i-1] := lji[j, i-1] / Lj[j];
-          yji[j, i-1] := vji[j, i-1] / Vj[j];
-        end;
-      xji[0, i-1] := xD[i];
-      xji[NTrays+1, i-1] := xB[i];
-    end;
-
-   // Расчет новых значений Kji
-  {RecalcKji}
-  Kj := Kji_Recalc(Tj, Pj, xji);
-  RecalcTj := Tj_Recalc({RecalcKji}Kj, Tj, Pj);
-  for j := 0 to NTrays+1 do
-    Tj[j] := RecalcTj[j];
-
-  for j := 0 to NTrays+1 do
-    for i := 0 to NComp-1 do
-      RecalcKji[j, i] := alpha[j, i] * Kj[j];
-
-  rError_Kji := Error_Kji;
-  Error_Kji := 0;
-  for j := 0 to NTrays+1 do
-    for i := 0 to NComp-1 do
-      Error_Kji := Error_Kji + abs(Kji[j, i] - RecalcKji[j, i]);
-
-  //ShowMessage(FloatToStr(getE(Kji, RecalcKji)));
-
-  for j := 0 to NTrays+1 do
-    for i := 0 to NComp-1 do
-      if k <= 5 then
-        Kji[j, i] := RecalcKji[j, i]
+          for j := 1 to NTrays+1 do
+            begin
+              buf:= arr[k-1, j-1];
+              arr[k-1, j-1]:= arr[k, j-1];
+              arr[k, j-1]:= buf;
+            end;
+          d:= arr[k-1, k-1];
+        end
       else
+        d:= arr[k-1, k-1];
+      for i := 1 to NTrays+1 do
+        if d <> 0 then
+          arr[k-1, i-1]:= arr[k-1, i-1] / d;
+      for i := 1 to NTrays do
+        if i <> k then
+          begin
+            d:= arr[i-1, k-1];
+            for j  := 1 to NTrays+1 do
+              arr[i-1, j-1]:= arr[i-1, j-1] - arr[k-1, j-1] * d;
+          end;
+    end;
+  for k := 1 to NTrays do
+    x[k-1] := arr[k-1, NTrays];
+end;
+
+procedure TMatBalance.CalculateLiquidMoleFractions(Fj: arrTrays; Lj: arrTrays;
+  Vj: arrTrays; Uj: arrTrays; Wj: arrTrays; zij, Kij: TArrOfArrOfDouble; var xij: TArrOfArrOfDouble);
+var
+  i, j: integer;
+  a_j, l_j, u_j, b_j: arrTrays;
+  arr: TArrOfArrOfDouble;
+  x: TArrOfDouble;
+  k: Integer;
+begin
+  SetLength(arr, NTrays, NTrays+1);
+  SetLength(x, NTrays);
+  l_j[1] := 0;
+  for j := 1 to NTrays do
+    l_j[j+1] := Lj[j];
+  for k := 1 to NComp do
+    begin
+      for j := 1 to NTrays do
         begin
-          Kji[j, i] := sqrt(Kji[j, i] * RecalcKji[j, i]);
-          k := 1;
+          a_j[j] := -(Lj[j] + Uj[j] + (Vj[j] + Wj[j]) * Kij[k-1, j-1]);
+          b_j[j] := -Fj[j] * zij[k-1, j-1];
         end;
+      for j := 1 to NTrays-1 do
+        u_j[j] := Vj[j+1] * Kij[k-1, j];
 
-  until {Error_Kji <= PhaseConst_Error} abs(rError_Kji - Error_Kji) <= 1 {getE(Kji, RecalcKji) <= 1};
+      for i := 0 to NTrays-1 do
+        for j := 0 to NTrays do
+          arr[i, j] := 0;
 
+      for i := 1 to NTrays do
+        begin
+          arr[i-1, i-1] := a_j[i];
+          arr[i-1, NTrays]:= b_j[i];
+        end;
+      for i := 2 to NTrays do
+        arr[i-1, i-2] := l_j[i];
+      for i := 1 to NTrays-1 do
+        arr[i-1, i] := u_j[i];
+
+      Gauss_Jordan(arr, x);
+      for j := 1 to NTrays do
+        xij[k-1, j-1] := x[j-1];
+    end;
+end;
+
+procedure TMatBalance.NormalizeOfxij(xij: TArrOfArrOfDouble; var norm_xij: TArrOfArrOfDouble);
+var
+  i, j: integer;
+  s: TArrOfDouble;
+begin
+  SetLength(s, NTrays);
+  for j := 0 to NTrays-1 do
+    s[j] := 0;
+
+  for j := 0 to NTrays-1 do
+    for i := 0 to NComp-1 do
+      begin
+        xij[i, j] := abs(xij[i, j]);
+        s[j] := s[j] + xij[i, j];
+      end;
+
+  for j := 0 to NTrays-1 do
+    for i := 0 to NComp-1 do
+      if s[j] <> 0 then
+        norm_xij[i, j] := xij[i, j] / s[j];
+  end;
+
+procedure TMatBalance.Secant(Tj: arrTrays; xij, Kij: TArrOfArrOfDouble; var rTj: arrTrays);
+const
+  eps = 1e-5;
+  function f(T: double): double;
+    var
+      i: integer;
+      s: double;
+  begin
+    s := 0;
+
+  end;
+begin
+  //
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
@@ -542,12 +292,20 @@ procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays
 var
   zf: TArrOfArrOfDouble;
   Res: TArrOfDouble;
-  Fj: arrTrays;
+  Fj, Wj, Uj: arrTrays;
+  Lj0, Vj0: arrTrays;
   Tj_0: arrTrays;
+  Pj: arrTrays;
   i, j: Integer;
+  Kij: TArrOfArrOfDouble;
+  xij: TArrOfArrOfDouble;
+  norm_xij: TArrOfArrOfDouble;
+
 begin
   SetLength(zf, NComp, NTrays);
-
+  SetLength(Kij, NComp, NTrays);
+  SetLength(xij, NComp, NTrays);
+  SetLength(norm_xij, NComp, NTrays);
   for i := 0 to NComp-1 do
     for j := 0 to NTrays-1 do
       zf[i, j] := 0;
@@ -562,12 +320,23 @@ begin
   zf[8, FeedTray-1] := 0.200000000000000;
 
   for j := 1 to NTrays do
-    Fj[j] := 0;
+    begin
+      Fj[j] := 0;
+      Wj[j] := 0;
+      Uj[j] := 0;
+    end;
   Fj[FeedTray] := 13.8;
-
-  //OveralMatBalance(10, 5, 13.8, 4.5, 13.5, 60, 100, 0.19, 0.20, zf, Res);
+  Pj[1] := P1;
+  Pj[Ntrays] := PN;
+  for j := 2 to NTrays-1 do
+    Pj[j] := Pj[j-1] + (Pj[NTrays] - Pj[1]) / NTrays;
 
   Tj_0 := getTj_0(Fj, zf);
+  InitGuessLV(Fj, Uj, Wj, 0, 4.5, 13.5, Lj0, Vj0);
+  WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
+  CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
+  NormalizeOfxij(xij, norm_xij);
+
 end;
 
 end.
