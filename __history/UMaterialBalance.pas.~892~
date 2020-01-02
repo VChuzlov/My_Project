@@ -12,19 +12,22 @@ type
   arrTrays = array[1..NTrays] of double;
   TArrOfDouble = array of double;
   TArrOfArrOfDouble = array of array of double;
-  fu = function(temp, pres, Tc, Pc, om: double): double;
+  Tfu = function(temp, pres, Tc, Pc, om: double): double of object;
 
   TMatBalance = Class
     procedure WilsonCorrelation(CritT, CritP, omega: arrComp; NTrays: integer;
       Tj, Pj: arrTrays; var Kij: TArrOfArrOfDouble);
     function Wilson(Tj: double; Pj: double; Tc, Pc, om: double): double;
-    function dihotomy(a, b: double; Pj: double; Tc, Pc, om: double): double;
+    function getTsat (temp, pres, Tc, Pc, om: double): double;
+    function dihotomy(f:Tfu; a, b: double; Pj: double; Tc, Pc, om: double): double;
     function getTj_0(Fj: arrTrays; zf: TArrOfArrOfDouble): arrTrays;
     procedure InitGuessLV(Fj, Uj, Wj: arrTrays; WD, LD, L0: double; var Lj0, Vj0: arrTrays);
     procedure Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
     procedure CalculateLiquidMoleFractions(Fj, Lj, Vj, Uj, Wj: arrTrays; zij, Kij: TArrOfArrOfDouble;
       var xij: TArrOfArrOfDouble);
     procedure NormalizeOfxij(xij: TArrOfArrOfDouble; var norm_xij: TArrOfArrOfDouble);
+    procedure Secant(a, b: double; Tj, Pj: arrTrays; xij: TArrOfArrOfDouble; var rTj: arrTrays);
+    procedure CalculateVaporMoleFractions(xij, Kij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble);
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
       var L, V: arrTrays);
   private
@@ -69,13 +72,8 @@ begin
   Result := Ps / (Pj * 10);
 end;
 
-function TMatBalance.dihotomy(a: Double; b: Double; Pj: Double; Tc, Pc, om: double): double;
-const
-  eps = 1e-5;
+function TMatBalance.getTsat(temp: Double; pres: Double; Tc: Double; Pc: Double; om: Double): double;
 var
-  temp: double;
-  function f(temp, pres, Tc, Pc, om: double): double;
-  var
     i: integer;
     Ki: double;
   begin
@@ -83,6 +81,13 @@ var
     Ki := Wilson(temp, pres, Tc, Pc, om);
     Result := Ki - 1;
   end;
+
+function TMatBalance.dihotomy(f: Tfu; a: Double; b: Double; Pj: Double; Tc, Pc, om: double): double;
+const
+  eps = 1e-5;
+var
+  temp: double;
+  
 begin
   temp := (a + b) / 2;
   if f(a, Pj, Tc, Pc, om) * f(b, Pj, Tc, Pc, om) < 0 then
@@ -121,7 +126,7 @@ begin
     begin
       S_zij_Fj[i] := 0;
       S_tbp_z_F[i] := 0;
-      Ti_sat[i] := dihotomy(90, 900, 0.195, Tcc[i], Pcc[i], omega[i]);
+      Ti_sat[i] := dihotomy(getTsat, 90, 900, 0.195, Tcc[i], Pcc[i], omega[i]);
     end;
 
   for j := 1 to Ntrays do
@@ -200,8 +205,9 @@ begin
             for j  := 1 to NTrays+1 do
               arr[i-1, j-1]:= arr[i-1, j-1] - arr[k-1, j-1] * d;
           end;
-      x[k-1] := arr[k-1, NTrays];
     end;
+  for k := 1 to NTrays do
+    x[k-1] := arr[k-1, NTrays];
 end;
 
 procedure TMatBalance.CalculateLiquidMoleFractions(Fj: arrTrays; Lj: arrTrays;
@@ -214,7 +220,6 @@ var
   k: Integer;
 begin
   SetLength(arr, NTrays, NTrays+1);
-  SetLength(xij, NComp, NTrays);
   SetLength(x, NTrays);
   l_j[1] := 0;
   for j := 1 to NTrays do
@@ -258,7 +263,86 @@ begin
   for j := 0 to NTrays-1 do
     s[j] := 0;
 
+  for j := 0 to NTrays-1 do
+    for i := 0 to NComp-1 do
+      begin
+        xij[i, j] := abs(xij[i, j]);
+        s[j] := s[j] + xij[i, j];
+      end;
 
+  for j := 0 to NTrays-1 do
+    for i := 0 to NComp-1 do
+      if s[j] <> 0 then
+        norm_xij[i, j] := xij[i, j] / s[j];
+  end;
+      
+procedure TMatBalance.Secant(a: Double; b: Double; Tj, Pj: arrTrays; xij: TArrOfArrOfDouble;
+  var rTj: arrTrays);
+const
+  eps = 1e-5;
+
+var
+  xi: TArrOfDouble;
+  i, j: integer;
+  T, P: double;
+  n: integer;
+  temp: TArrOfDouble;
+
+  function f(T, P: double; xi: TArrOfDouble): double;
+    var
+      i: integer;
+      s: double;
+      Ki: Double;
+
+  begin
+    s := 0;
+    for i := 0 to NComp-1 do
+      begin
+        Ki := Wilson(T, P, Tcc[i+1], Pcc[i+1], omega[i+1]);
+        s := s + Ki * xi[i];
+      end;
+    Result := 1 - s;
+  end;
+
+begin
+  SetLength(xi, NComp);
+
+  for j := 0 to NTrays-1 do
+    begin
+      T := Tj[j+1];
+      P := Pj[j+1];
+      n := 1;
+      SetLength(temp, n+1);
+      temp[0] := a;
+      temp[1] := b;
+      for i := 0 to NComp-1 do
+        xi[i] := xij[i, j];
+      if f(temp[n-1], P, xi) * f(temp[n], P, xi) < 0 then
+        begin
+          repeat
+            n := n + 1;
+            SetLength(temp, n+1);
+            temp[n] := temp[n-1] - f(temp[n-1], P, xi) * (temp[n-1] - temp[n-2]) /
+              (f(temp[n-1], P, xi) - f(temp[n-2], P, xi));
+          until abs(temp[n] - temp[n-1]) <= eps;
+
+          rTj[j+1] := temp[n];
+          for i := 0 to n-1 do
+            temp[i] := 0;
+        end
+      else
+        ShowMessage('Secant, No Roots!');
+    end;
+end;
+
+procedure TMatBalance.CalculateVaporMoleFractions(xij: TArrOfArrOfDouble; Kij: TArrOfArrOfDouble; 
+  var yij: TArrOfArrOfDouble);
+var
+  i, j: integer;
+begin
+  for i := 0 to NComp-1 do
+    for j := 0 to NTrays-1 do
+      yij[i, j] := Kij[i, j] * xij[i, j];
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
@@ -273,11 +357,16 @@ var
   i, j: Integer;
   Kij: TArrOfArrOfDouble;
   xij: TArrOfArrOfDouble;
-
+  norm_xij: TArrOfArrOfDouble;
+  Tj: arrTRays;
+  yij: TArrOfArrOfDouble;
+  
 begin
   SetLength(zf, NComp, NTrays);
   SetLength(Kij, NComp, NTrays);
-
+  SetLength(xij, NComp, NTrays);
+  SetLength(norm_xij, NComp, NTrays);
+  SetLength(yij, NComp, NTrays);
   for i := 0 to NComp-1 do
     for j := 0 to NTrays-1 do
       zf[i, j] := 0;
@@ -307,7 +396,9 @@ begin
   InitGuessLV(Fj, Uj, Wj, 0, 4.5, 13.5, Lj0, Vj0);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
-
+  NormalizeOfxij(xij, norm_xij);
+  Secant(90, 400, Tj_0, Pj, norm_xij, Tj);
+  CalculateVaporMoleFractions(norm_xij, Kij, yij)
 end;
 
 end.
