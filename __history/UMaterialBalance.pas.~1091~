@@ -477,7 +477,7 @@ begin
   IntegralIdealGasCompCp := IntegralIdealGasCp(T1, T2);
   for i := 1 to NComp do
     Result[i] := LiquidCp_a[1] * (T2 - T1) + (LiquidCp_a[2] + LiquidCp_a[3] * LiquidCp_R[i]) * (sqr(T2) - sqr(T1))
-      / (2 * (Tcc[i] + 273.15))
+      / (2 * ((Tcc[i] + 273.15) + 273.15))
       + (LiquidCp_a[4] + LiquidCp_a[5] * LiquidCp_R[i]) * (sqr(sqr(sqr(T2))) - sqr(sqr(sqr(T1)))) / (6 * sqr(sqr((Tcc[i] + 273.15)))
       * (Tcc[i] + 273.15))
       + (-LiquidCp_a[6] * sqr(LiquidCp_R[i]) * sqr((Tcc[i] + 273.15))) / (T2 - T1)

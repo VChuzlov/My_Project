@@ -35,7 +35,7 @@ type
     function getComp_dHvap(Tj: arrTrays): arrComp;
     function IntegralIdealGasCp(T1, T2: Double): arrComp;
     function IntegralLiquidCp(T1, T2: double): arrComp;
-    procedure CalculateEnthalpies(Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble; var H_l, H_v: arrTrays);
+    procedure CalculateEnthalpies(Tj: arrTrays; xij, yij: TArrOfArrOfDouble; var H_l, H_v: arrTrays);
     procedure RashfordRice(zf: arrComp; T, P: double; var e: double; var xf, yf: arrComp);
     procedure getEquilibrium(zf: TArrOfArrOfDouble; Tj, Pj: arrTrays;
       var xf, yf: TArrOfArrOfDouble; var ej: arrTrays);
@@ -476,22 +476,18 @@ var
 begin
   IntegralIdealGasCompCp := IntegralIdealGasCp(T1, T2);
   for i := 1 to NComp do
-    Result[i] := LiquidCp_a[1] * (T2 - T1) + (LiquidCp_a[2] + LiquidCp_a[3] * LiquidCp_R[i]) * (sqr(T2) - sqr(T1))
-      / (2 * (Tcc[i] + 273.15))
-      + (LiquidCp_a[4] + LiquidCp_a[5] * LiquidCp_R[i]) * (sqr(sqr(sqr(T2))) - sqr(sqr(sqr(T1)))) / (6 * sqr(sqr((Tcc[i] + 273.15)))
-      * (Tcc[i] + 273.15))
-      + (-LiquidCp_a[6] * sqr(LiquidCp_R[i]) * sqr((Tcc[i] + 273.15))) / (T2 - T1)
-      + (-LiquidCp_a[7] * LiquidCp_R[i] * sqr(sqr((Tcc[i] + 273.15))) * (Tcc[i] + 273.15)) / (2 * (sqr(T2) - sqr(T1)))
-      + (-LiquidCp_a[8] * sqr(sqr((Tcc[i] + 273.15))) * (Tcc[i] + 273.15)) / (4 * (sqr(sqr(T2)) - sqr(sqr(T1))))
-      + LiquidCp_k[i] * (LiquidCp_b[1] * (T2 - T1) + LiquidCp_b[2] * (sqr(T2) * T2 - sqr(T1) * T1) / (3 * sqr((Tcc[i] + 273.15)))
-      + LiquidCp_b[3] * (sqr(sqr(sqr(T2))) - sqr(sqr(sqr(T1)))) / (6 * sqr(sqr((Tcc[i] + 273.15))) * (Tcc[i] + 273.15)))
-      + sqr(LiquidCp_k[i]) * (LiquidCp_b[4] * (T2 - T1) + LiquidCp_b[5] * (sqr(T2) * T2 - sqr(T1) * T1)
-      / (3 * sqr((Tcc[i] + 273.15))))
+    Result[i] := LiquidCp_a[1] * (T2 - T1) + (LiquidCp_a[2] + LiquidCp_a[3] * LiquidCp_R[i]) * (sqr(T2) - sqr(T1)) / (2 * Tcc[i])
+      + (LiquidCp_a[4] + LiquidCp_a[5] * LiquidCp_R[i]) * (sqr(sqr(sqr(T2))) - sqr(sqr(sqr(T1)))) / (6 * sqr(sqr(Tcc[i])) * Tcc[i])
+      + (-LiquidCp_a[6] * sqr(LiquidCp_R[i]) * sqr(Tcc[i])) / (T2 - T1)
+      + (-LiquidCp_a[7] * LiquidCp_R[i] * sqr(sqr(Tcc[i])) * Tcc[i]) / (2 * (T2 - T1))
+      + (-LiquidCp_a[8] * sqr(sqr(Tcc[i])) * Tcc[i]) / (4 * (sqr(sqr(T2)) - sqr(sqr(T1))))
+      + LiquidCp_k[i] * (LiquidCp_b[1] * (T2 - T1) + LiquidCp_b[2] * (sqr(T2) * T2 - sqr(T1) * T1) / (3 * sqr(Tcc[i]))
+      + LiquidCp_b[3] * (sqr(sqr(sqr(T2))) - sqr(sqr(sqr(T1)))) / (6 * sqr(sqr(Tcc[i])) * Tcc[i]))
+      + sqr(LiquidCp_k[i]) * (LiquidCp_b[4] * (T2 - T1) + LiquidCp_b[5] * (sqr(T2) * T2 - sqr(T1) * T1) / (3 * sqr(Tcc[i])))
       + IntegralIdealGasCompCp[i];
-
 end;
 
-procedure TMatBalance.CalculateEnthalpies(Tj, Pj: arrTrays; xij: TArrOfArrOfDouble; yij: TArrOfArrOfDouble;
+procedure TMatBalance.CalculateEnthalpies(Tj: arrTrays; xij: TArrOfArrOfDouble; yij: TArrOfArrOfDouble;
   var H_l: arrTrays; var H_v: arrTrays);
 var
   i, j: integer;
@@ -512,7 +508,10 @@ begin
 
   compH_v := getIdealGasCompEnthalpy(Tj);
   dHvap := getComp_dHvap(Tj);
- 
+  for i := 1 to NComp do
+    begin
+
+    end;
   for j := 1 to Ntrays do
     for i := 1 to NComp do
       begin
@@ -684,9 +683,9 @@ begin
   Secant(90, 400, Tj_0, Pj, norm_xij, Tj);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
   CalculateVaporMoleFractions(norm_xij, Kij, yij);
-  CalculateEnthalpies(Tj, Pj, norm_xij, yij, H_l, H_v);
+  CalculateEnthalpies(Tj, norm_xij, yij, H_l, H_v);
   getEquilibrium(zf, Tfj, Pj, xf, yf, ej);
-  CalculateEnthalpies(Tfj, Pfj, xf, yf, Hf_l, Hf_v);
+  CalculateEnthalpies(Tfj, xf, yf, Hf_l, Hf_v);
 
 end;
 
