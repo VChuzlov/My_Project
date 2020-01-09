@@ -91,6 +91,11 @@ type
      Mr: arrComp = (16.0429000854492,	30.0699005126953,	44.0970001220703,	58.1240005493164,
                     58.1240005493164,	72.1510009765625,	72.1510009765625,	86.1779022216797,	100.205001831055);
 
+    // Normal Boiling Point
+    tbpi: arrComp = (-161.525,	-88.5999969482422,	-42.1019958496094,	-11.7299865722656,
+                     -0.501989746093727,	27.8780151367188,	36.0590148925781,	68.7300048828125,
+                     98.4290100097656);
+
     { Public declarations }
   End;
 
@@ -615,15 +620,22 @@ begin
  
   for j := 1 to Ntrays do
     begin
+
       for i := 1 to NComp do
         begin
+          {
+          Это закомментировано, т.к. пока можно взять индивидуальные Тк
+          Для неизвестных компонентов она может быть рассчитана
           Tsat[i] := dihotomy(getTsat, 90, 900, Pj[j], Tcc[i], Pcc[i], omega[i]);
           Tdp[i] :=  dihotomy(getTdp, 90, 900, Pj[j], Tcc[i], Pcc[i], omega[i]);
+          }
+          Tsat := tbpi[i] + 273.15;
         end;
+
       for i := 1 to NComp do
         begin
-          CompIntIdGasCp[i-1, j-1] := IntegralIdealGasCp(298, Tdp)[i];
-          CompItnLiqCp[i-1, j-1] := IntegralLiquidCp(Tsat, Tj[j])[i];
+          CompIntIdGasCp[i-1, j-1] := IntegralIdealGasCp(298, {Tdp}(tbpi)[i];
+          CompItnLiqCp[i-1, j-1] := IntegralLiquidCp({Tsat}tbpi, Tj[j])[i];
         end;
     end;
   for j := 1 to NTrays do
@@ -632,7 +644,7 @@ begin
       for i := 1 to NComp do
         s := s + (dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.1868 - dHvap[i] * 4.1868
           + CompItnLiqCp[i-1, j-1] * 4.1868) * xij[i-1, j-1];
-      H_l[j] := s * 1e-3;
+      H_l[j] := s {* 1e-3};
     end;
   for j := 1 to NTrays do
     begin

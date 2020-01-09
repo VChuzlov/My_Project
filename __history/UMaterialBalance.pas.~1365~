@@ -29,6 +29,7 @@ type
     procedure CalculateLiquidMoleFractions(Fj, Lj, Vj, Uj, Wj: arrTrays; zij, Kij: TArrOfArrOfDouble;
       var xij: TArrOfArrOfDouble);
     procedure NormalizeOfxij(xij: TArrOfArrOfDouble; var norm_xij: TArrOfArrOfDouble);
+    function TMatBalance.NormalizeOfxij(xij: TArrOfArrOfDouble): TArrOfArrOfDouble;
     procedure Secant(a, b: double; Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble; var rTj: arrTrays);
     procedure CalculateVaporMoleFractions(xij, Kij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble);
     function getIdealGasCompEnthalpy(Tj: arrTrays): TArrOfArrOfDouble;
@@ -90,6 +91,11 @@ type
      // Molar weight
      Mr: arrComp = (16.0429000854492,	30.0699005126953,	44.0970001220703,	58.1240005493164,
                     58.1240005493164,	72.1510009765625,	72.1510009765625,	86.1779022216797,	100.205001831055);
+
+    // Normal Boiling Point
+    tbpi: arrComp = (-161.525,	-88.5999969482422,	-42.1019958496094,	-11.7299865722656,
+                     -0.501989746093727,	27.8780151367188,	36.0590148925781,	68.7300048828125,
+                     98.4290100097656);
 
     { Public declarations }
   End;
@@ -238,7 +244,7 @@ begin
   Lj0[1] := Fj[1] + L0 - Uj[1];
   Vj0[1] := 0;
 
-  for j := 2 to NTrays do
+  for j := 2 to NTrays-1 do
     Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
   for j := 2 to NTrays do
     Vj0[j] := WD + LD + L0 - Wj[j];
@@ -366,6 +372,28 @@ begin
     for i := 0 to NComp-1 do
       if s[j] <> 0 then
         norm_xij[i, j] := xij[i, j] / s[j];
+end;
+
+function TMatBalance.NormalizeOfxij(xij: TArrOfArrOfDouble): TArrOfArrOfDouble;
+var
+  i, j: integer;
+  s: TArrOfDouble;
+begin
+  SetLength(s, NTrays);
+  for j := 0 to NTrays-1 do
+    s[j] := 0;
+
+  for j := 0 to NTrays-1 do
+    for i := 0 to NComp-1 do
+      begin
+        xij[i, j] := abs(xij[i, j]);
+        s[j] := s[j] + xij[i, j];
+      end;
+
+  for j := 0 to NTrays-1 do
+    for i := 0 to NComp-1 do
+      if s[j] <> 0 then
+        Result[i, j] := xij[i, j] / s[j];
 end;
 
 function TMatBalance.forRegularTrays(T, P: double; xi: TArrOfDouble): double;
@@ -615,15 +643,22 @@ begin
  
   for j := 1 to Ntrays do
     begin
+
       for i := 1 to NComp do
         begin
+          {
+          Это закомментировано, т.к. пока можно взять индивидуальные Тк
+          Для неизвестных компонентов она может быть рассчитана
           Tsat[i] := dihotomy(getTsat, 90, 900, Pj[j], Tcc[i], Pcc[i], omega[i]);
           Tdp[i] :=  dihotomy(getTdp, 90, 900, Pj[j], Tcc[i], Pcc[i], omega[i]);
+          }
+          Tsat[i] := tbpi[i] + 273.15;
         end;
+
       for i := 1 to NComp do
         begin
-          CompIntIdGasCp[i-1, j-1] := IntegralIdealGasCp(298, Tdp)[i];
-          CompItnLiqCp[i-1, j-1] := IntegralLiquidCp(Tsat, Tj[j])[i];
+          CompIntIdGasCp[i-1, j-1] := IntegralIdealGasCp(298, {Tdp}Tsat)[i];
+          CompItnLiqCp[i-1, j-1] := IntegralLiquidCp({Tsat}Tsat, Tj[j])[i];
         end;
     end;
   for j := 1 to NTrays do
@@ -632,7 +667,7 @@ begin
       for i := 1 to NComp do
         s := s + (dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.1868 - dHvap[i] * 4.1868
           + CompItnLiqCp[i-1, j-1] * 4.1868) * xij[i-1, j-1];
-      H_l[j] := s;
+      H_l[j] := s {* 1e-3};
     end;
   for j := 1 to NTrays do
     begin
@@ -822,7 +857,10 @@ begin
         dj[j] := (Uj[j] + Wj[j]) / (Lj0[j] + Vj[j])
       else
         dj[j] := 0;
-      Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] + Lj0[j-1]);
+      if j = 1 then
+        Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] {+ Lj0[j-1]})
+      else
+        Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] + Lj0[j-1]);
       Wj[j] := ej[j] * Rj[j];
       Uj[j] := (1 - ej[j]) * Rj[j];
     end;
@@ -830,6 +868,7 @@ begin
   Rj[1] := 4.5;
   Rj[NTrays] := 9.3;
   }
+  Uj[1] := 4.5;
   for j := 1 to NTrays-1 do
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
 end;
@@ -940,10 +979,11 @@ begin
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   repeat
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
-    NormalizeOfxij(xij, norm_xij);
+    {NormalizeOfxij(xij, norm_xij);
     for j := 0 to NTrays-1 do
       for i := 0 to NComp-1 do
-        xij[i, j] := norm_xij[i, j];
+        xij[i, j] := norm_xij[i, j]; }
+    xij := NormalizeOfxij;
     Secant(90, 400, Tj_0, Pj, xij, yij, Tj);
     WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
     CalculateVaporMoleFractions(xij, Kij, yij);
