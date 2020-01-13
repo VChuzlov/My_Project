@@ -15,6 +15,7 @@ type
   Tfu = function(temp, pres, Tc, Pc, om: double): double of object;
 
   TMatBalance = Class
+
     procedure WilsonCorrelation(CritT, CritP, omega: arrComp; NTrays: integer;
       Tj, Pj: arrTrays; var Kij: TArrOfArrOfDouble);
     function Wilson(Tj: double; Pj: double; Tc, Pc, om: double): double;
@@ -47,7 +48,7 @@ type
       var xf, yf: TArrOfArrOfDouble; var ej: arrTrays);
     function getTrays_ej(Fj, Lj, Vj: arrTrays; zf, xij, yij: TArrOfArrOfDouble; Tj, Pj: arrTrays): arrTrays;
     procedure CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v: arrTrays; Fj, Lj, Uj, Wj: arrTrays;
-      Qj: arrTrays; ej: arrTrays; var Vj: arrTrays);
+      Qj: arrTrays; ej: arrTrays; LD, VD: double; var Vj: arrTrays);
     procedure CalculateHeatDuties (Fj, ej, Lj, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v: arrTrays;
       var Qc, Qr: double);
     procedure CalculateSideFlows_and_LiquidFlows(Fj, ej, Vj, Lj0: arrTrays; LD, L0: double;
@@ -103,12 +104,30 @@ type
   End;
 
   function pow(x, n: double): double;
+  function powZ(x: double; n: integer): double;
 
 implementation
 
 function pow(x, n: double): double;
 begin
   Result := exp(n * ln(x))
+end;
+
+function powZ(x: double; n: integer): double;
+var
+  temp: integer;
+  Res: double;
+begin
+  temp := n;
+  Res := 0;
+  if temp = 0 then
+    Res := 1
+  else
+    if temp mod 2 = 0 then
+      Res := powZ(x*x, Round(temp/2))
+    else
+      Res := x * powZ(x, temp-1);
+  Result := Res
 end;
 
 procedure TMatBalance.WilsonCorrelation(CritT: arrComp; CritP: arrComp; omega: arrComp;
@@ -672,28 +691,53 @@ begin
     Result[i] :=
       IdealGasCp_a[i] * (T2[i] - T1)
       + IdealGasCp_b[i] * (sqr(T2[i]) - sqr(T1)) / 2
-      + IdealGasCp_c[i] * (pow(T2[i], 3) - pow(T1, 3)) / 3
-      + IdealGasCp_d[i] * (pow(T2[i], 4) - pow(T1, 4)) / 4;
+      + IdealGasCp_c[i] * (powZ(T2[i], 3) - powZ(T1, 3)) / 3
+      + IdealGasCp_d[i] * (powZ(T2[i], 4) - powZ(T1, 4)) / 4;
 end;
 
 function TMatBalance.IntegralLiquidCp(T1: arrComp; T2: Double): arrComp;
 var
   i: integer;
   IntegralIdealGasCompCp: arrComp;
+  k: arrComp;
+  function get_k: arrComp;
+  var
+    i: integer;
+    Cn, Dn: arrComp;
+    Pc, Tc, Tb: arrComp;
+  begin
+    for i := 1 to NComp do
+      begin
+        Pc[i] := Pcc[i] * 0.00986923;
+        Tc[i] := Tcc[i] + 273.15;
+        Tb[i] := tbpi[i] + 273.15;
+      end;
+    for i := 1 to NComp do
+      begin
+        Cn[i] := 4.6773 + 1.8324 * liquidCp_R[i] - 0.03501 * sqr(liquidCp_R[i]);
+        Dn[i] := 0.7751 * Cn[i] - 2.6354;
+        Result[i] := (-ln(Pc[i]) - Cn[i] * (1 - Tc[i] / Tb[i]) + Dn[i] * ln(Tb[i]
+          / Tc[i]) - 0.4218 * (1 / (Pc[i] * sqr(Tb[i] / Tc[i]))))
+        / (1 - Tc[i] / Tb[i] - ln(Tb[i] / Tc[i]));
+      end;
+  end;
 
-begin
+  begin
   IntegralIdealGasCompCp := IntegralIdealGasCp(298, T1);
+  k := get_k;
   for i := 1 to NComp do
     Result[i] :=
       liquidCp_a[1] * (T2 - T1[i])
       + (liquidCp_a[2] + liquidCp_a[3] * liquidCp_R[i]) * (sqr(T2) - sqr(T1[i])) / (2 * (Tcc[i] + 273.15))
-      + (liquidCp_a[4] + liquidCp_a[5] * liquidCp_R[i]) * (pow(T2, 6) - pow(T1[i], 6)) / (6 * pow(Tcc[i] + 273.15, 5))
+      + (liquidCp_a[4] + liquidCp_a[5] * liquidCp_R[i]) * (powZ(T2, 6) - powZ(T1[i], 6)) / (6 * powZ(Tcc[i] + 273.15, 5))
       + -(liquidCp_a[6] * sqr(liquidCp_R[i]) * sqr(Tcc[i] + 273.15)) / (T2 - T1[i])
-      + -(liquidCp_a[7] * liquidCp_R[i] * pow(Tcc[i] + 273.15, 3)) / (2 * (sqr(T2) - sqr(T1[i])))
-      + - (liquidCp_a[8] * pow(Tcc[i] + 273.15, 5)) / (4 * (pow(T2, 4) - pow(T1[i], 4)))
-      + liquidCp_k[i] * (liquidCp_b[1] * (T2 - T1[i]) + liquidCp_b[2] * (pow(T2, 3) - pow(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15))
-        + liquidCp_b[3] * (pow(T2, 6) - pow(T1[i], 6)) / (6 * pow(Tcc[i] + 273.15, 5)))
-     + sqr(liquidCp_k[i]) * (liquidCp_b[4] * (T2 - T1[i]) + liquidCp_b[5] * (pow(T2, 3) - pow(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15)))
+      + -(liquidCp_a[7] * liquidCp_R[i] * powZ(Tcc[i] + 273.15, 3)) / (2 * (sqr(T2) - sqr(T1[i])))
+      + - (liquidCp_a[8] * powZ(Tcc[i] + 273.15, 5)) / (4 * (powZ(T2, 4) - powZ(T1[i], 4)))
+      + liquidCp_k[i] * (liquidCp_b[1] * (T2 - T1[i]) + liquidCp_b[2] * (powZ(T2, 3)
+        - powZ(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15)) + liquidCp_b[3] * (powZ(T2, 6) - powZ(T1[i], 6))
+          / (6 * powZ(Tcc[i] + 273.15, 5)))
+     + sqr(liquidCp_k[i]) * (liquidCp_b[4] * (T2 - T1[i]) + liquidCp_b[5] * (powZ(T2, 3) - powZ(T1[i], 3))
+       / (3 * sqr(Tcc[i] + 273.15)))
      + IntegralIdealGasCompCp[i];
 end;
 
@@ -742,8 +786,8 @@ begin
     begin
       s := 0;
       for i := 1 to NComp do
-        s := s + compH_v[i-1, j-1] * yij[i-1, j-1] * Mr[i]
-            {(dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.1868) * yij[i-1, j-1]};
+        s := s + {compH_v[i-1, j-1] * yij[i-1, j-1] * Mr[i]}
+            (dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.1868) * yij[i-1, j-1];
       H_v[j] := s;
     end;
 end;
@@ -893,7 +937,7 @@ end;
 
 procedure TMatBalance.CalculateVaporFlowRates(Hf_l: arrTrays; Hf_v: arrTrays;
   H_l: arrTrays; H_v: arrTrays; Fj: arrTrays; Lj: arrTrays; Uj: arrTrays; Wj: arrTrays;
-  Qj: arrTrays; ej: arrTrays; var Vj: arrTrays);
+  Qj: arrTrays; ej: arrTrays; LD, VD: double; var Vj: arrTrays);
 var
   j, k: integer;
   alp, bet, gam: arrTrays;
@@ -901,7 +945,8 @@ var
 
 begin
   Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
-  for j := NTrays-1 downto 2 do
+  Vj[2] := Lj[1] + LD + VD;
+  for j := NTrays-1 downto 3 do
     begin
       s := 0;
       for k := 1 to j-1 do
@@ -1009,24 +1054,16 @@ begin
       Wj[j] := ej[j] * Rj[j];
       Uj[j] := (1 - ej[j]) * Rj[j];
     end;
-  {
-  Rj[1] := 4.5;
-  Rj[NTrays] := 9.3;
-  }
+
   Uj[1] := 4.5;
   Uj[NTrays] := 9.3;
-
-  //rB := 1;
 
   for j := 2 to NTrays-1 do
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
   Lj[NTrays] := Uj[NTrays];
   Lj[1] := L0;
   rD := Lj[1] / LD;
-  rB := get_rB(1e-5, 1e3, Fj, Uj, Wj, Lj, Vj);
-  Calculation(rB, Fj, Uj, Wj, Lj, Vj);
-  rB := get_rB(1e-5, 1e3, Fj, Uj, Wj, Lj, Vj);
-  Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+  rB := Vj[NTrays] / Uj[NTrays];
 
 end;
 
@@ -1160,7 +1197,7 @@ begin
     CalculateEnthalpies(Tj, Pj, xij, yij, H_l, H_v);
     getEquilibrium(zf, Tfj, Pj, xf, yf, ej);
     CalculateEnthalpies(Tfj, Pfj, xf, yf, Hf_l, Hf_v);
-    CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v, Fj, Lj0, Uj, Wj, Qj, ej, Vj);
+    CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v, Fj, Lj0, Uj, Wj, Qj, ej, 4.5, 0, Vj);
     CalculateHeatDuties(Fj, ej, Lj0, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v, Qc, Qr);
     ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
     CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, 4.5, 13.5, Wj, Uj, Lj);
@@ -1181,13 +1218,13 @@ begin
         calcLj[n-1, j] := Lj[j+1];
         calcVj[n-1, j] := Vj[j+1];
       end;
-  {
+
     for j := 1 to NTrays do
       begin
         Lj0[j] := calcLj[n-1, j-1];
         Vj0[j] := calcVj[n-1, j-1];
       end;
-    }
+
   until getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance;
   ShowMessage(IntToStr(n))
 
