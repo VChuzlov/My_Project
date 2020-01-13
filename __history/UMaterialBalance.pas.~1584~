@@ -22,7 +22,10 @@ type
     function getTdp (temp, pres, Tc, Pc, om: double): double;
     function dihotomy(f:Tfu; a, b: double; Pj: double; Tc, Pc, om: double): double;
     function getTj_0(Fj: arrTrays; zf: TArrOfArrOfDouble): arrTrays;
-    function getTrayBalanceError(Fj, Uj, Wj, Lj, Vj: arrTrays): arrTrays;
+    function getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj: arrTrays): arrTrays;
+    function getTrayHeatBalanceError (Fj, Uj, Wj, Lj, Vj, ef_j: arrTrays;
+      Hf_l, Hf_v, H_l, H_v: arrTrays): arrTrays;
+    procedure CalculationLV(rB, LD: double; var Fj, Uj, Wj, Lj0, Vj0: arrTrays);
     procedure InitGuessLV(Fj: arrTrays; WD: Double; LD: Double; L0: Double;
       var Lj0: arrTrays; var Vj0: arrTrays;
       var Uj: arrTrays; var Wj: arrTrays);
@@ -35,7 +38,8 @@ type
     function getIdealGasCompEnthalpy(Tj: arrTrays): TArrOfArrOfDouble;
     function getIdealGasCompHeatCapasity(Tj: arrTrays): TArrOfArrOfDouble;
     function getLiquidCompHeatCapasity(Tj: arrTrays): TArrOfArrOfDouble;
-    function getComp_dHvap(Tj: arrTrays): arrComp;
+    function TbpVsPressure(Tbp: arrComp; P: double): arrComp;
+    function getComp_dHvap(Tbp: arrComp): arrComp;
     function IntegralIdealGasCp(T1: Double; T2: arrComp): arrComp;
     function IntegralLiquidCp(T1: arrComp; T2: Double): arrComp;
     procedure CalculateEnthalpies(Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble; var H_l, H_v: arrTrays);
@@ -47,7 +51,7 @@ type
       Qj: arrTrays; ej: arrTrays; var Vj: arrTrays);
     procedure CalculateHeatDuties (Fj, ej, Lj, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v: arrTrays;
       var Qc, Qr: double);
-    procedure CalculateSideFlows_and_LiquidFlows(Fj, ej, Vj, Lj0: arrTrays;
+    procedure CalculateSideFlows_and_LiquidFlows(Fj, ej, Vj, Lj0: arrTrays; LD: double;
       var Wj, Uj, Lj: arrTrays);
     function getErrorValue(n: integer; calcTj, calcLj, CalcVj: TArrOfArrOfDouble): double;
 
@@ -222,22 +226,86 @@ begin
     Result[j] := Tmin + 2 * (j - 1) / NTrays * (Tave - Tmin);
 end;
 
-function TMatBalance.getTrayBalanceError(Fj, Uj, Wj, Lj, Vj: arrTrays): arrTrays;
+function TMatBalance.getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj: arrTrays): arrTrays;
 var
- j: integer;
- input: arrTrays;
- output: arrTrays;
+  j: integer;
+  input: arrTrays;
+  output: arrTrays;
 
 begin
   input[1] := Fj[1] + Vj[2];
   input[NTrays] := Fj[NTrays] + Lj[NTrays-1];
+  output[NTrays] := Wj[NTrays] + Lj[NTrays] + Vj[NTrays];
 
   for j := 2 to NTrays-1 do
     input[j] := Fj[j] + Lj[j-1] + Vj[j+1];
-  for j := 1 to NTrays do
+  for j := 1 to NTrays-1 do
     output[j] := Uj[j] + Wj[j] + Lj[j] + Vj[j];
 
+  for j := 1 to NTrays do
+    Result[j] := input[j] - output[j];
+
 end;
+
+function TMatBalance.getTrayHeatBalanceError(Fj: arrTrays; Uj: arrTrays; Wj: arrTrays;
+  Lj: arrTrays; Vj: arrTrays; ef_j: arrTrays; Hf_l: arrTrays; Hf_v: arrTrays;
+  H_l: arrTrays; H_v: arrTrays): arrTrays;
+var
+  j: integer;
+  input: arrTrays;
+  output: arrTrays;
+begin
+  input[1] := (ef_j[1] * Hf_v[1] + (1 - ef_j[1]) * Hf_l[1]) * Fj[1] + Vj[2] * H_v[2];
+  input[NTrays] := (ef_j[NTrays] * Hf_v[NTrays] + (1 - ef_j[NTrays]) * Hf_l[NTrays])
+    * Fj[NTrays] + Lj[NTrays-1] * H_l[NTrays-1];
+  output[NTrays] := Wj[NTrays] * H_v[NTrays] + Lj[NTrays] * H_l[NTrays] + Vj[NTrays] * H_v[NTrays];
+
+  for j := 2 to NTrays-1 do
+    input[j] := (ef_j[j] * Hf_v[j] + (1 - ef_j[j]) * Hf_l[j]) * Fj[j]
+      + Lj[j-1] * H_l[j-1] + Vj[j+1] * H_v[j+1];
+  for j := 1 to NTrays-1 do
+    output[j] := Uj[j] * H_l[j] + Wj[j] * H_v[j] + Lj[j] * H_l[j] + Vj[j] * H_v[j];
+
+  for j := 1 to NTrays do
+    Result[j] := input[j] - output[j];
+end;
+
+procedure TMatBalance.CalculationLV(rB: Double; LD: double; var Fj: arrTrays; var Uj: arrTrays;
+  var Wj: arrTrays; var Lj0: arrTrays; var Vj0: arrTrays);
+var
+    j: integer;
+    dj: arrTrays;
+    qj: arrTrays;
+    rD: double;
+    B: double;
+    D: double;
+    s: double;
+
+  begin
+    for j := 1 to NTrays do
+      begin
+        dj[j] := (Uj[j] + Wj[j]) / (Vj0[j] + Lj0[j]);
+        qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
+      end;
+
+    Vj0[NTrays] := rB * Lj0[NTrays];
+    Lj0[1] := rD * LD;
+
+    for j := NTrays-1 downto 2 do
+      Vj0[j] := ((1 - qj[j]) * Fj[j] + Vj0[j+1]) / (dj[j] + 1);
+    for j := 2 to NTrays-1 do
+      Lj0[j] := (Fj[j] + Vj0[j+1] + Lj0[j-1]) / (dj[j] + 1) - Vj0[j];
+
+    s := 0;
+    for j := 2 to NTrays-1 do
+      s := s + (qj[j] + rD) * Fj[j] + (rD + 1) * Uj[j] - Wj[j];
+    B := (rD * Fj[1] + (rD + 1) * Fj[NTrays] + s) / (rD + rB + 1){9.3};
+
+    s := 0;
+    for j := 2 to NTrays-1 do
+      s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
+    D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
+  end;
 
 procedure TMatBalance.InitGuessLV(Fj: arrTrays; WD: Double; LD: Double; L0: Double;
   var Lj0: arrTrays; var Vj0: arrTrays;
@@ -250,45 +318,85 @@ var
   rB: double; // паравое число // принял за 1
   D, B: double;
   s: double;
+  TrayMaterialBalanceError: arrTrays;
 
-begin
-  rD := 3;
-  rB := 1.935483871;
+  procedure Calculation(rB: double; var Fj, Uj, Wj, Lj0, Vj0: arrTrays);
+  var
+    j: integer;
+
+  begin
+    Lj0[1] := L0;
+    for j := 2 to NTrays-1 do
+    Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
+    Lj0[NTrays] := 9.3; // нужен пересчет
+    for j := 2 to NTrays do
+      Vj0[j] := WD + LD + L0 - Wj[j];
+
+    for j := 1 to NTrays do
+      begin
+        dj[j] := (Uj[j] + Wj[j]) / (Vj0[j] + Lj0[j]);
+        qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
+      end;
+
+    Vj0[NTrays] := rB * Lj0[NTrays];
+    Lj0[1] := rD * LD;
+
+    for j := NTrays-1 downto 2 do
+      Vj0[j] := ((1 - qj[j]) * Fj[j] + Vj0[j+1]) / (dj[j] + 1);
+    for j := 2 to NTrays-1 do
+      Lj0[j] := (Fj[j] + Vj0[j+1] + Lj0[j-1]) / (dj[j] + 1) - Vj0[j];
+
+    s := 0;
+    for j := 2 to NTrays-1 do
+      s := s + (qj[j] + rD) * Fj[j] + (rD + 1) * Uj[j] - Wj[j];
+    B := (rD * Fj[1] + (rD + 1) * Fj[NTrays] + s) / (rD + rB + 1){9.3};
+
+    s := 0;
+    for j := 2 to NTrays-1 do
+      s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
+    D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
+  end;
+
+  function get_rB(a, b: double; Fj, Uj, Wj, Lj0, Vj0: arrTrays): double;
+  const
+    eps = 1e-5;
+  var
+    j: integer;
+    rB: double;
+
+    function f(rB: double): double;
+    begin
+      Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
+      Result := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj0, Vj0)[1];
+    end;
+
+  begin
+    if f(a) * f(b) < 0 then
+      repeat
+        rB := (a + b) / 2;
+        if f(a) * f(rB) < 0 then
+          b := rB
+        else
+          a := rB
+      until (f(rB) = 0) or (abs(a - b) <= eps)
+    else
+      ShowMessage('There is not solutions for rB!');
+    Result := rB;
+  end;
+
+  begin
+  rD := {3} L0 / LD;
+  rB := {1.93548387096774}1;
   Uj[1] := LD;
   Wj[1] := WD;
   Uj[NTrays] := Fj[FeedTray] - (LD + WD);
   Lj0[1] := Fj[1] + L0 - Uj[1];
   Vj0[1] := 0;
+  Lj0[1] := L0;
 
-  for j := 2 to NTrays-1 do
-    Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
-  for j := 2 to NTrays do
-    Vj0[j] := WD + LD + L0 - Wj[j];
-
-  for j := 1 to NTrays do
-    begin
-      dj[j] := (Uj[j] + Wj[j]) / (Vj0[j] + Lj0[j]);
-      qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
-    end;
-
-  s := 0;
-  for j := 2 to NTrays-1 do
-    s := s + (qj[j] + rD) * Fj[j] + (rD + 1) * Uj[j] - Wj[j];
-  B := (rD * Fj[1] + (rD + 1) * Fj[NTrays] + s) / (rD + rB + 1);
-
-  s := 0;
-  for j := 2 to NTrays-1 do
-    s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
-  D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1);
-
-  Vj0[NTrays] := rB * B;
-  Lj0[1] := rD * D;
-
-  for j := NTrays-1 downto 2 do
-    Vj0[j] := ((1 - qj[j]) * Fj[j] + Vj0[j+1]) / (dj[j] + 1);
-  for j := 2 to NTrays-1 do
-    Lj0[j] := (Fj[j] + Vj0[j+1] + Lj0[j-1]) / (dj[j] + 1) - Vj0[j];
-  Lj0[NTrays] := B;
+  Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
+  rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj0, Vj0);
+  Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
 end;
 
 procedure TMatBalance.Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
@@ -571,15 +679,27 @@ begin
         + sqr(LiquidCp_k[i]) * (LiquidCp_b[4] + LiquidCp_b[5] * sqr(Tj[j] / (Tcc[i] + 273.15))) + IdealGasCompCp[i-1, j-1];
 end;
 
-function TMatBalance.getComp_dHvap(Tj: arrTrays): arrComp; {cal / mole}
+function TMatBalance.TbpVsPressure(Tbp: arrComp; P: Double{MPa}): arrComp;
+var
+  i: integer;
+  Tnormboil: arrComp;
+begin
+  for i := 1 to NComp do
+    Tnormboil[i] := tbpi[i] + 273.15;
+  for i := 1 to NComp do
+    Result[i] := 1 / (1 / (tbp[i] + 273.15) - 8.314 * ln(P / 0.101325)
+      / (getComp_dHvap(Tnormboil)[i] * 4.1868));
+end;
+
+function TMatBalance.getComp_dHvap(Tbp: arrComp): arrComp; {cal / mole}
 const
   R = 1.987; {cal / (mole K)}
 var
   i: integer;
 begin
   for i := 1 to NComp do
-    Result[i] := 1.093 * R * (Tcc[i] + 273.15) * ((tbp[i] + 273.15) / (Tcc[i] + 23.15)
-      * (ln(Pcc[i] / 101.325) - 1) / (0.930 - (tbp[i] + 273.15) / (Tcc[i] + 23.15)))
+    Result[i] := 1.093 * R * (Tcc[i] + 273.15) * (Tbp[i] / (Tcc[i] + 273.15)
+      * (ln(Pcc[i] / 101.325) - 1) / (0.930 - Tbp[i] / (Tcc[i] + 273.15)))
 end;
 
 function TMatBalance.IntegralIdealGasCp(T1: Double; T2: arrComp): arrComp;
@@ -600,7 +720,7 @@ var
   IntegralIdealGasCompCp: arrComp;
 
 begin
-  IntegralIdealGasCompCp := IntegralIdealGasCp(T2, T1);
+  IntegralIdealGasCompCp := IntegralIdealGasCp(298, T1);
   for i := 1 to NComp do
     Result[i] :=
       liquidCp_a[1] * (T2 - T1[i])
@@ -612,7 +732,7 @@ begin
       + liquidCp_k[i] * (liquidCp_b[1] * (T2 - T1[i]) + liquidCp_b[2] * (pow(T2, 3) - pow(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15))
         + liquidCp_b[3] * (pow(T2, 6) - pow(T1[i], 6)) / (6 * pow(Tcc[i] + 273.15, 5)))
      + sqr(liquidCp_k[i]) * (liquidCp_b[4] * (T2 - T1[i]) + liquidCp_b[5] * (pow(T2, 3) - pow(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15)))
-     + -IntegralIdealGasCompCp[i];
+     + IntegralIdealGasCompCp[i];
 end;
 
 procedure TMatBalance.CalculateEnthalpies(Tj, Pj: arrTrays; xij: TArrOfArrOfDouble; yij: TArrOfArrOfDouble;
@@ -635,41 +755,33 @@ begin
   SetLength(CompIntIdGasCp, NComp, NTrays);
 
   compH_v := getIdealGasCompEnthalpy(Tj);
-  dHvap := getComp_dHvap(Tj);
- 
+
   for j := 1 to Ntrays do
     begin
-
-      for i := 1 to NComp do
-        begin
-          {
-          Это закомментировано, т.к. можно взять индивидуальные Тк
-          Для неизвестных компонентов она может быть рассчитана
-          Tsat[i] := dihotomy(getTsat, 90, 900, Pj[j], Tcc[i], Pcc[i], omega[i]);
-          Tdp[i] :=  dihotomy(getTdp, 90, 900, Pj[j], Tcc[i], Pcc[i], omega[i]);
-          }
-          Tsat[i] := tbpi[i] + 273.15;
-        end;
-
+      Tsat := TbpVsPressure(Tbp, Pj[j]);
+      dHvap := getComp_dHvap(Tsat);
       for i := 1 to NComp do
         begin
           CompIntIdGasCp[i-1, j-1] := IntegralIdealGasCp(298, {Tdp}Tsat)[i];
-          CompItnLiqCp[i-1, j-1] := IntegralLiquidCp({Tsat}Tsat, Tj[j])[i];
+          CompItnLiqCp[i-1, j-1] := IntegralLiquidCp(Tsat, Tj[j])[i];
         end;
     end;
+
   for j := 1 to NTrays do
     begin
       s := 0;
       for i := 1 to NComp do
-        s := s + (dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.1868 - dHvap[i] * 4.1868
-          + CompItnLiqCp[i-1, j-1] * 4.1868) * xij[i-1, j-1];
+        s := s + (dHf298[i] + (CompIntIdGasCp[i-1, j-1] - dHvap[i]
+          + CompItnLiqCp[i-1, j-1]) * 4.1868) * xij[i-1, j-1];
       H_l[j] := s;
     end;
+
   for j := 1 to NTrays do
     begin
       s := 0;
       for i := 1 to NComp do
-        s := s + compH_v[i-1, j-1] * yij[i-1, j-1] * Mr[i];
+        s := s + compH_v[i-1, j-1] * yij[i-1, j-1] * Mr[i]
+            {(dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.1868) * yij[i-1, j-1]};
       H_v[j] := s;
     end;
 end;
@@ -723,6 +835,11 @@ var
 begin
   a := 0;
   b := 1;
+  for i := 1 to NComp do
+    begin
+      xf[i] := 0;
+      yf[i] := 0;
+    end;
   case f2(zf, T, P) of
     1://Жидкость
       for i := 1 to NComp do
@@ -743,7 +860,7 @@ begin
           for i := 1 to NComp do
             begin
               xf[i] := zf[i] / (1 + e * (Ki[i] - 1));
-              yf[i] := Ki[i] * xf[i];
+              yf[i] := {Ki[i] * xf[i]} zf[i] * Ki[i] / (1 + e * (Ki[i] - 1));
             end;
         end
       else
@@ -776,6 +893,8 @@ begin
           yf[k-1, j-1] := tray_yf[k];
         end;
     end;
+  xf := Normalize(xf);
+  yf := Normalize(yf);
 end;
 
 function TMatBalance.getTrays_ej(Fj: arrTrays; Lj: arrTrays; Vj: arrTrays;
@@ -844,11 +963,73 @@ begin
 end;
 
 procedure TMatBalance.CalculateSideFlows_and_LiquidFlows(Fj: arrTrays; ej: arrTrays;
-  Vj: arrTrays; Lj0: arrTrays; var Wj: arrTrays; var Uj: arrTrays; var Lj: arrTrays);
+  Vj: arrTrays; Lj0: arrTrays; LD: double; var Wj: arrTrays; var Uj: arrTrays; var Lj: arrTrays);
 var
   dj: arrTrays;
   Rj: arrTrays;
   j: integer;
+  rD, rB: double;
+  B, D: double;
+
+  procedure Calculation(rB: double; var Fj, Uj, Wj, Lj0, Vj0: arrTrays);
+  var
+    j: integer;
+    qj: arrTrays;
+    s: double;
+  begin
+
+    for j := 1 to NTrays do
+      begin
+        dj[j] := (Uj[j] + Wj[j]) / (Vj0[j] + Lj0[j]);
+        qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
+      end;
+
+    Vj0[NTrays] := rB * Lj0[NTrays];
+    Lj0[1] := rD * LD;
+
+    for j := NTrays-1 downto 2 do
+      Vj0[j] := ((1 - qj[j]) * Fj[j] + Vj0[j+1]) / (dj[j] + 1);
+    for j := 2 to NTrays-1 do
+      Lj0[j] := (Fj[j] + Vj0[j+1] + Lj0[j-1]) / (dj[j] + 1) - Vj0[j];
+
+    s := 0;
+    for j := 2 to NTrays-1 do
+      s := s + (qj[j] + rD) * Fj[j] + (rD + 1) * Uj[j] - Wj[j];
+    B := (rD * Fj[1] + (rD + 1) * Fj[NTrays] + s) / (rD + rB + 1){9.3};
+
+    s := 0;
+    for j := 2 to NTrays-1 do
+      s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
+    D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
+  end;
+
+  function get_rB(a, b: double; Fj, Uj, Wj, Lj0, Vj0: arrTrays): double;
+  const
+    eps = 1e-5;
+  var
+    j: integer;
+    rB: double;
+
+    function f(rB: double): double;
+    begin
+      Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
+      Result := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj0, Vj0)[1];
+    end;
+
+  begin
+    if f(a) * f(b) < 0 then
+      repeat
+        rB := (a + b) / 2;
+        if f(a) * f(rB) < 0 then
+          b := rB
+        else
+          a := rB
+      until (f(rB) = 0) or (abs(a - b) <= eps)
+    else
+      ShowMessage('There is not solutions for rB!');
+    Result := rB;
+  end;
+
 begin
   for j := 1 to NTrays do
     begin
@@ -872,6 +1053,11 @@ begin
   for j := 1 to NTrays-1 do
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
   Lj[NTrays] := Uj[NTrays];
+
+  Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+  get_rB(1e-5, 1e3, Fj, Uj, Wj, Lj, Vj);
+  Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+
 end;
 
 function TMatBalance.getErrorValue(n: integer; calcTj, calcLj, calcVj: TArrOfArrOfDouble): double;
@@ -924,6 +1110,9 @@ var
   calcVj: TArrOfArrOfDouble;
   n: integer;
   omegaj: ArrTrays; // доля пара в боковых отборах
+  TrayMaterialBalanceError: arrTrays;
+  TrayHeatBalanceError: arrTrays;
+
 begin
   n := 1;
 
@@ -971,6 +1160,19 @@ begin
 
   Tj_0 := getTj_0(Fj, zf);
   InitGuessLV(Fj, 0, 4.5, 13.5, Lj0, Vj0, Uj, Wj);
+  WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
+  CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
+  xij := Normalize(xij);
+  Secant(90, 400, Tj_0, Pj, xij, yij, Tj);
+  WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
+  CalculateVaporMoleFractions(xij, Kij, yij);
+  yij := Normalize(yij);
+  CalculateEnthalpies(Tj, Pj, xij, yij, H_l, H_v);
+  getEquilibrium(zf, Tfj, Pj, xf, yf, ej);
+  CalculateEnthalpies(Tfj, Pfj, xf, yf, Hf_l, Hf_v);
+  CalculateHeatDuties(Fj, ej, Lj0, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v, Qc, Qr);
+  TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj0, Vj0);
+  TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj0, Vj0, ej, Hf_l, Hf_v, H_l, H_v);
   for j := 0 to NTrays-1 do
     begin
       calcTj[n-1, j] := Tj_0[j+1];
@@ -992,7 +1194,8 @@ begin
     CalculateHeatDuties(Fj, ej, Lj0, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v, Qc, Qr);
     ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
     CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, Wj, Uj, Lj);
-
+    TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
+    TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
     n := n + 1;
     if n >= 1e5 then
       begin
@@ -1008,18 +1211,15 @@ begin
         calcLj[n-1, j] := Lj[j+1];
         calcVj[n-1, j] := Vj[j+1];
       end;
-    {
+  {
     for j := 1 to NTrays do
       begin
-        Lj0[j] := Lj[j];
-        Vj0[j] := Vj[j];
-        Lj[j] := 0;
-        Vj[j] := 0;
+        Lj0[j] := calcLj[n-1, j-1];
+        Vj0[j] := calcVj[n-1, j-1];
       end;
-      }
+    }
   until getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance;
   ShowMessage(IntToStr(n))
-
 
   end;
 
