@@ -306,7 +306,7 @@ var
     j: integer;
 
   begin
-    Lj0[1] := L0;
+    //Lj0[1] := L0;
     for j := 2 to NTrays-1 do
     Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
     Lj0[NTrays] := 9.3; // нужен пересчет
@@ -378,6 +378,7 @@ var
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj0, Vj0);
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
+
 end;
 
 procedure TMatBalance.Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
@@ -699,20 +700,59 @@ function TMatBalance.IntegralLiquidCp(T1: arrComp; T2: Double): arrComp;
 var
   i: integer;
   IntegralIdealGasCompCp: arrComp;
+  k: arrComp;
 
-begin
+  function get_k: arrComp;
+  var
+    i: integer;
+    Cn, Dn: arrComp;
+    Pc, Tc, Tb: arrComp;
+  begin
+    for i := 1 to NComp do
+      begin
+        Pc[i] := Pcc[i] / 101.325;
+        Tc[i] := Tcc[i] + 273.15;
+        Tb[i] := tbpi[i] + 273.15;
+      end;
+    for i := 1 to NComp do
+      begin
+        Cn[i] := 4.6773 + 1.8324 * liquidCp_R[i] - 0.03501 * sqr(liquidCp_R[i]);
+        Dn[i] := 0.7751 * Cn[i] - 2.6354;
+        Result[i] := (-ln(Pc[i]) - Cn[i] * (1 - Tc[i] / Tb[i]) + Dn[i] * ln(Tb[i]
+          / Tc[i]) - 0.4218 * (1 / (Pc[i] * sqr(Tb[i] / Tc[i]))))
+        / (1 - Tc[i] / Tb[i] - ln(Tb[i] / Tc[i]));
+      end;
+  end;
+
+  begin
   IntegralIdealGasCompCp := IntegralIdealGasCp(298, T1);
+  k := get_k;
   for i := 1 to NComp do
-    Result[i] :=
+    Result[i] :=     {
       liquidCp_a[1] * (T2 - T1[i])
       + (liquidCp_a[2] + liquidCp_a[3] * liquidCp_R[i]) * (sqr(T2) - sqr(T1[i])) / (2 * (Tcc[i] + 273.15))
       + (liquidCp_a[4] + liquidCp_a[5] * liquidCp_R[i]) * (powZ(T2, 6) - powZ(T1[i], 6)) / (6 * powZ(Tcc[i] + 273.15, 5))
       + -(liquidCp_a[6] * sqr(liquidCp_R[i]) * sqr(Tcc[i] + 273.15)) / (T2 - T1[i])
       + -(liquidCp_a[7] * liquidCp_R[i] * powZ(Tcc[i] + 273.15, 3)) / (2 * (sqr(T2) - sqr(T1[i])))
       + - (liquidCp_a[8] * powZ(Tcc[i] + 273.15, 5)) / (4 * (powZ(T2, 4) - powZ(T1[i], 4)))
-      + liquidCp_k[i] * (liquidCp_b[1] * (T2 - T1[i]) + liquidCp_b[2] * (powZ(T2, 3) - powZ(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15))
-        + liquidCp_b[3] * (powZ(T2, 6) - powZ(T1[i], 6)) / (6 * powZ(Tcc[i] + 273.15, 5)))
-     + sqr(liquidCp_k[i]) * (liquidCp_b[4] * (T2 - T1[i]) + liquidCp_b[5] * (powZ(T2, 3) - powZ(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15)))
+      + liquidCp_k[i] * (liquidCp_b[1] * (T2 - T1[i]) + liquidCp_b[2] * (powZ(T2, 3)
+        - powZ(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15)) + liquidCp_b[3] * (powZ(T2, 6) - powZ(T1[i], 6))
+          / (6 * powZ(Tcc[i] + 273.15, 5)))
+     + sqr(liquidCp_k[i]) * (liquidCp_b[4] * (T2 - T1[i]) + liquidCp_b[5] * (powZ(T2, 3) - powZ(T1[i], 3))
+       / (3 * sqr(Tcc[i] + 273.15)))
+     + IntegralIdealGasCompCp[i];
+      }
+     liquidCp_a[1] * (T2 - T1[i])
+      + (liquidCp_a[2] + liquidCp_a[3] * liquidCp_R[i]) * (sqr(T2) - sqr(T1[i])) / (2 * (Tcc[i] + 273.15))
+      + (liquidCp_a[4] + liquidCp_a[5] * liquidCp_R[i]) * (powZ(T2, 6) - powZ(T1[i], 6)) / (6 * powZ(Tcc[i] + 273.15, 5))
+      + -(liquidCp_a[6] * sqr(liquidCp_R[i]) * sqr(Tcc[i] + 273.15)) / (T2 - T1[i])
+      + -(liquidCp_a[7] * liquidCp_R[i] * powZ(Tcc[i] + 273.15, 3)) / (2 * (sqr(T2) - sqr(T1[i])))
+      + - (liquidCp_a[8] * powZ(Tcc[i] + 273.15, 5)) / (4 * (powZ(T2, 4) - powZ(T1[i], 4)))
+      + k[i] * (liquidCp_b[1] * (T2 - T1[i]) + liquidCp_b[2] * (powZ(T2, 3)
+        - powZ(T1[i], 3)) / (3 * sqr(Tcc[i] + 273.15)) + liquidCp_b[3] * (powZ(T2, 6) - powZ(T1[i], 6))
+          / (6 * powZ(Tcc[i] + 273.15, 5)))
+     + sqr(k[i]) * (liquidCp_b[4] * (T2 - T1[i]) + liquidCp_b[5] * (powZ(T2, 3) - powZ(T1[i], 3))
+       / (3 * sqr(Tcc[i] + 273.15)))
      + IntegralIdealGasCompCp[i];
 end;
 
@@ -895,8 +935,8 @@ begin
       if (Fj[1] + Vj[2]) <> 0 then
         z_tr[i-1, 0] := (Fj[1] * zf[i-1, 0] + Vj[2] * yij[i-1, 1]) / (Fj[1] + Vj[2]);
       if (Fj[NTrays] + Lj[NTrays-1]) <> 0then
-      z_tr[i-1, NTrays-1] := (Fj[NTrays] * zf[i-1, NTrays-1] + Lj[NTrays-1] * xij[i-1, NTrays-2])
-        / (Fj[NTrays] + Lj[NTrays-1]);
+        z_tr[i-1, NTrays-1] := (Fj[NTrays] * zf[i-1, NTrays-1] + Lj[NTrays-1] * xij[i-1, NTrays-2])
+          / (Fj[NTrays] + Lj[NTrays-1]);
     end;
 
   for j := 2 to NTrays-1 do
@@ -938,7 +978,7 @@ procedure TMatBalance.CalculateHeatDuties(Fj, ej: arrTrays; Lj: arrTrays; Vj: ar
   Uj: arrTrays; Wj: arrTrays; Hf_l: arrTrays; Hf_v: arrTrays; H_l: arrTrays;
   H_v: arrTrays; var Qc: Double; var Qr: Double);
 begin
-  Qc := (1 - ej[1]) *Fj[1] * Hf_l[1] +  ej[1] * Fj[1] * Hf_v[1] * Vj[2] * H_v[2] - Wj[1] * H_v[1]
+  Qc := (1 - ej[1]) *Fj[1] * Hf_l[1] +  ej[1] * Fj[1] * Hf_v[1] + Vj[2] * H_v[2] - Wj[1] * H_v[1]
     - (Lj[1] + Uj[1]) * H_l[1];
   Qr := (1 - ej[NTrays]) * Fj[NTrays] * Hf_l[NTrays] + ej[NTrays] * Fj[NTrays] * Hf_v[NTrays]
     + Lj[Ntrays-1] * H_l[NTrays-1] - (Vj[NTrays] + Wj[NTrays]) * H_v[NTrays] - Uj[NTrays] * H_l[NTrays];
@@ -1037,6 +1077,7 @@ begin
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
   Lj[NTrays] := Uj[NTrays];
   Lj[1] := L0;
+
   rD := Lj[1] / LD;
   rB := Vj[NTrays] / Uj[NTrays];
 

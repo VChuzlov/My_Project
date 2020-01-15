@@ -306,12 +306,14 @@ var
     j: integer;
 
   begin
-    Lj0[1] := L0;
+    //Lj0[1] := L0;
+    Lj0[1] := rD * LD;
     for j := 2 to NTrays-1 do
     Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
     Lj0[NTrays] := 9.3; // нужен пересчет
+
     for j := 2 to NTrays do
-      Vj0[j] := WD + LD + L0 - Wj[j];
+      Vj0[j] := WD + LD + Lj0[1] - Wj[j];
 
     for j := 1 to NTrays do
       begin
@@ -320,8 +322,6 @@ var
       end;
 
     Vj0[NTrays] := rB * Lj0[NTrays];
-    Lj0[1] := rD * LD;
-
     for j := NTrays-1 downto 2 do
       Vj0[j] := ((1 - qj[j]) * Fj[j] + Vj0[j+1]) / (dj[j] + 1);
     for j := 2 to NTrays-1 do
@@ -370,14 +370,15 @@ var
   rB := {1.93548387096774}1;
   Uj[1] := LD;
   Wj[1] := WD;
-  Uj[NTrays] := Fj[FeedTray] - (LD + WD);
-  Lj0[1] := Fj[1] + L0 - Uj[1];
-  Vj0[1] := 0;
-  Lj0[1] := L0;
+  Uj[NTrays] := Fj[FeedTray] - (LD + WD);  // д.б. сумма Fj
+  Lj0[1] := Fj[1] + LD * rD - Uj[1];
+  Vj0[1] := 0; // должно зависеть от типа конденсатора
+  Lj0[1] := LD * rD;
 
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj0, Vj0);
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
+
 end;
 
 procedure TMatBalance.Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
@@ -727,7 +728,7 @@ var
   IntegralIdealGasCompCp := IntegralIdealGasCp(298, T1);
   k := get_k;
   for i := 1 to NComp do
-    Result[i] := {
+    Result[i] :=     {
       liquidCp_a[1] * (T2 - T1[i])
       + (liquidCp_a[2] + liquidCp_a[3] * liquidCp_R[i]) * (sqr(T2) - sqr(T1[i])) / (2 * (Tcc[i] + 273.15))
       + (liquidCp_a[4] + liquidCp_a[5] * liquidCp_R[i]) * (powZ(T2, 6) - powZ(T1[i], 6)) / (6 * powZ(Tcc[i] + 273.15, 5))
@@ -740,7 +741,7 @@ var
      + sqr(liquidCp_k[i]) * (liquidCp_b[4] * (T2 - T1[i]) + liquidCp_b[5] * (powZ(T2, 3) - powZ(T1[i], 3))
        / (3 * sqr(Tcc[i] + 273.15)))
      + IntegralIdealGasCompCp[i];
-     }
+      }
      liquidCp_a[1] * (T2 - T1[i])
       + (liquidCp_a[2] + liquidCp_a[3] * liquidCp_R[i]) * (sqr(T2) - sqr(T1[i])) / (2 * (Tcc[i] + 273.15))
       + (liquidCp_a[4] + liquidCp_a[5] * liquidCp_R[i]) * (powZ(T2, 6) - powZ(T1[i], 6)) / (6 * powZ(Tcc[i] + 273.15, 5))
@@ -934,8 +935,8 @@ begin
       if (Fj[1] + Vj[2]) <> 0 then
         z_tr[i-1, 0] := (Fj[1] * zf[i-1, 0] + Vj[2] * yij[i-1, 1]) / (Fj[1] + Vj[2]);
       if (Fj[NTrays] + Lj[NTrays-1]) <> 0then
-      z_tr[i-1, NTrays-1] := (Fj[NTrays] * zf[i-1, NTrays-1] + Lj[NTrays-1] * xij[i-1, NTrays-2])
-        / (Fj[NTrays] + Lj[NTrays-1]);
+        z_tr[i-1, NTrays-1] := (Fj[NTrays] * zf[i-1, NTrays-1] + Lj[NTrays-1] * xij[i-1, NTrays-2])
+          / (Fj[NTrays] + Lj[NTrays-1]);
     end;
 
   for j := 2 to NTrays-1 do
@@ -977,7 +978,7 @@ procedure TMatBalance.CalculateHeatDuties(Fj, ej: arrTrays; Lj: arrTrays; Vj: ar
   Uj: arrTrays; Wj: arrTrays; Hf_l: arrTrays; Hf_v: arrTrays; H_l: arrTrays;
   H_v: arrTrays; var Qc: Double; var Qr: Double);
 begin
-  Qc := (1 - ej[1]) *Fj[1] * Hf_l[1] +  ej[1] * Fj[1] * Hf_v[1] * Vj[2] * H_v[2] - Wj[1] * H_v[1]
+  Qc := (1 - ej[1]) *Fj[1] * Hf_l[1] +  ej[1] * Fj[1] * Hf_v[1] + Vj[2] * H_v[2] - Wj[1] * H_v[1]
     - (Lj[1] + Uj[1]) * H_l[1];
   Qr := (1 - ej[NTrays]) * Fj[NTrays] * Hf_l[NTrays] + ej[NTrays] * Fj[NTrays] * Hf_v[NTrays]
     + Lj[Ntrays-1] * H_l[NTrays-1] - (Vj[NTrays] + Wj[NTrays]) * H_v[NTrays] - Uj[NTrays] * H_l[NTrays];
@@ -991,7 +992,7 @@ var
   j: integer;
   rD, rB: double;
   B, D: double;
-
+  {
   procedure Calculation(rB: double; var Fj, Uj, Wj, Lj0, Vj0: arrTrays);
   var
     j: integer;
@@ -1053,7 +1054,7 @@ var
       ShowMessage('There is not solutions for rB!');
     Result := rB;
   end;
-
+ }
 begin
   for j := 1 to NTrays do
     begin
@@ -1076,6 +1077,7 @@ begin
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
   Lj[NTrays] := Uj[NTrays];
   Lj[1] := L0;
+
   rD := Lj[1] / LD;
   rB := Vj[NTrays] / Uj[NTrays];
 
