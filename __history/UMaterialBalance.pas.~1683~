@@ -282,7 +282,7 @@ begin
     input[j] := (ef_j[j] * Hf_v[j] + (1 - ef_j[j]) * Hf_l[j]) * Fj[j]
       + Lj[j-1] * H_l[j-1] + Vj[j+1] * H_v[j+1];
   for j := 1 to NTrays-1 do
-    output[j] := Uj[j] * H_l[j] + Wj[j] * H_v[j] + Lj[j] * H_l[j] + Vj[j] * H_v[j];
+    output[j] := (Uj[j] + Lj[j]) * H_l[j] + (Wj[j] +  Vj[j]) * H_v[j];
 
   for j := 1 to NTrays do
     Result[j] := input[j] - output[j];
@@ -372,8 +372,8 @@ var
   Wj[1] := WD;
   Uj[NTrays] := Fj[FeedTray] - (LD + WD);  // д.б. сумма Fj
   Lj0[1] := Fj[1] + LD * rD - Uj[1];
-  Vj0[1] := 0;
-  Lj0[1] := L0;
+  Vj0[1] := 0; // должно зависеть от типа конденсатора
+  Lj0[1] := LD * rD;
 
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj0, Vj0);
@@ -992,7 +992,7 @@ var
   j: integer;
   rD, rB: double;
   B, D: double;
-
+  {
   procedure Calculation(rB: double; var Fj, Uj, Wj, Lj0, Vj0: arrTrays);
   var
     j: integer;
@@ -1054,7 +1054,7 @@ var
       ShowMessage('There is not solutions for rB!');
     Result := rB;
   end;
-
+ }
 begin
   for j := 1 to NTrays do
     begin

@@ -282,7 +282,7 @@ begin
     input[j] := (ef_j[j] * Hf_v[j] + (1 - ef_j[j]) * Hf_l[j]) * Fj[j]
       + Lj[j-1] * H_l[j-1] + Vj[j+1] * H_v[j+1];
   for j := 1 to NTrays-1 do
-    output[j] := Uj[j] * H_l[j] + Wj[j] * H_v[j] + Lj[j] * H_l[j] + Vj[j] * H_v[j];
+    output[j] := (Uj[j] + Lj[j]) * H_l[j] + (Wj[j] +  Vj[j]) * H_v[j];
 
   for j := 1 to NTrays do
     Result[j] := input[j] - output[j];
@@ -306,12 +306,14 @@ var
     j: integer;
 
   begin
-    Lj0[1] := L0;
+    //Lj0[1] := L0;
+    Lj0[1] := rD * LD;
     for j := 2 to NTrays-1 do
     Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
     Lj0[NTrays] := 9.3; // нужен пересчет
+
     for j := 2 to NTrays do
-      Vj0[j] := WD + LD + L0 - Wj[j];
+      Vj0[j] := WD + LD + Lj0[1] - Wj[j];
 
     for j := 1 to NTrays do
       begin
@@ -320,8 +322,6 @@ var
       end;
 
     Vj0[NTrays] := rB * Lj0[NTrays];
-    Lj0[1] := rD * LD;
-
     for j := NTrays-1 downto 2 do
       Vj0[j] := ((1 - qj[j]) * Fj[j] + Vj0[j+1]) / (dj[j] + 1);
     for j := 2 to NTrays-1 do
@@ -370,14 +370,41 @@ var
   rB := {1.93548387096774}1;
   Uj[1] := LD;
   Wj[1] := WD;
-  Uj[NTrays] := Fj[FeedTray] - (LD + WD);
-  Lj0[1] := Fj[1] + L0 - Uj[1];
-  Vj0[1] := 0;
-  Lj0[1] := L0;
+  Uj[NTrays] := Fj[FeedTray] - (LD + WD);  // д.б. сумма Fj
+  Lj0[1] := Fj[1] + LD * rD - Uj[1];
+  Vj0[1] := 0; // должно зависеть от типа конденсатора
+  Lj0[1] := LD * rD;
 
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj0, Vj0);
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
+  {
+  Lj0[1] := 13.4982019279072;
+  Lj0[2] := 20.8005769959922;
+  Lj0[3] := 21.1981504749791;
+  Lj0[4] := 20.774814507136;
+  Lj0[5] := 19.2573556436704;
+  Lj0[6] := 25.8734711812505;
+  Lj0[7] := 26.0571532600085;
+  Lj0[8] := 26.0924227713739;
+  Lj0[9] := 26.2141335205684;
+  Lj0[10] := 26.2030976087456;
+  Lj0[11] := 25.5175475484524;
+  Lj0[12] := 9.3008579707604;
+
+  Vj0[1] := 2.68535840559692E-21;
+  Vj0[2] := 17.9975496855556;
+  Vj0[3] := 25.2999247536406;
+  Vj0[4] := 25.6974982326274;
+  Vj0[5] := 25.2741622647843;
+  Vj0[6] := 23.7567034013187;
+  Vj0[7] := 16.5726132104901;
+  Vj0[8] := 16.7562952892481;
+  Vj0[9] := 16.7915648006135;
+  Vj0[10] := 16.913275549808;
+  Vj0[11] := 16.9022396379852;
+  Vj0[12] := 16.216689577692;
+  }
 end;
 
 procedure TMatBalance.Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
@@ -727,7 +754,7 @@ var
   IntegralIdealGasCompCp := IntegralIdealGasCp(298, T1);
   k := get_k;
   for i := 1 to NComp do
-    Result[i] :=     {
+    Result[i] :=        {
       liquidCp_a[1] * (T2 - T1[i])
       + (liquidCp_a[2] + liquidCp_a[3] * liquidCp_R[i]) * (sqr(T2) - sqr(T1[i])) / (2 * (Tcc[i] + 273.15))
       + (liquidCp_a[4] + liquidCp_a[5] * liquidCp_R[i]) * (powZ(T2, 6) - powZ(T1[i], 6)) / (6 * powZ(Tcc[i] + 273.15, 5))
@@ -740,7 +767,7 @@ var
      + sqr(liquidCp_k[i]) * (liquidCp_b[4] * (T2 - T1[i]) + liquidCp_b[5] * (powZ(T2, 3) - powZ(T1[i], 3))
        / (3 * sqr(Tcc[i] + 273.15)))
      + IntegralIdealGasCompCp[i];
-      }
+     }
      liquidCp_a[1] * (T2 - T1[i])
       + (liquidCp_a[2] + liquidCp_a[3] * liquidCp_R[i]) * (sqr(T2) - sqr(T1[i])) / (2 * (Tcc[i] + 273.15))
       + (liquidCp_a[4] + liquidCp_a[5] * liquidCp_R[i]) * (powZ(T2, 6) - powZ(T1[i], 6)) / (6 * powZ(Tcc[i] + 273.15, 5))
@@ -934,8 +961,8 @@ begin
       if (Fj[1] + Vj[2]) <> 0 then
         z_tr[i-1, 0] := (Fj[1] * zf[i-1, 0] + Vj[2] * yij[i-1, 1]) / (Fj[1] + Vj[2]);
       if (Fj[NTrays] + Lj[NTrays-1]) <> 0then
-      z_tr[i-1, NTrays-1] := (Fj[NTrays] * zf[i-1, NTrays-1] + Lj[NTrays-1] * xij[i-1, NTrays-2])
-        / (Fj[NTrays] + Lj[NTrays-1]);
+        z_tr[i-1, NTrays-1] := (Fj[NTrays] * zf[i-1, NTrays-1] + Lj[NTrays-1] * xij[i-1, NTrays-2])
+          / (Fj[NTrays] + Lj[NTrays-1]);
     end;
 
   for j := 2 to NTrays-1 do
@@ -991,7 +1018,7 @@ var
   j: integer;
   rD, rB: double;
   B, D: double;
-
+  {
   procedure Calculation(rB: double; var Fj, Uj, Wj, Lj0, Vj0: arrTrays);
   var
     j: integer;
@@ -1053,7 +1080,7 @@ var
       ShowMessage('There is not solutions for rB!');
     Result := rB;
   end;
-
+ }
 begin
   for j := 1 to NTrays do
     begin
@@ -1076,6 +1103,7 @@ begin
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
   Lj[NTrays] := Uj[NTrays];
   Lj[1] := L0;
+
   rD := Lj[1] / LD;
   rB := Vj[NTrays] / Uj[NTrays];
 
