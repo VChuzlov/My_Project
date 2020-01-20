@@ -96,6 +96,12 @@ type
                      -0.501989746093727,	27.8780151367188,	36.0590148925781,	68.7300048828125,
                      98.4290100097656);
 
+    // Ideal gas heat capasity
+    Cpig: arrComp = (34.92,	52.49,	73.6,	96.65,	98.49,	118.9,	120.07,	142.6,	165.2);
+
+    // Liquid heat capasity
+    Cpliq: arrComp = (0,	74.48,	119.6,	129.7,	132.42,	164.85,	167.19,	197.66,	224.721);
+
     { Public declarations }
   End;
 
@@ -803,7 +809,7 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {(dHf298[i] + (CompIntIdGasCp[i-1, j-1] - dHvap[i]
-          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.1868 * (Tsat[i] + Tj[j]) * xij[i-1, j-1];
+          + CompItnLiqCp[i-1, j-1]) * 4.1868)} {LiquidCompHeatCapasity[i-1, j-1] * 4.1868}Cpliq[i] * (Tsat[i] + Tj[j]) * xij[i-1, j-1];
       H_l[j] := s;
     end;
 
@@ -1002,7 +1008,74 @@ var
   j: integer;
   rD, rB: double;
   B, D: double;
-  
+
+  procedure Calculation(rB: double; var Fj, Uj, Wj, Lj, Vj: arrTrays);
+  var
+    j: integer;
+    qj: arrTrays;
+    WD: double; // избавитьс€
+    s: double;
+
+  begin
+    //Lj0[1] := L0;
+    Lj[1] := rD * LD;
+    for j := 2 to NTrays-1 do
+    Lj[j] := Lj[j-1] + Fj[j] - Uj[j];
+    Lj[NTrays] := 9.3; // нужен пересчет
+
+    for j := 2 to NTrays do
+      Vj[j] := WD + LD + Lj[1] - Wj[j];
+
+    for j := 1 to NTrays do
+      begin
+        dj[j] := (Uj[j] + Wj[j]) / (Vj[j] + Lj[j]);
+        qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состо€ни€
+      end;
+
+    Vj[NTrays] := rB * Lj[NTrays];
+    for j := NTrays-1 downto 2 do
+      Vj[j] := ((1 - qj[j]) * Fj[j] + Vj[j+1]) / (dj[j] + 1);
+    for j := 2 to NTrays-1 do
+      Lj[j] := (Fj[j] + Vj[j+1] + Lj[j-1]) / (dj[j] + 1) - Vj[j];
+
+    s := 0;
+    for j := 2 to NTrays-1 do
+      s := s + (qj[j] + rD) * Fj[j] + (rD + 1) * Uj[j] - Wj[j];
+    B := (rD * Fj[1] + (rD + 1) * Fj[NTrays] + s) / (rD + rB + 1){9.3};
+
+    s := 0;
+    for j := 2 to NTrays-1 do
+      s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
+    D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
+  end;
+
+  function get_rB(a, b: double; Fj, Uj, Wj, Lj, Vj: arrTrays): double;
+  const
+    eps = 1e-5;
+  var
+    j: integer;
+    rB: double;
+
+    function f(rB: double): double;
+    begin
+      Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+      Result := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj)[1];
+    end;
+
+  begin
+    if f(a) * f(b) < 0 then
+      repeat
+        rB := (a + b) / 2;
+        if f(a) * f(rB) < 0 then
+          b := rB
+        else
+          a := rB
+      until (f(rB) = 0) or (abs(a - b) <= eps)
+    else
+      ShowMessage('There is not solutions for rB!');
+    Result := rB;
+  end;
+
 begin
   for j := 1 to NTrays do
     begin
@@ -1028,6 +1101,9 @@ begin
 
   rD := Lj[1] / LD;
   rB := Vj[NTrays] / Uj[NTrays];
+  Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+  rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj, Vj);
+  Calculation(rB, Fj, Uj, Wj, Lj, Vj);
 
 end;
 
