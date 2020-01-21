@@ -57,6 +57,7 @@ type
 
     function forRegularTrays(T, P: double; xi: TArrOfDouble): double;
     function forCondenser (T, P: double; zf: TArrOfDouble): double;
+    function global_energy_balance(Fj, ej, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v: arrTrays): double;
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
       var L, V: arrTrays);
   private
@@ -1058,8 +1059,11 @@ var
     rB: double;
 
     function f(rB: double): double;
+    var
+      global_energy_balance_error: double;
     begin
       Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+
       Result := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj)[1];
     end;
 
@@ -1101,7 +1105,7 @@ begin
   Lj[1] := L0;
 
   rD := Lj[1] / LD;
-  rB := Vj[NTrays] / Uj[NTrays];
+  //rB := Vj[NTrays] / Uj[NTrays];
   {
   Calculation(rB, Fj, Uj, Wj, Lj, Vj);
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj, Vj);
@@ -1124,6 +1128,20 @@ begin
   for j := 1 to NTrays-1 do
     sV := sV + sqr((calcVj[n-1, j] - calcVj[n-2, j]) / calcVj[n-1, j]);
   Result := sT + sL + sV;
+end;
+
+function TMatBalance.global_energy_balance(Fj, ej: arrTrays; Uj: arrTrays; Wj: arrTrays;
+  Qj: arrTrays; Hf_l: arrTrays; Hf_v: arrTrays; H_l: arrTrays; H_v: arrTrays): double;
+var
+  j: integer;
+  s: double;
+begin
+  s := 0;
+  for j := 1 to NTrays do
+    s:= s + Fj[j] * (Hf_v[j] * ej[j] + Hf_l[j] * (1 - ej[j]));
+  for j := 1 to NTrays do
+    s := s - (Wj[j] * H_v[j] + Uj[j] * H_l[j] + Qj[j]);
+  Result := s;
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
@@ -1162,14 +1180,27 @@ var
   TrayMaterialBalanceError: arrTrays;
   TrayHeatBalanceError: arrTrays;
   rB: double;
+  global_energy_balance_error: double;
 
   procedure Calculation(rB: double; TrayHeatBalanceError: arrTrays);
+  var
+    j: integer;
   begin
+    CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
+    xij := Normalize(xij);
+    Secant(90, 400, Tj_0, Pj, xij, yij, Tj);
+    WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
+    CalculateVaporMoleFractions(xij, Kij, yij);
+    yij := Normalize(yij);
+    CalculateEnthalpies(Tj, Pj, xij, yij, H_l, H_v);
+    getEquilibrium(zf, Tfj, Pj, xf, yf, ej);
+    CalculateEnthalpies(Tfj, Pfj, xf, yf, Hf_l, Hf_v);
     CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v, Fj, Lj0, Uj, Wj, Qj, ej, 4.5, 0, rB, Vj);
     CalculateHeatDuties(Fj, ej, Lj0, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v, Qc, Qr);
     CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, 4.5, 13.5, Wj, Uj, Lj);
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
+    
   end;
 
   function get_rB(a, b: double): double;
@@ -1262,6 +1293,7 @@ begin
     end;
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   repeat
+    {
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
     xij := Normalize(xij);
     Secant(90, 400, Tj_0, Pj, xij, yij, Tj);
@@ -1271,15 +1303,17 @@ begin
     CalculateEnthalpies(Tj, Pj, xij, yij, H_l, H_v);
     getEquilibrium(zf, Tfj, Pj, xf, yf, ej);
     CalculateEnthalpies(Tfj, Pfj, xf, yf, Hf_l, Hf_v);
-    {
+
     CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v, Fj, Lj0, Uj, Wj, Qj, ej, 4.5, 0, 1, Vj);
     CalculateHeatDuties(Fj, ej, Lj0, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v, Qc, Qr);
     CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, 4.5, 13.5, Wj, Uj, Lj);
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
     }
-    rB := get_rB(1e-5, 1e3);
+    rB := get_rB(1e-3, 1e3);
     Calculation(rB, TrayMaterialBalanceError);
+    global_energy_balance_error := global_energy_balance(Fj, ej, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v);
+
     ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
     n := n + 1;
     if n >= 1e5 then
