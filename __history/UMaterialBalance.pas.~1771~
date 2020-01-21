@@ -48,7 +48,7 @@ type
       var xf, yf: TArrOfArrOfDouble; var ej: arrTrays);
     function getTrays_ej(Fj, Lj, Vj: arrTrays; zf, xij, yij: TArrOfArrOfDouble; Tj, Pj: arrTrays): arrTrays;
     procedure CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v: arrTrays; Fj, Lj, Uj, Wj: arrTrays;
-      Qj: arrTrays; ej: arrTrays; LD, VD: double; var Vj: arrTrays);
+      Qj: arrTrays; ej: arrTrays; LD, VD, rB: double; var Vj: arrTrays);
     procedure CalculateHeatDuties (Fj, ej, Lj, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v: arrTrays;
       var Qc, Qr: double);
     procedure CalculateSideFlows_and_LiquidFlows(Fj, ej, Vj, Lj0: arrTrays; LD, L0: double;
@@ -968,15 +968,16 @@ end;
 
 procedure TMatBalance.CalculateVaporFlowRates(Hf_l: arrTrays; Hf_v: arrTrays;
   H_l: arrTrays; H_v: arrTrays; Fj: arrTrays; Lj: arrTrays; Uj: arrTrays; Wj: arrTrays;
-  Qj: arrTrays; ej: arrTrays; LD, VD: double; var Vj: arrTrays);
+  Qj: arrTrays; ej: arrTrays; LD, VD, rB: double; var Vj: arrTrays);
 var
   j, k: integer;
   alp, bet, gam: arrTrays;
   s: double;
 
 begin
-  Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
+  //Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
   //Vj[2] := Lj[1] + LD + VD;
+  Vj[NTrays] := rB * Lj[NTrays-1];
   for j := NTrays-1 downto 2 do
     begin
       s := 0;
@@ -1008,31 +1009,35 @@ var
   j: integer;
   rD, rB: double;
   B, D: double;
-  procedure Calculation(rB: double; var Fj, Uj, Wj, Lj0, Vj0: arrTrays);
+
+  procedure Calculation(rB: double; var Fj, Uj, Wj, Lj, Vj: arrTrays);
   var
     j: integer;
+    qj: arrTrays;
+    WD: double; // избавиться
+    s: double;
 
   begin
     //Lj0[1] := L0;
-    Lj0[1] := rD * LD;
+    Lj[1] := rD * LD;
     for j := 2 to NTrays-1 do
-    Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
-    Lj0[NTrays] := 9.3; // нужен пересчет
+    Lj[j] := Lj[j-1] + Fj[j] - Uj[j];
+    Lj[NTrays] := 9.3; // нужен пересчет
 
     for j := 2 to NTrays do
-      Vj0[j] := WD + LD + Lj0[1] - Wj[j];
+      Vj[j] := WD + LD + Lj[1] - Wj[j];
 
     for j := 1 to NTrays do
       begin
-        dj[j] := (Uj[j] + Wj[j]) / (Vj0[j] + Lj0[j]);
+        dj[j] := (Uj[j] + Wj[j]) / (Vj[j] + Lj[j]);
         qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
       end;
 
-    Vj0[NTrays] := rB * Lj0[NTrays];
+    Vj[NTrays] := rB * Lj[NTrays];
     for j := NTrays-1 downto 2 do
-      Vj0[j] := ((1 - qj[j]) * Fj[j] + Vj0[j+1]) / (dj[j] + 1);
+      Vj[j] := ((1 - qj[j]) * Fj[j] + Vj[j+1]) / (dj[j] + 1);
     for j := 2 to NTrays-1 do
-      Lj0[j] := (Fj[j] + Vj0[j+1] + Lj0[j-1]) / (dj[j] + 1) - Vj0[j];
+      Lj[j] := (Fj[j] + Vj[j+1] + Lj[j-1]) / (dj[j] + 1) - Vj[j];
 
     s := 0;
     for j := 2 to NTrays-1 do
@@ -1044,6 +1049,34 @@ var
       s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
     D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
   end;
+
+  function get_rB(a, b: double; Fj, Uj, Wj, Lj, Vj: arrTrays): double;
+  const
+    eps = 1e-5;
+  var
+    j: integer;
+    rB: double;
+
+    function f(rB: double): double;
+    begin
+      Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+      Result := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj)[1];
+    end;
+
+  begin
+    if f(a) * f(b) < 0 then
+      repeat
+        rB := (a + b) / 2;
+        if f(a) * f(rB) < 0 then
+          b := rB
+        else
+          a := rB
+      until (f(rB) = 0) or (abs(a - b) <= eps)
+    else
+      ShowMessage('There is not solutions for rB!');
+    Result := rB;
+  end;
+
 begin
   for j := 1 to NTrays do
     begin
@@ -1069,7 +1102,11 @@ begin
 
   rD := Lj[1] / LD;
   rB := Vj[NTrays] / Uj[NTrays];
-
+  {
+  Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+  rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj, Vj);
+  Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+   }
 end;
 
 function TMatBalance.getErrorValue(n: integer; calcTj, calcLj, calcVj: TArrOfArrOfDouble): double;
@@ -1124,6 +1161,38 @@ var
   omegaj: ArrTrays; // доля пара в боковых отборах
   TrayMaterialBalanceError: arrTrays;
   TrayHeatBalanceError: arrTrays;
+  rB: double;
+
+  procedure Calculation(rB: double; TrayHeatBalanceError: arrTrays);
+  begin
+    CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v, Fj, Lj0, Uj, Wj, Qj, ej, 4.5, 0, rB, Vj);
+    CalculateHeatDuties(Fj, ej, Lj0, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v, Qc, Qr);
+    CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, 4.5, 13.5, Wj, Uj, Lj);
+    TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
+    TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
+  end;
+
+  function get_rB(a, b: double): double;
+  const
+    eps = 1e-5;
+    function f (rB: double): double;
+    begin
+      Calculation(rB, TrayMaterialBalanceError);
+      Result := TrayMaterialBalanceError[1];
+    end;
+  begin
+    if f(a) * f(b) < 0 then
+      repeat
+        rB := (a + b) / 2;
+        if f(a) * f(rB) < 0 then
+          b := rB
+        else
+          a := rB
+      until (f(rB) = 0) or (abs(a - b) <= eps)
+    else
+      ShowMessage('There is not solutions for rB!');
+    Result := rB;
+  end;
 
 begin
   n := 1;
@@ -1202,12 +1271,17 @@ begin
     CalculateEnthalpies(Tj, Pj, xij, yij, H_l, H_v);
     getEquilibrium(zf, Tfj, Pj, xf, yf, ej);
     CalculateEnthalpies(Tfj, Pfj, xf, yf, Hf_l, Hf_v);
-    CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v, Fj, Lj0, Uj, Wj, Qj, ej, 4.5, 0, Vj);
+    {
+    CalculateVaporFlowRates(Hf_l, Hf_v, H_l, H_v, Fj, Lj0, Uj, Wj, Qj, ej, 4.5, 0, 1, Vj);
     CalculateHeatDuties(Fj, ej, Lj0, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v, Qc, Qr);
-    ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
     CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, 4.5, 13.5, Wj, Uj, Lj);
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
+    }
+    rB := get_rB(1e-5, 1e3);
+    Calculation(rB, TrayMaterialBalanceError);
+
+    ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
     n := n + 1;
     if n >= 1e5 then
       begin
