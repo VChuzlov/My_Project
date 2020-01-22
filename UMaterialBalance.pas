@@ -969,14 +969,14 @@ var
   s: double;
 
 begin
-  Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
+  Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays]{Lj[NTrays-1] * 1.15};
   //Vj[2] := Lj[1] + LD + VD;
   for j := NTrays-1 downto 2 do
     begin
       s := 0;
       for k := 1 to j-1 do
         s := s + (Fj[k] - Uj[k] - Wj[k]);
-      gam[j] := Hf_l[j] * (1 - ej[j]) * Fj[j] + Hf_v[j] * ej[j] * Fj[j] - H_l[j] * Fj[j]
+      gam[j] := (Hf_l[j] * (1 - ej[j]) + Hf_v[j] * ej[j] - H_l[j]) * Fj[j]
         + (H_l[j-1] - H_l[j]) * s + (H_l[j] - H_v[j]) * Wj[j] - Qj[j];
       bet[j] := H_v[j+1] - H_l[j];
       alp[j] := H_v[j] - H_l[j-1];
@@ -1010,21 +1010,21 @@ begin
         dj[j] := (Uj[j] + Wj[j]) / (Lj0[j] + Vj[j])
       else
         dj[j] := 0;
-      if j = 1 then
-        Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] {+ Lj0[j-1]})
-      else
+      //if j = 1 then
         Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] + Lj0[j-1]);
+      {else
+        Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] + Lj0[j-1]);}
       Wj[j] := ej[j] * Rj[j];
       Uj[j] := (1 - ej[j]) * Rj[j];
     end;
 
   Uj[1] := 4.5;
   Uj[NTrays] := 9.3;
-
+  Lj[1] := L0;
   for j := 2 to NTrays-1 do
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
   Lj[NTrays] := Uj[NTrays];
-  Lj[1] := L0;
+
 
   rD := Lj[1] / LD;
   rB := Vj[NTrays] / Uj[NTrays];
@@ -1182,13 +1182,14 @@ begin
         calcLj[n-1, j] := Lj[j+1];
         calcVj[n-1, j] := Vj[j+1];
       end;
-   
+
     for j := 1 to NTrays do
       begin
         Lj0[j] := calcLj[n-1, j-1];
         Vj0[j] := calcVj[n-1, j-1];
+        Tj_0[j] := Tj[j];
       end;
-     
+
   until getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance;
   ShowMessage(IntToStr(n))
 

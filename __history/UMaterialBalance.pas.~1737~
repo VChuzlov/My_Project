@@ -361,9 +361,9 @@ var
     Result := rB;
   end;
 
-  begin
+begin
   rD := {3} L0 / LD;
-  rB := {1.93548387096774}1;
+  rB := {1.93548387096774}3;
   Uj[1] := LD;
   Wj[1] := WD;
   Uj[NTrays] := Fj[FeedTray] - (LD + WD);  // д.б. сумма Fj
@@ -374,7 +374,7 @@ var
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj0, Vj0);
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
 
- end;
+end;
 
 procedure TMatBalance.Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
 var
@@ -803,7 +803,7 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {(dHf298[i] + (CompIntIdGasCp[i-1, j-1] - dHvap[i]
-          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.1868 * (-Tsat[i] + Tj[j]) * xij[i-1, j-1];
+          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.1868 * (Tsat[i] + Tj[j]) * xij[i-1, j-1];
       H_l[j] := s;
     end;
 
@@ -969,17 +969,17 @@ var
   s: double;
 
 begin
-  Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
-  Vj[2] := Lj[1] + LD + VD;
-  for j := NTrays-1 downto 3 do
+  Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays]{Lj[NTrays-1] * 1.15};
+  //Vj[2] := Lj[1] + LD + VD;
+  for j := NTrays-1 downto 2 do
     begin
       s := 0;
       for k := 1 to j-1 do
         s := s + (Fj[k] - Uj[k] - Wj[k]);
-      gam[j] := Hf_l[j] * (1 - ej[j]) * Fj[j] + Hf_v[j] * ej[j] * Fj[j] - H_l[j] * Fj[j]
-        + (H_l[j-1] - H_l[j]) * s + (H_l[j] - H_v[j]) * Wj[j] - Qj[j];
-      bet[j] := H_v[j+1] - H_l[j];
-      alp[j] := H_v[j] - H_l[j-1];
+      gam[j] := (Hf_l[j] * (1 - ej[j]) + Hf_v[j] * ej[j] - H_l[j]) * Fj[j]
+        + (H_l[j-1] - H_l[j]) * s + ({H_l[j]}H_v[j+1] - H_v[j]) * Wj[j] - Qj[j];
+      bet[j] := H_v[j+1] - {H_l[j]}H_v[j];
+      alp[j] := {H_v[j]}H_l[j] - H_l[j-1];
       Vj[j] := (bet[j] * Vj[j+1] + gam[j]) / alp[j];
     end;
 end;

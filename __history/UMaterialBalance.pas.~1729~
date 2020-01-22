@@ -361,46 +361,19 @@ var
     Result := rB;
   end;
 
-  begin
+begin
   rD := {3} L0 / LD;
-  rB := {1.93548387096774}1;
+  rB := {1.93548387096774}3;
   Uj[1] := LD;
   Wj[1] := WD;
   Uj[NTrays] := Fj[FeedTray] - (LD + WD);  // д.б. сумма Fj
-  Lj0[1] := Fj[1] + LD * rD - Uj[1];
   Vj0[1] := 0; // должно зависеть от типа конденсатора
   Lj0[1] := LD * rD;
 
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj0, Vj0);
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
-  {
-  Lj0[1] := 13.4982019279072;
-  Lj0[2] := 20.8005769959922;
-  Lj0[3] := 21.1981504749791;
-  Lj0[4] := 20.774814507136;
-  Lj0[5] := 19.2573556436704;
-  Lj0[6] := 25.8734711812505;
-  Lj0[7] := 26.0571532600085;
-  Lj0[8] := 26.0924227713739;
-  Lj0[9] := 26.2141335205684;
-  Lj0[10] := 26.2030976087456;
-  Lj0[11] := 25.5175475484524;
-  Lj0[12] := 9.3008579707604;
 
-  Vj0[1] := 2.68535840559692E-21;
-  Vj0[2] := 17.9975496855556;
-  Vj0[3] := 25.2999247536406;
-  Vj0[4] := 25.6974982326274;
-  Vj0[5] := 25.2741622647843;
-  Vj0[6] := 23.7567034013187;
-  Vj0[7] := 16.5726132104901;
-  Vj0[8] := 16.7562952892481;
-  Vj0[9] := 16.7915648006135;
-  Vj0[10] := 16.913275549808;
-  Vj0[11] := 16.9022396379852;
-  Vj0[12] := 16.216689577692;
-  }
 end;
 
 procedure TMatBalance.Gauss_Jordan(arr: TArrOfArrOfDouble; var x: TArrOfDouble);
@@ -830,7 +803,7 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {(dHf298[i] + (CompIntIdGasCp[i-1, j-1] - dHvap[i]
-          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * (Tsat[i] - Tj[j]) * xij[i-1, j-1];
+          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.1868 * (Tsat[i] + Tj[j]) * xij[i-1, j-1];
       H_l[j] := s;
     end;
 
@@ -997,8 +970,8 @@ var
 
 begin
   Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
-  Vj[2] := Lj[1] + LD + VD;
-  for j := NTrays-1 downto 3 do
+  //Vj[2] := Lj[1] + LD + VD;
+  for j := NTrays-1 downto 2 do
     begin
       s := 0;
       for k := 1 to j-1 do
