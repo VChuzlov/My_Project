@@ -57,6 +57,7 @@ type
 
     function forRegularTrays(T, P: double; xi: TArrOfDouble): double;
     function forCondenser (T, P: double; zf: TArrOfDouble): double;
+    function teta_method(Fj: arrTrays; xij: TArrOfArrOfDouble; D, B: double): double;
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
       var L, V: arrTrays);
   private
@@ -969,14 +970,14 @@ var
   s: double;
 
 begin
-  Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
+  Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays]{Lj[NTrays-1] * 1.15};
   //Vj[2] := Lj[1] + LD + VD;
   for j := NTrays-1 downto 2 do
     begin
       s := 0;
       for k := 1 to j-1 do
         s := s + (Fj[k] - Uj[k] - Wj[k]);
-      gam[j] := Hf_l[j] * (1 - ej[j]) * Fj[j] + Hf_v[j] * ej[j] * Fj[j] - H_l[j] * Fj[j]
+      gam[j] := (Hf_l[j] * (1 - ej[j]) + Hf_v[j] * ej[j] - H_l[j]) * Fj[j]
         + (H_l[j-1] - H_l[j]) * s + (H_l[j] - H_v[j]) * Wj[j] - Qj[j];
       bet[j] := H_v[j+1] - H_l[j];
       alp[j] := H_v[j] - H_l[j-1];
@@ -994,6 +995,59 @@ begin
     + Lj[Ntrays-1] * H_l[NTrays-1] - (Vj[NTrays] + Wj[NTrays]) * H_v[NTrays] - Uj[NTrays] * H_l[NTrays];
 end;
 
+function TMatBalance.teta_method(Fj: arrTrays; xij: TArrOfArrOfDouble; D: Double; B: Double): double;
+var
+  s: double;
+  i, j: double;
+  teta: double;
+
+  function g(teta: double): double;
+  var
+    i, j: integer;
+    s, s1: double;
+    tet: arrComp;
+  begin
+    s := 0;
+    for i := 1 to NComp do
+      begin
+        s1 := 0;
+        for j := 1 to NTrays do
+          begin
+            s1 := s1 + Fj[j] * xij[i-1, j-1];
+          end;
+        tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
+          / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+        s := s + tet[i];
+      end;
+    Result := s - D;
+  end;
+
+  function g1(teta: double): double;
+  var
+    i, j: integer;
+    s, s1: double;
+    tet: arrComp;
+  begin
+    s := 0;
+    for i := 1 to NComp do
+      begin
+        s1 := 0;
+        for j := 1 to NTrays do
+          begin
+            s1 := s1 + Fj[j] * xij[i-1, j-1];
+          end;
+        tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
+          / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+        s := s + tet[i];
+      end;
+    Result := s;
+  end;
+
+begin
+  teta := 0;
+
+end;
+
 procedure TMatBalance.CalculateSideFlows_and_LiquidFlows(Fj: arrTrays; ej: arrTrays;
   Vj: arrTrays; Lj0: arrTrays; LD, L0: double; var Wj: arrTrays; var Uj: arrTrays; var Lj: arrTrays);
 var
@@ -1002,7 +1056,9 @@ var
   j: integer;
   rD, rB: double;
   B, D: double;
-  
+  s: double;
+  qj: arrTrays;
+
 begin
   for j := 1 to NTrays do
     begin
@@ -1010,24 +1066,38 @@ begin
         dj[j] := (Uj[j] + Wj[j]) / (Lj0[j] + Vj[j])
       else
         dj[j] := 0;
-      if j = 1 then
-        Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] {+ Lj0[j-1]})
-      else
+      //if j = 1 then
         Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] + Lj0[j-1]);
+      {else
+        Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] + Lj0[j-1]);}
       Wj[j] := ej[j] * Rj[j];
       Uj[j] := (1 - ej[j]) * Rj[j];
     end;
-
+  {
   Uj[1] := 4.5;
   Uj[NTrays] := 9.3;
-
+  }
+  Lj[1] := L0;
   for j := 2 to NTrays-1 do
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
   Lj[NTrays] := Uj[NTrays];
-  Lj[1] := L0;
+
 
   rD := Lj[1] / LD;
   rB := Vj[NTrays] / Uj[NTrays];
+
+  for j := 1 to NTrays do
+    qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
+
+  s := 0;
+  for j := 2 to NTrays-1 do
+    s := s + (qj[j] + rD) * Fj[j] + (rD + 1) * Uj[j] - Wj[j];
+  B := (rD * Fj[1] + (rD + 1) * Fj[NTrays] + s) / (rD + rB + 1){9.3};
+
+  s := 0;
+  for j := 2 to NTrays-1 do
+    s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
+  D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
 
 end;
 
@@ -1182,13 +1252,14 @@ begin
         calcLj[n-1, j] := Lj[j+1];
         calcVj[n-1, j] := Vj[j+1];
       end;
-   
+
     for j := 1 to NTrays do
       begin
         Lj0[j] := calcLj[n-1, j-1];
         Vj0[j] := calcVj[n-1, j-1];
+        Tj_0[j] := Tj[j];
       end;
-     
+
   until getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance;
   ShowMessage(IntToStr(n))
 
