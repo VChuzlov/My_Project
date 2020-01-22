@@ -976,10 +976,10 @@ var
   s: double;
 
 begin
-  //Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
-  //Vj[2] := Lj[1] + LD + VD;
-  Vj[NTrays] := rB * Lj[NTrays-1];
-  for j := NTrays-1 downto 2 do
+  Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays];
+  Vj[2] := Lj[1] + LD + VD;
+  //Vj[NTrays] := rB * Lj[NTrays-1];
+  for j := NTrays-1 downto 3 do
     begin
       s := 0;
       for k := 1 to j-1 do
@@ -1051,7 +1051,7 @@ var
     D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
   end;
 
-  function get_rB(a, b: double; Fj, Uj, Wj, Lj, Vj, Qj, Hf_l, Hf_v, H_l, H_v: arrTrays): double;
+  function get_rB(a, b: double; Fj, Uj, Wj, Lj, Vj: arrTrays): double;
   const
     eps = 1e-5;
   var
@@ -1104,7 +1104,7 @@ begin
   Lj[1] := L0;
 
   rD := Lj[1] / LD;
-  //rB := Vj[NTrays] / Uj[NTrays];
+  rB := Vj[NTrays] / Uj[NTrays];
   {
   Calculation(rB, Fj, Uj, Wj, Lj, Vj);
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj, Vj);
@@ -1199,7 +1199,6 @@ var
     CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, 4.5, 13.5, Wj, Uj, Lj);
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
-    
   end;
 
   function get_rB(a, b: double): double;
@@ -1293,7 +1292,7 @@ begin
     end;
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   repeat
-    {
+
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
     xij := Normalize(xij);
     Secant(90, 400, Tj_0, Pj, xij, yij, Tj);
@@ -1309,11 +1308,11 @@ begin
     CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, 4.5, 13.5, Wj, Uj, Lj);
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
-    }
+    {
     rB := get_rB(1e-3, 1e3);
     Calculation(rB, TrayMaterialBalanceError);
-    global_energy_balance_error := global_energy_balance(Fj, ej, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v);
-
+    global_energy_balance_error := global_energy_balance(Fj, ej, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v) - Qc - Qr;
+     }
     ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
     n := n + 1;
     if n >= 1e5 then

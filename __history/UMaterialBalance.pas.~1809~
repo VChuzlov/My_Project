@@ -57,7 +57,7 @@ type
 
     function forRegularTrays(T, P: double; xi: TArrOfDouble): double;
     function forCondenser (T, P: double; zf: TArrOfDouble): double;
-    function global_energy_balance(Fj, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v: arrTrays): double;
+    function global_energy_balance(Fj, ej, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v: arrTrays): double;
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
       var L, V: arrTrays);
   private
@@ -1051,7 +1051,7 @@ var
     D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
   end;
 
-  function get_rB(a, b: double; Fj, Uj, Wj, Lj, Vj: arrTrays): double;
+  function get_rB(a, b: double; Fj, Uj, Wj, Lj, Vj, Qj, Hf_l, Hf_v, H_l, H_v: arrTrays): double;
   const
     eps = 1e-5;
   var
@@ -1059,6 +1059,8 @@ var
     rB: double;
 
     function f(rB: double): double;
+    var
+      global_energy_balance_error: double;
     begin
       Calculation(rB, Fj, Uj, Wj, Lj, Vj);
       Result := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj)[1];
@@ -1103,8 +1105,9 @@ begin
 
   rD := Lj[1] / LD;
   //rB := Vj[NTrays] / Uj[NTrays];
-  {
+
   Calculation(rB, Fj, Uj, Wj, Lj, Vj);
+  {
   rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj, Vj);
   Calculation(rB, Fj, Uj, Wj, Lj, Vj);
    }
@@ -1125,6 +1128,20 @@ begin
   for j := 1 to NTrays-1 do
     sV := sV + sqr((calcVj[n-1, j] - calcVj[n-2, j]) / calcVj[n-1, j]);
   Result := sT + sL + sV;
+end;
+
+function TMatBalance.global_energy_balance(Fj, ej: arrTrays; Uj: arrTrays; Wj: arrTrays;
+  Qj: arrTrays; Hf_l: arrTrays; Hf_v: arrTrays; H_l: arrTrays; H_v: arrTrays): double;
+var
+  j: integer;
+  s: double;
+begin
+  s := 0;
+  for j := 1 to NTrays do
+    s:= s + Fj[j] * (Hf_v[j] * ej[j] + Hf_l[j] * (1 - ej[j]));
+  for j := 1 to NTrays do
+    s := s - (Wj[j] * H_v[j] + Uj[j] * H_l[j] + Qj[j]);
+  Result := s;
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
@@ -1163,6 +1180,7 @@ var
   TrayMaterialBalanceError: arrTrays;
   TrayHeatBalanceError: arrTrays;
   rB: double;
+  global_energy_balance_error: double;
 
   procedure Calculation(rB: double; TrayHeatBalanceError: arrTrays);
   var
@@ -1182,7 +1200,6 @@ var
     CalculateSideFlows_and_LiquidFlows(Fj, omegaj, Vj, Lj0, 4.5, 13.5, Wj, Uj, Lj);
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
-    
   end;
 
   function get_rB(a, b: double): double;
@@ -1191,7 +1208,8 @@ var
     function f (rB: double): double;
     begin
       Calculation(rB, TrayMaterialBalanceError);
-      Result := TrayMaterialBalanceError[1];
+      Result := TrayMaterialBalanceError[1]
+         {+ global_energy_balance(Fj, ej, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v)};
     end;
   begin
     if f(a) * f(b) < 0 then
@@ -1294,6 +1312,7 @@ begin
     }
     rB := get_rB(1e-3, 1e3);
     Calculation(rB, TrayMaterialBalanceError);
+    global_energy_balance_error := global_energy_balance(Fj, ej, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v) - Qc - Qr;
 
     ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
     n := n + 1;
@@ -1320,6 +1339,7 @@ begin
      
   until getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance;
   ShowMessage(IntToStr(n))
+
 
   end;
 
