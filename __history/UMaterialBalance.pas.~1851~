@@ -364,7 +364,7 @@ var
 
 begin
   rD := {3} L0 / LD;
-  rB := {1.93548387096774}3;
+  rB := {1.93548387096774}1;
   Uj[1] := LD;
   Wj[1] := WD;
   Uj[NTrays] := Fj[FeedTray] - (LD + WD);  // д.б. сумма Fj
@@ -971,7 +971,7 @@ var
 
 begin
   Vj[NTrays] := Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays]{Lj[NTrays-1] * 1.15};
-  //Vj[2] := Lj[1] + LD + VD;
+  Vj[2] := Lj[1] + LD + VD;
   for j := NTrays-1 downto 2 do
     begin
       s := 0;
@@ -1139,11 +1139,11 @@ begin
   Vj[NTrays] := B * rB;
 
   for j := 2 to NTrays-1 do
-    Lj[j] := Lj[j-1] + Fj[j] - Uj[j];
+    Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
 
   for j := 2 to NTrays-1 do
     Vj[j] := D + Lj[1] - Wj[j];
-  {
+
   for j := 1 to NTrays do
     begin
       dj[j] := (Uj[j] + Wj[j]) / (Vj[j] + Lj[j]);
@@ -1152,9 +1152,10 @@ begin
 
   for j := NTrays-1 downto 2 do
     Vj[j] := ((1 - qj[j]) * Fj[j] + Vj[j+1]) / (dj[j] + 1);
+
   for j := 2 to NTrays-1 do
-    Lj[j] := (Fj[j] + Vj[j+1] + Lj[j-1]) / (dj[j] + 1) - Vj[j];
-  }
+    Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
+
   end;
 
 function TMatBalance.getErrorValue(n: integer; calcTj, calcLj, calcVj: TArrOfArrOfDouble): double;
