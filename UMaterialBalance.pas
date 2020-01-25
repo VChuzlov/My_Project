@@ -58,6 +58,7 @@ type
     function forRegularTrays(T, P: double; xi: TArrOfDouble): double;
     function forCondenser (T, P: double; zf: TArrOfDouble): double;
     function teta_method(Fj: arrTrays; zf, xij: TArrOfArrOfDouble; D, B, Dco: double): double;
+    procedure LV_correction(rD, rB: double; Fj, Uj, Wj: arrTrays; var Lj, Vj: arrTrays);
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
       var Tj: arrTrays; var Lj: arrTrays; var Vj: arrTrays;
       var xij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble);
@@ -1049,13 +1050,25 @@ var
 
 begin
   r_teta := 0;
-  teta := r_teta - g(r_teta) / g1(r_teta);
-  repeat
-    r_teta := teta;
-    teta := r_teta - g(r_teta) / g1(r_teta);
-  until abs(teta - r_teta) <= eps;
-  Result := teta;
-  //ShowMessage('Teta method, no solutions!');
+  //teta := r_teta - g(r_teta) / g1(r_teta);
+  _a := 1e-3;
+  _b := 1e3;
+  if g(_a) * g(_b) < 0 then
+    begin
+      repeat
+        {r_teta := teta;
+        teta := r_teta - g(r_teta) / g1(r_teta); }
+        teta := (_a + _b) / 2;
+        if g(_a) * g(teta) < 0 then
+          _b := teta
+        else
+          _a := teta
+      until (abs(_a - _b) <= eps) or (g(teta) = 0);
+      teta := (_a + _b) / 2;
+      Result := teta;
+    end
+  else
+    ShowMessage('Teta method, no solutions!');
 end;
 
 procedure TMatBalance.CalculateSideFlows_and_LiquidFlows(dj, Fj: arrTrays; ej: arrTrays;
@@ -1083,13 +1096,13 @@ begin
         Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] + Lj0[j-1])
     else
         Rj[j] := (dj[j] / (dj[j] + 1)) * (Fj[j] + Vj[j+1] + Lj0[j-1]);
-      Wj[j] := ej[j] * Rj[j];
-      Uj[j] := (1 - ej[j]) * Rj[j];
+      {Wj[j] := ej[j] * Rj[j];
+      Uj[j] := (1 - ej[j]) * Rj[j];}
     end;
-  {
+
   Uj[1] := 4.5;
   Uj[NTrays] := 9.3;
-  }
+
   Lj[1] := L0;
   for j := 2 to NTrays-1 do
     Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
@@ -1168,6 +1181,26 @@ begin
     end;
 
   end;
+
+procedure TMatBalance.LV_correction(rD: Double; rB: Double; Fj: arrTrays; Uj: arrTrays;
+  Wj: arrTrays; var Lj: arrTrays; var Vj: arrTrays);
+var
+  j, k: integer;
+  s: double;
+begin
+  Vj[NTrays] := rB * Uj[NTrays];
+  Vj[2] := (1 + rD) * Uj[1] + Wj[1];
+  Lj[NTrays] := Uj[NTrays];
+  Lj[NTrays-1] := Vj[NTrays] + Lj[NTrays] + Wj[NTrays];
+
+  for j := 2 to NTrays-1 do
+    begin
+      s := 0;
+      for k := 1 to j do
+        s := s + (Fj[k] - Uj[k] - Wj[k]);
+      Lj[j] := Vj[j+1] + s - Vj[1];
+    end;
+end;
 
 function TMatBalance.getErrorValue(n: integer; calcTj, calcLj, calcVj: TArrOfArrOfDouble): double;
 var
@@ -1307,6 +1340,7 @@ begin
     CalculateHeatDuties(Fj, ej, Lj0, Vj, Uj, Wj, Hf_l, Hf_v, H_l, H_v, Qc, Qr);
     ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
     CalculateSideFlows_and_LiquidFlows(dj, Fj, omegaj, Vj, Lj0, 4.5, 13.5, zf, xij, Wj, Uj, Lj);
+    LV_correction(3, rB, Fj, Uj, Wj, Lj, Vj);
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
     n := n + 1;
