@@ -59,9 +59,14 @@ type
     function forCondenser (T, P: double; zf: TArrOfDouble): double;
     function teta_method(Fj: arrTrays; zf, xij: TArrOfArrOfDouble; D, B, Dco: double): double;
     procedure LV_correction(rD, rB: double; Fj, Uj, Wj: arrTrays; var Lj, Vj: arrTrays);
+    procedure correction_with_tray_efficiencies(tray_efficiency: arrTrays; Kij: TarrOfArrOfDouble; var xij, yij: TArrOfArrOfDouble);
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
       var Tj: arrTrays; var Lj: arrTrays; var Vj: arrTrays;
-      var xij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble);
+      var xij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble;
+      var calcTj: TArrOfArrOfDouble;
+      var calcLj: TArrOfArrOfDouble;
+      var calcVj: TArrOfArrOfDouble;
+      var n: integer);
   private
     { Private declarations }
   public
@@ -1219,10 +1224,34 @@ begin
   Result := sT + sL + sV;
 end;
 
+procedure TMatBalance.correction_with_tray_efficiencies(tray_efficiency: arrTrays; Kij: TArrOfArrOfDouble;
+  var xij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble);
+var
+  i, j: integer;
+begin
+  for j := 1 to NTrays-1 do
+    for i := 0 to NComp-1 do
+      xij[i, j] := xij[i, j-1] - tray_efficiency[j] * (xij[i, j-1] - xij[i, j]);
+  for j := 0 to NTrays-2 do
+    for i := 0 to NComp-1 do
+      yij[i, j] := yij[i, j+1] + tray_efficiency[j] * (yij[i, j] - yij[i, j+1]);
+
+  for i := 0 to Ncomp-1 do
+    begin
+      xij[i, 0] := yij[i, 0] / Kij[i, 0];
+      yij[i, NTrays-1] := xij[i, NTrays-1] * Kij[i, NTrays-1];
+    end;
+
+end;
+
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
   Wv: arrTrays; T1: Double; TN: Double; P1: Double; PN: Double;
   var Tj: arrTrays; var Lj: arrTrays; var Vj: arrTrays;
-  var xij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble);
+  var xij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble;
+  var calcTj: TArrOfArrOfDouble;
+  var calcLj: TArrOfArrOfDouble;
+  var calcVj: TArrOfArrOfDouble;
+  var n: integer);
 const
   tolerance = 1e-5;
 var
@@ -1249,15 +1278,16 @@ var
   {Vj: arrTrays; }
   Qj: arrTrays;
   Qc, Qr: Double;
-  calcTj: TArrOfArrOfDouble;
-  calcLj: TArrOfArrOfDouble;
+  {calcTj: TArrOfArrOfDouble;}
+  {calcLj: TArrOfArrOfDouble;
   calcVj: TArrOfArrOfDouble;
-  n: integer;
+  n: integer; }
   omegaj: ArrTrays; // доля пара в боковых отборах
   TrayMaterialBalanceError: arrTrays;
   TrayHeatBalanceError: arrTrays;
   dj: arrTrays;
   rB: double;
+  tray_efficiency: arrTrays;
 
 begin
   n := 1;
@@ -1290,6 +1320,7 @@ begin
       Wj[j] := 0;
       Uj[j] := 0;
       Qj[j] := 0;
+      tray_efficiency[j] := 1;
     end;
   Fj[FeedTray] := 13.8;
   Pj[1] := P1;
@@ -1332,6 +1363,9 @@ begin
     Secant(90, 400, Tj_0, Pj, xij, yij, Tj);
     WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
     CalculateVaporMoleFractions(xij, Kij, yij);
+    yij := Normalize(yij);
+    correction_with_tray_efficiencies(tray_efficiency, Kij, xij, yij);
+    xij := Normalize(xij);
     yij := Normalize(yij);
     CalculateEnthalpies(Tj, Pj, xij, yij, H_l, H_v);
     getEquilibrium(zf, Tfj, Pj, xf, yf, ej);
