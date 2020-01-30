@@ -3,7 +3,7 @@ unit UPhase_Equilibrium;
 interface
 
 const
-  NComp = 9;
+  NComp = 31;
 
 
 type
