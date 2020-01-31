@@ -89,7 +89,7 @@ var
 
 begin
   MatBal.Create;
-  MatBal.MatBalCalculation(Fl, Fv, Uj, Wj, 60, 100, 0.626, 0.655, Tj, Lj, Vj,
+  MatBal.MatBalCalculation(Fl, Fv, Uj, Wj, 48, 120, 0.626, 0.655, Tj, Lj, Vj,
                            xij, yij, calcTj, calcLj, calcVj, n);
   ShowMessage('Success !!!')
 end;

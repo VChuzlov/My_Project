@@ -6,8 +6,8 @@ uses
 
 const
   NTrays = 60;
-  FeedTray1 = 7;
-  FeedTray2 = 19;
+  FeedTray1 = 9;
+  FeedTray2 = 21;
 
 type
   arrTrays = array[1..NTrays] of double;
@@ -90,17 +90,16 @@ type
                       );
       // Критическое давление
       Pcc: arrComp = ({4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737}
-                      4075.8995489502,	4209.10135437012,	4055.36095166016,
-                      3695.95108374023,	3846.92533374023,	2601.59037176514,
-                      2857.23339624023,	2765.78758374023,	2519.45626739502,
-                      2590.24202124023,	2663.19602124023,	4681.63059082031,
-                      2773.04236468506,	2992.75558374023,	2769.84058374023,
-                      2946.55128479003,	2851.07275708008,	2929.1031494751,
-                      2517.28802124023,	3575.45522552491,	2320.21089624023,
-                      4313.06090332031,	3377.76015655518,	3168.30114624023,
-                      3141.075,	3050.24737884522,	3165.23096905518,
-                      1854.16648452759,	2340.22258374023,	1990.96537692261,
-                      4948.56111145019
+                      4022.60009765625,	4154.06005859375,	4002.330078125,
+                      3647.6201171875,	3796.6201171875,	2567.57006835938,
+                      2819.8701171875,	2729.6201171875,	2486.51000976563,
+                      2556.3701171875,	2628.3701171875,	4620.41015625,
+                      2736.78002929688,	2953.6201171875,	2733.6201171875,
+                      2908.02001953125,	2813.7900390625,	2890.80004882813,
+                      2484.3701171875,	3528.69995117188,	2289.8701171875,
+                      4256.66015625,	3333.59008789063,	3126.8701171875,
+                      3100,	3010.36010742188,	3123.84008789063,	1829.92004394531,
+                      2309.6201171875,	1964.93005371094,	4883.85009765625
                       );
       // Ацентрический фактор
       omega: arrComp = ({0.0115, 0.0986, 0.1524, 0.1848, 0.201, 0.2539, 0.2222, 0.3007, 0.3498}
@@ -816,14 +815,17 @@ begin
   IdealGasCompCp := getIdealGasCompHeatCapasity(Tj);
   for j := 1 to NTrays do
     for i := 1 to NComp do
-      Result[i-1, j-1] := LiquidCp_a[1] * (LiquidCp_a[2] + LiquidCp_a[3] * LiquidCp_R[i]) * Tj[j] / (Tcc[i] + 273.15)
-        + (LiquidCp_a[4] + LiquidCp_a[5] * LiquidCp_R[i]) * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15)
-        + LiquidCp_a[6] * sqr(LiquidCp_R[i]) / sqr(Tj[j] / (Tcc[i] + 273.15)) + LiquidCp_a[7] * LiquidCp_R[i]
-        / (sqr(Tj[j] / (Tcc[i] + 273.15)) * Tj[j] / (Tcc[i] + 273.15))
-        + LiquidCp_a[8] * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15)
-        + LiquidCp_k[i] * (LiquidCp_b[1] + LiquidCp_b[2] * sqr(Tj[j] / (Tcc[i] + 273.15)) +
-        LiquidCp_b[3] * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15))
-        + sqr(LiquidCp_k[i]) * (LiquidCp_b[4] + LiquidCp_b[5] * sqr(Tj[j] / (Tcc[i] + 273.15))) + IdealGasCompCp[i-1, j-1];
+      if Tj[j] <> 0 then
+        Result[i-1, j-1] := LiquidCp_a[1] * (LiquidCp_a[2] + LiquidCp_a[3] * LiquidCp_R[i]) * Tj[j] / (Tcc[i] + 273.15)
+          + (LiquidCp_a[4] + LiquidCp_a[5] * LiquidCp_R[i]) * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15)
+          + LiquidCp_a[6] * sqr(LiquidCp_R[i]) / sqr(Tj[j] / (Tcc[i] + 273.15)) + LiquidCp_a[7] * LiquidCp_R[i]
+          / (sqr(Tj[j] / (Tcc[i] + 273.15)) * Tj[j] / (Tcc[i] + 273.15))
+          + LiquidCp_a[8] * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15)
+          + LiquidCp_k[i] * (LiquidCp_b[1] + LiquidCp_b[2] * sqr(Tj[j] / (Tcc[i] + 273.15)) +
+          LiquidCp_b[3] * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15))
+          + sqr(LiquidCp_k[i]) * (LiquidCp_b[4] + LiquidCp_b[5] * sqr(Tj[j] / (Tcc[i] + 273.15))) + IdealGasCompCp[i-1, j-1]
+      else
+        Result[i-1, j-1] := 0;
 end;
 
 function TMatBalance.TbpVsPressure(Tbp: arrComp; P: Double{MPa}): arrComp;
@@ -1082,6 +1084,8 @@ begin
 
   for j := 1 to NTrays do
     begin
+      if Tj[j] = 0 then
+        continue;
       for i := 1 to NComp do
         begin
           tray_zf[i] := zf[i-1, j-1];
@@ -1186,7 +1190,8 @@ var
           begin
             s1 := s1 + Fj[j] * zf[i-1, j-1];
           end;
-        tet[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+        if xij[i-1, 0] <> 0 then
+          tet[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
         s := s + tet[i];
       end;
     Result := s - Dco;
@@ -1290,7 +1295,7 @@ begin
     s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
   D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
 
-  teta := teta_method(Fj, zf, xij, D, B, 4.5);
+  teta := teta_method(Fj, zf, xij, D, B, 1313);
   sd := 0;
   sb := 0;
   for i := 1 to NComp do
@@ -1298,9 +1303,12 @@ begin
       s1 := 0;
       for j := 1 to NTrays do
         s1 := s1 + Fj[j] * zf[i-1, j-1];
-      di[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+      if xij[i-1, 0] <> 0 then
+        begin
+          di[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+          bi[i] := teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * di[i];
+        end;
       sd := sd + di[i];
-      bi[i] := teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * di[i];
       sb := sb + bi[i];
     end;
   D := sd;
@@ -1317,26 +1325,7 @@ begin
   rB := (rD + Fj[1] + (rD + 1) * Fj[NTrays] + s) / B - rD - 1;
 
   Vj[NTrays] := B * rB;
-  {
-  for j := 2 to NTrays-1 do
-    Lj[j] := Fj[j] + Vj[j+1] - Vj[j] + Lj[j-1] - Rj[j];
-
-  for j := 2 to NTrays-1 do
-    Vj[j] := D + Lj[1] - Wj[j];
-
-  for j := 1 to NTrays do
-    begin
-      dj[j] := (Uj[j] + Wj[j]) / (Vj[j] + Lj[j]);
-      qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
-    end;
-  }{
-
-  for j := NTrays-1 downto 2 do
-    Vj[j] := ((1 - qj[j]) * Fj[j] + Vj[j+1]) / (dj[j] + 1);
-   } {
-  for j := 2 to NTrays-1 do
-    Lj[j] := (Fj[j] + Vj[j+1] + Lj[j-1]) / (dj[j] + 1) - Vj[j];  }
-
+  
   for j := 2 to NTrays-1 do
     begin
       s := 0;
@@ -1475,70 +1464,69 @@ begin
   zf[7, FeedTray1-1] := 0.177777777777778;
   zf[8, FeedTray1-1] := 0.200000000000000;
   }
-  zf[ 0,FeedTray1-1] := 0;
-  zf[ 1,FeedTray1-1] := 0;
-  zf[ 2,FeedTray1-1] := 0;
-  zf[ 3,FeedTray1-1] := 53.2434510310423;
-  zf[ 4,FeedTray1-1] := 13.9469584691842;
-  zf[ 5,FeedTray1-1] := 9.64475485590856;
-  zf[ 6,FeedTray1-1] := 5.09975946839561;
-  zf[ 7,FeedTray1-1] := 4.30189661776558;
-  zf[ 8,FeedTray1-1] := 1.1361250705204;
-  zf[ 9,FeedTray1-1] := 0.924679155267898;
-  zf[10,FeedTray1-1] := 0.799659213845727;
-  zf[11,FeedTray1-1] := 0;
-  zf[12,FeedTray1-1] := 0.894327768172518;
-  zf[13,FeedTray1-1] := 0.0547052895275276;
-  zf[14,FeedTray1-1] := 0.0530266973209197;
-  zf[15,FeedTray1-1] := 0.450934263732591;
-  zf[16,FeedTray1-1] := 0.037493268704121;
-  zf[17,FeedTray1-1] := 0;
-  zf[18,FeedTray1-1] := 0.723621406102272;
-  zf[19,FeedTray1-1] := 0;
-  zf[20,FeedTray1-1] := 1.09478200055871;
-  zf[21,FeedTray1-1] := 1.95150395003681;
-  zf[22,FeedTray1-1] := 2.49593124719107;
-  zf[23,FeedTray1-1] := 1.2700891777383;
-  zf[24,FeedTray1-1] := 0;
-  zf[25,FeedTray1-1] := 0.295291319519114;
-  zf[26,FeedTray1-1] := 0.138658785404103;
-  zf[27,FeedTray1-1] := 0.054943739468231;
-  zf[28,FeedTray1-1] := 0.336017803832046;
-  zf[29,FeedTray1-1] := 1.05138940076147;
-  zf[30,FeedTray1-1] := 0;
+  zf[ 0, FeedTray1-1] := 0;
+  zf[ 1, FeedTray1-1] := 0;
+  zf[ 2, FeedTray1-1] := 0;
+  zf[ 3, FeedTray1-1] := 0.532434510310423;
+  zf[ 4, FeedTray1-1] := 0.139469584691842;
+  zf[ 5, FeedTray1-1] := 0.0964475485590856;
+  zf[ 6, FeedTray1-1] := 0.0509975946839561;
+  zf[ 7, FeedTray1-1] := 0.0430189661776558;
+  zf[ 8, FeedTray1-1] := 0.011361250705204;
+  zf[ 9, FeedTray1-1] := 0.00924679155267898;
+  zf[10, FeedTray1-1] := 0.00799659213845727;
+  zf[11, FeedTray1-1] := 0;
+  zf[12, FeedTray1-1] := 0.00894327768172518;
+  zf[13, FeedTray1-1] := 0.000547052895275276;
+  zf[14, FeedTray1-1] := 0.000530266973209197;
+  zf[15, FeedTray1-1] := 0.00450934263732591;
+  zf[16, FeedTray1-1] := 0.00037493268704121;
+  zf[17, FeedTray1-1] := 0;
+  zf[18, FeedTray1-1] := 0.00723621406102272;
+  zf[19, FeedTray1-1] := 0;
+  zf[20, FeedTray1-1] := 0.0109478200055871;
+  zf[21, FeedTray1-1] := 0.0195150395003681;
+  zf[22, FeedTray1-1] := 0.0249593124719107;
+  zf[23, FeedTray1-1] := 0.012700891777383;
+  zf[24, FeedTray1-1] := 0;
+  zf[25, FeedTray1-1] := 0.00295291319519114;
+  zf[26, FeedTray1-1] := 0.00138658785404103;
+  zf[27, FeedTray1-1] := 0.00054943739468231;
+  zf[28, FeedTray1-1] := 0.00336017803832046;
+  zf[29, FeedTray1-1] := 0.0105138940076147;
+  zf[30, FeedTray1-1] := 0;
 
-  zf[ 0,FeedTray2-1] := 0.075792344443219;
-  zf[ 1,FeedTray2-1] := 0;
-  zf[ 2,FeedTray2-1] := 0.218269096480515;
-  zf[ 3,FeedTray2-1] := 95.5906364320361;
-  zf[ 4,FeedTray2-1] := 3.62677562997908;
-  zf[ 5,FeedTray2-1] := 0;
-  zf[ 6,FeedTray2-1] := 0;
-  zf[ 7,FeedTray2-1] := 0;
-  zf[ 8,FeedTray2-1] := 0;
-  zf[ 9,FeedTray2-1] := 0;
-  zf[10,FeedTray2-1] := 0;
-  zf[11,FeedTray2-1] := 0;
-  zf[12,FeedTray2-1] := 0;
-  zf[13,FeedTray2-1] := 0;
-  zf[14,FeedTray2-1] := 0;
-  zf[15,FeedTray2-1] := 0;
-  zf[16,FeedTray2-1] := 0;
-  zf[17,FeedTray2-1] := 0;
-  zf[18,FeedTray2-1] := 0;
-  zf[19,FeedTray2-1] := 0;
-  zf[20,FeedTray2-1] := 0;
-  zf[21,FeedTray2-1] := 0.488526497061137;
-  zf[22,FeedTray2-1] := 0;
-  zf[23,FeedTray2-1] := 0;
-  zf[24,FeedTray2-1] := 0;
-  zf[25,FeedTray2-1] := 0;
-  zf[26,FeedTray2-1] := 0;
-  zf[27,FeedTray2-1] := 0;
-  zf[28,FeedTray2-1] := 0;
-  zf[29,FeedTray2-1] := 0;
-  zf[30,FeedTray2-1] := 0;
-
+  zf[ 0, FeedTray2-1] := 0.00075792344443219;
+  zf[ 1, FeedTray2-1] := 0;
+  zf[ 2, FeedTray2-1] := 0.00218269096480515;
+  zf[ 3, FeedTray2-1] := 0.95590636432036;
+  zf[ 4, FeedTray2-1] := 0.0362677562997908;
+  zf[ 5, FeedTray2-1] := 0;
+  zf[ 6, FeedTray2-1] := 0;
+  zf[ 7, FeedTray2-1] := 0;
+  zf[ 8, FeedTray2-1] := 0;
+  zf[ 9, FeedTray2-1] := 0;
+  zf[10, FeedTray2-1] := 0;
+  zf[11, FeedTray2-1] := 0;
+  zf[12, FeedTray2-1] := 0;
+  zf[13, FeedTray2-1] := 0;
+  zf[14, FeedTray2-1] := 0;
+  zf[15, FeedTray2-1] := 0;
+  zf[16, FeedTray2-1] := 0;
+  zf[17, FeedTray2-1] := 0;
+  zf[18, FeedTray2-1] := 0;
+  zf[19, FeedTray2-1] := 0;
+  zf[20, FeedTray2-1] := 0;
+  zf[21, FeedTray2-1] := 0.00488526497061137;
+  zf[22, FeedTray2-1] := 0;
+  zf[23, FeedTray2-1] := 0;
+  zf[24, FeedTray2-1] := 0;
+  zf[25, FeedTray2-1] := 0;
+  zf[26, FeedTray2-1] := 0;
+  zf[27, FeedTray2-1] := 0;
+  zf[28, FeedTray2-1] := 0;
+  zf[29, FeedTray2-1] := 0;
+  zf[30, FeedTray2-1] := 0;
 
   for j := 1 to NTrays do
     begin
@@ -1557,7 +1545,7 @@ begin
 
   for j := 1 to NTrays do
     begin
-      Tfj[j] := 50 + 273.15;
+      Tfj[j] := 0;
       Pfj[j] := Pj[j];
       omegaj[j] := 0; // Т.к. все отбры в виде жидкости
     end;
