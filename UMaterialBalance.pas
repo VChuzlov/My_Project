@@ -5,9 +5,9 @@ uses
   UPhase_Equilibrium, Dialogs, System.SysUtils, Math;
 
 const
-  NTrays = 60;
-  FeedTray1 = 9;
-  FeedTray2 = 21;
+  NTrays = 62;
+  FeedTray1 = 10;
+  FeedTray2 = 22;
 
 type
   arrTrays = array[1..NTrays] of double;
@@ -1221,8 +1221,8 @@ var
 begin
   r_teta := 0;
   //teta := r_teta - g(r_teta) / g1(r_teta);
-  _a := 1e-3;
-  _b := 1e3;
+  _a := -1;
+  _b := 1e7;
   if g(_a) * g(_b) < 0 then
     begin
       repeat
