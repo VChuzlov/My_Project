@@ -1222,13 +1222,13 @@ begin
   r_teta := 0;
   //teta := r_teta - g(r_teta) / g1(r_teta);
   _a := -1;
-  _b := 1e7;
-  if g(_a) * g(_b) < 0 then
+  _b := 1e5;
+  if g(_a) * g(_b) / abs(g(_b)) < 0 then
     begin
       repeat
         {r_teta := teta;
         teta := r_teta - g(r_teta) / g1(r_teta); }
-        teta := (_a + _b) / 2;
+        teta := _a + (_b - _a) / 2;
         if g(_a) * g(teta) < 0 then
           _b := teta
         else
@@ -1295,7 +1295,7 @@ begin
     s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
   D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
 
-  teta := teta_method(Fj, zf, xij, D, B, 1313);
+  teta := {teta_method(Fj, zf, xij, D, B, 1313)}1;
   sd := 0;
   sb := 0;
   for i := 1 to NComp do
@@ -1334,7 +1334,7 @@ begin
       Lj[j] := Vj[j+1] + s - Vj[1];
     end;
 
-  end;
+end;
 
 procedure TMatBalance.LV_correction(rD: Double; rB: Double; Fj: arrTrays; Uj: arrTrays;
   Wj: arrTrays; var Lj: arrTrays; var Vj: arrTrays);
@@ -1402,7 +1402,7 @@ procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays
   var calcVj: TArrOfArrOfDouble;
   var n: integer);
 const
-  tolerance = 1e-5;
+  tolerance = 5e-3;
 var
   zf: TArrOfArrOfDouble;
   Res: TArrOfDouble;

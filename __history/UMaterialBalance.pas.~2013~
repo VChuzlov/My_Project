@@ -5,9 +5,9 @@ uses
   UPhase_Equilibrium, Dialogs, System.SysUtils, Math;
 
 const
-  NTrays = 60;
-  FeedTray1 = 9;
-  FeedTray2 = 21;
+  NTrays = 62;
+  FeedTray1 = 10;
+  FeedTray2 = 22;
 
 type
   arrTrays = array[1..NTrays] of double;
@@ -90,17 +90,16 @@ type
                       );
       // Критическое давление
       Pcc: arrComp = ({4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737}
-                      4075.8995489502,	4209.10135437012,	4055.36095166016,
-                      3695.95108374023,	3846.92533374023,	2601.59037176514,
-                      2857.23339624023,	2765.78758374023,	2519.45626739502,
-                      2590.24202124023,	2663.19602124023,	4681.63059082031,
-                      2773.04236468506,	2992.75558374023,	2769.84058374023,
-                      2946.55128479003,	2851.07275708008,	2929.1031494751,
-                      2517.28802124023,	3575.45522552491,	2320.21089624023,
-                      4313.06090332031,	3377.76015655518,	3168.30114624023,
-                      3141.075,	3050.24737884522,	3165.23096905518,
-                      1854.16648452759,	2340.22258374023,	1990.96537692261,
-                      4948.56111145019
+                      4022.60009765625,	4154.06005859375,	4002.330078125,
+                      3647.6201171875,	3796.6201171875,	2567.57006835938,
+                      2819.8701171875,	2729.6201171875,	2486.51000976563,
+                      2556.3701171875,	2628.3701171875,	4620.41015625,
+                      2736.78002929688,	2953.6201171875,	2733.6201171875,
+                      2908.02001953125,	2813.7900390625,	2890.80004882813,
+                      2484.3701171875,	3528.69995117188,	2289.8701171875,
+                      4256.66015625,	3333.59008789063,	3126.8701171875,
+                      3100,	3010.36010742188,	3123.84008789063,	1829.92004394531,
+                      2309.6201171875,	1964.93005371094,	4883.85009765625
                       );
       // Ацентрический фактор
       omega: arrComp = ({0.0115, 0.0986, 0.1524, 0.1848, 0.201, 0.2539, 0.2222, 0.3007, 0.3498}
@@ -816,14 +815,17 @@ begin
   IdealGasCompCp := getIdealGasCompHeatCapasity(Tj);
   for j := 1 to NTrays do
     for i := 1 to NComp do
-      Result[i-1, j-1] := LiquidCp_a[1] * (LiquidCp_a[2] + LiquidCp_a[3] * LiquidCp_R[i]) * Tj[j] / (Tcc[i] + 273.15)
-        + (LiquidCp_a[4] + LiquidCp_a[5] * LiquidCp_R[i]) * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15)
-        + LiquidCp_a[6] * sqr(LiquidCp_R[i]) / sqr(Tj[j] / (Tcc[i] + 273.15)) + LiquidCp_a[7] * LiquidCp_R[i]
-        / (sqr(Tj[j] / (Tcc[i] + 273.15)) * Tj[j] / (Tcc[i] + 273.15))
-        + LiquidCp_a[8] * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15)
-        + LiquidCp_k[i] * (LiquidCp_b[1] + LiquidCp_b[2] * sqr(Tj[j] / (Tcc[i] + 273.15)) +
-        LiquidCp_b[3] * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15))
-        + sqr(LiquidCp_k[i]) * (LiquidCp_b[4] + LiquidCp_b[5] * sqr(Tj[j] / (Tcc[i] + 273.15))) + IdealGasCompCp[i-1, j-1];
+      if Tj[j] <> 0 then
+        Result[i-1, j-1] := LiquidCp_a[1] * (LiquidCp_a[2] + LiquidCp_a[3] * LiquidCp_R[i]) * Tj[j] / (Tcc[i] + 273.15)
+          + (LiquidCp_a[4] + LiquidCp_a[5] * LiquidCp_R[i]) * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15)
+          + LiquidCp_a[6] * sqr(LiquidCp_R[i]) / sqr(Tj[j] / (Tcc[i] + 273.15)) + LiquidCp_a[7] * LiquidCp_R[i]
+          / (sqr(Tj[j] / (Tcc[i] + 273.15)) * Tj[j] / (Tcc[i] + 273.15))
+          + LiquidCp_a[8] * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15)
+          + LiquidCp_k[i] * (LiquidCp_b[1] + LiquidCp_b[2] * sqr(Tj[j] / (Tcc[i] + 273.15)) +
+          LiquidCp_b[3] * sqr(sqr(Tj[j] / (Tcc[i] + 273.15))) * Tj[j] / (Tcc[i] + 273.15))
+          + sqr(LiquidCp_k[i]) * (LiquidCp_b[4] + LiquidCp_b[5] * sqr(Tj[j] / (Tcc[i] + 273.15))) + IdealGasCompCp[i-1, j-1]
+      else
+        Result[i-1, j-1] := 0;
 end;
 
 function TMatBalance.TbpVsPressure(Tbp: arrComp; P: Double{MPa}): arrComp;
@@ -1082,6 +1084,8 @@ begin
 
   for j := 1 to NTrays do
     begin
+      if Tj[j] = 0 then
+        continue;
       for i := 1 to NComp do
         begin
           tray_zf[i] := zf[i-1, j-1];
@@ -1217,9 +1221,9 @@ var
 begin
   r_teta := 0;
   //teta := r_teta - g(r_teta) / g1(r_teta);
-  _a := 1e-3;
-  _b := 1e3;
-  if g(_a) * g(_b) < 0 then
+  _a := -1;
+  _b := 1e7;
+  if g(_a) * g(_b) / abs(g(_b)) < 0 then
     begin
       repeat
         {r_teta := teta;
@@ -1541,7 +1545,7 @@ begin
 
   for j := 1 to NTrays do
     begin
-      Tfj[j] := 50 + 273.15;
+      Tfj[j] := 0;
       Pfj[j] := Pj[j];
       omegaj[j] := 0; // Т.к. все отбры в виде жидкости
     end;
