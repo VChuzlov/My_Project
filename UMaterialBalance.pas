@@ -62,6 +62,7 @@ type
     procedure LV_correction(rD, rB: double; Fj, Uj, Wj: arrTrays; var Lj, Vj: arrTrays);
     procedure correction_with_tray_efficiencies(tray_efficiency: arrTrays; Kij: TarrOfArrOfDouble; var xij, yij: TArrOfArrOfDouble);
     procedure MatBalCalculation(Fl, Fv, Wl, Wv: arrTrays; T1, TN, P1, PN: double;
+      D: double; LD: double;
       var Tj: arrTrays; var Lj: arrTrays; var Vj: arrTrays;
       var xij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble;
       var calcTj: TArrOfArrOfDouble;
@@ -74,32 +75,31 @@ type
     const
       // Критическая температура
       Tcc: arrComp = ({-82.45, 32.28, 96.75, 134.9, 152, 187.2, 196.5, 234.7, 267}
-                      146.300006103516,	158.802508544922,	144.598010253906,
-                      134.796008300781,
-                      151.899005126953,	270.660021972656,	300.259020996094,
-                      293.108020019531,
-                      276.759020996094,	280.22001953125,	290.189013671875,
-                      91.7,
-                      246.489001464844, 257.869006347656,	257.069018554688,
-                      264.048022460938,	261.95,	267.340014648438,
-                      286.338000488281,	191.399005126953,	313.45,
-                      96.5980102539063,	187.098010253906,
-                      226.680010986328,	215.7,	224.197009277344,
-                      231.149005126953,	384.999011230469,
-                      346.739001464844,	364.999011230469,	32.1280090332031
+                      146.450006103516,	155.477014160156,	144.748010253906,
+                      134.946008300781,	152.049005126953,	270.810021972656,
+                      300.409020996094,	293.258020019531,	276.909020996094,
+                      280.370019531250,	290.339013671875,	91.8500000000000,
+                      246.639001464844,	258.019006347656,	257.219018554688,
+                      264.198022460938,	262.100000000000,	247.350000000000,
+                      286.488000488281,	191.549005126953,	298.198022460938,
+                      91.8500000000000,	187.248010253906,	226.830010986328,
+                      215.850000000000,	224.347009277344,	231.299005126953,
+                      385.149011230469,	337.222009277344,	365.149011230469,
+                      32.2780090332031
                       );
       // Критическое давление
       Pcc: arrComp = ({4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737}
-                      4022.60009765625,	4154.06005859375,	4002.330078125,
-                      3647.6201171875,	3796.6201171875,	2567.57006835938,
-                      2819.8701171875,	2729.6201171875,	2486.51000976563,
-                      2556.3701171875,	2628.3701171875,	4620.41015625,
-                      2736.78002929688,	2953.6201171875,	2733.6201171875,
-                      2908.02001953125,	2813.7900390625,	2890.80004882813,
-                      2484.3701171875,	3528.69995117188,	2289.8701171875,
-                      4256.66015625,	3333.59008789063,	3126.8701171875,
-                      3100,	3010.36010742188,	3123.84008789063,	1829.92004394531,
-                      2309.6201171875,	1964.93005371094,	4883.85009765625
+                      4022.60009765625,	4102.35009765625,	4002.33007812500,
+                      3647.62011718750,	3796.62011718750,	2567.57006835938,
+                      2819.87011718750,	2729.62011718750,	2486.51000976563,
+                      2556.37011718750,	2628.37011718750,	4620.41015625000,
+                      2736.78002929688,	2953.62011718750,	2733.62011718750,
+                      2908.02001953125,	2813.79003906250,	2773.26000976563,
+                      2484.37011718750,	3528.69995117188,	2479.37011718750,
+                      4256.66015625000,	3333.59008789063,	3126.87011718750,
+                      3100.00000000000,	3010.36010742188,	3123.84008789063,
+                      1829.92004394531,	2095.87011718750,	1964.93005371094,
+                      4883.85009765625
                       );
       // Ацентрический фактор
       omega: arrComp = ({0.0115, 0.0986, 0.1524, 0.1848, 0.201, 0.2539, 0.2222, 0.3007, 0.3498}
@@ -664,8 +664,19 @@ var
   end;
 
   procedure DihotomyIterations(f: Tfoo; a, b: double; var tmp: double);
+
+    function get_borders(x: double): double;
+    const
+      h = 1;
+    begin
+      while f(x, P, xi) * f(x + h, P, xi) / abs(f(x + h, P, xi)) >= 0 do
+        x := x + h;
+      Result := x + h;
+    end;
+
   begin
-    if f(a, P, xi) * f(b, P, xi) < 0 then
+    b := get_borders(a);
+    if f(a, P, xi) * f(b, P, xi) / abs(f(b, P, xi)) < 0 then
       begin
         repeat
           tmp := (a + b) / 2;
@@ -700,11 +711,11 @@ begin
           for i := 0 to NComp-1 do
             zf[i] := yij[i, 1];
           //SecantIterations(forCondenser, temp);
-          DihotomyIterations(forCondenser, 50, 900, tmp);
+          DihotomyIterations(forCondenser, a, b, tmp);
         end
       else
         //SecantIterations(forRegularTrays, temp);
-        DihotomyIterations(forRegularTrays, 50, 900, tmp);
+        DihotomyIterations(forRegularTrays, a, b, tmp);
 
       rTj[j+1] := {temp[n]}tmp;
         for i := 0 to n-1 do
@@ -1191,7 +1202,9 @@ var
             s1 := s1 + Fj[j] * zf[i-1, j-1];
           end;
         if xij[i-1, 0] <> 0 then
-          tet[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+          tet[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]))
+        else
+          tet[i] := 0;
         s := s + tet[i];
       end;
     Result := s - Dco;
@@ -1218,11 +1231,20 @@ var
     Result := -s;
   end;
 
+  function get_borders(x: double): double;
+  const
+    h = 1;
+  begin
+    while g(x) * g(x + h) / abs(g(x + h)) >= 0 do
+      x := x + h;
+    Result := x + h;
+  end;
+
 begin
   r_teta := 0;
   //teta := r_teta - g(r_teta) / g1(r_teta);
-  _a := -1;
-  _b := 1e5;
+  _a := 0;
+  _b := get_borders(_a);
   if g(_a) * g(_b) / abs(g(_b)) < 0 then
     begin
       repeat
@@ -1295,7 +1317,7 @@ begin
     s := s + (rB + 1 - qj[j]) * Fj[j] + (rD + 1) * Uj[j] + Wj[j];
   D := ((rB + 1) * Fj[1] + rD * Fj[NTrays] + s) / (rD + rB + 1){4.5};
 
-  teta := {teta_method(Fj, zf, xij, D, B, 1313)}1;
+  teta := teta_method(Fj, zf, xij, D, B, 1313);
   sd := 0;
   sb := 0;
   for i := 1 to NComp do
@@ -1395,6 +1417,7 @@ end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
   Wv: arrTrays; T1: Double; TN: Double; P1: Double; PN: Double;
+  D: double; LD: double;
   var Tj: arrTrays; var Lj: arrTrays; var Vj: arrTrays;
   var xij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble;
   var calcTj: TArrOfArrOfDouble;
@@ -1402,7 +1425,7 @@ procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays
   var calcVj: TArrOfArrOfDouble;
   var n: integer);
 const
-  tolerance = 5e-3;
+  tolerance = 1e-5;
 var
   zf: TArrOfArrOfDouble;
   Res: TArrOfDouble;
@@ -1559,7 +1582,7 @@ begin
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
   xij := Normalize(xij);
-  Secant(90, 400, Tj_0, Pj, xij, yij, Tj);
+  Secant(50, 900, Tj_0, Pj, xij, yij, Tj);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
   CalculateVaporMoleFractions(xij, Kij, yij);
   yij := Normalize(yij);
@@ -1579,7 +1602,7 @@ begin
   repeat
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
     xij := Normalize(xij);
-    Secant(90, 400, Tj_0, Pj, xij, yij, Tj);
+    Secant(50, 500, Tj_0, Pj, xij, yij, Tj);
     WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
     CalculateVaporMoleFractions(xij, Kij, yij);
     yij := Normalize(yij);
@@ -1597,7 +1620,7 @@ begin
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
     n := n + 1;
-    if n >= 1e5 then
+    if n >= 1e3 then
       begin
         ShowMessage('Main Calculation, No Solutions!');
         break
@@ -1619,7 +1642,7 @@ begin
         Tj_0[j] := Tj[j];
       end;
 
-  until getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance;
+  until {getErrorValue(n, calcTj, calcLj, calcVj)}(abs(Uj[1] - D)) + (abs(Lj[1] - LD)) <= tolerance;
   ShowMessage(IntToStr(n))
 
 
