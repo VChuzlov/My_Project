@@ -338,7 +338,7 @@ begin
     begin
       S_zij_Fj[i] := 0;
       S_tbp_z_F[i] := 0;
-      Ti_sat[i] := dihotomy(getTsat, 90, 900, 0.195, Tcc[i], Pcc[i], omega[i]);
+      Ti_sat[i] := dihotomy(getTsat, 90, 900, 0.645, Tcc[i], Pcc[i], omega[i]);
     end;
 
   for j := 1 to Ntrays do
@@ -626,7 +626,7 @@ function TMatBalance.forCondenser (T, P: double; zf: TArrOfDouble): double;
     for i := 0 to NComp-1 do
       begin
         Ki := Wilson(T, P, Tcc[i+1], Pcc[i+1], omega[i+1]);
-        s := s + {zf[i] *} (Ki {- 1});
+        s := s + zf[i] / (Ki {- 1});
       end;
     Result := 1 - s {- 1};
   end;
