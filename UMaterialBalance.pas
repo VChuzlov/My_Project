@@ -132,6 +132,7 @@ type
                               0.2064,	0.1877,	0.1034,	0.1877,	0.07315,	0.121,
                               0.1469,	0.1503,	0.1477,	0.1359,	0.2362,	0.1671,
                               0.1788,	0.04254
+
                               );
      IdealGasCp_c: arrComp = ({0.00000286,	-0.00001657,	-0.00003789,	-0.00004409,	-0.00002647,	-0.00006519,
                               -0.00006163,	-0.00007449,	-0.0000872}
@@ -169,6 +170,7 @@ type
                             4.7401,	3.1956,	4.1556,	2.4255,	3.313,	3.5209,
                             3.4846,	3.809,	3.6797,	6.4321,	5.539,	5.9867,
                             1.8314
+
                             );
      LiquidCp_k: arrComp = ({0,	0,	0,	-0.6884,	0,	-0.7643,	0,	0,	0}
                             -0.0103,	0.2014,	-0.1428,	-0.6884,	0,	-1.3313,
@@ -203,6 +205,7 @@ type
                     86.1779022216797,	86.1779022216797,	86.1779022216797,
                     170.339004516602,	142.285003662109,	156.313003540039,
                     30.0699005126953
+
                     );
 
     // Normal Boiling Point
@@ -217,6 +220,7 @@ type
                      122.291009521484,	-42.1019958496094,	27.8780151367188,	57.9770141601563,
                      49.7310119628906,	60.2610107421875,	63.2700134277344,	216.278009033203,
                      167.028009033203,	195.890008544922,	-88.5999969482422
+
                      );
 
     { Public declarations }
@@ -495,7 +499,7 @@ begin
   Lj0[1] := LD * rD;
 
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0, dj);
-  rB := get_rB(1e-5, 1000, Fj, Uj, Wj, Lj0, Vj0);
+  rB := get_rB(1e-5, 100, Fj, Uj, Wj, Lj0, Vj0);
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0, dj);
 
 end;
@@ -598,7 +602,9 @@ begin
   for j := 0 to NTrays-1 do
     for i := 0 to NComp-1 do
       if s[j] <> 0 then
-        Result[i, j] := xij[i, j] / s[j];
+        Result[i, j] := xij[i, j] / s[j]
+      else
+        Result[i, j] := 0;
 end;
 
 function TMatBalance.forRegularTrays(T, P: double; xi: TArrOfDouble): double;
@@ -675,7 +681,7 @@ var
     end;
 
   begin
-    b := get_borders(a);
+    //b := get_borders(a);
     if f(a, P, xi) * f(b, P, xi) / abs(f(b, P, xi)) < 0 then
       begin
         repeat
@@ -784,6 +790,7 @@ const
                 0,	-0.000000000667176,	0.000000000251446,	0.000000000641015,
                 0.000000000643776,	0.00000000106506,	0.000000000353795,
                 0.000000000199451,	0,	0.000000000197836,	-0.00000000339316
+
                 );
   f: arrComp = ({0.000000000000860896,	0.000000000000882096,	0.000000000000167936,
                 0.000000000000236736,	-6.39926E-15,	-1.29576E-14,	-8.66485E-15,
@@ -898,7 +905,7 @@ var
         Dn[i] := 0.7751 * Cn[i] - 2.6354;
         Result[i] := (-ln(Pc[i]) - Cn[i] * (1 - Tc[i] / Tb[i]) + Dn[i] * ln(Tb[i]
           / Tc[i]) - 0.4218 * (1 / (Pc[i] * sqr(Tb[i] / Tc[i]))))
-        / (1 - Tc[i] / Tb[i] - ln(Tb[i] / Tc[i]));
+         / (1 - Tc[i] / Tb[i] - ln(Tb[i] / Tc[i]));
       end;
   end;
 
@@ -1582,7 +1589,7 @@ begin
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
   xij := Normalize(xij);
-  Secant(50, 900, Tj_0, Pj, xij, yij, Tj);
+  Secant(50, 500, Tj_0, Pj, xij, yij, Tj);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
   CalculateVaporMoleFractions(xij, Kij, yij);
   yij := Normalize(yij);
