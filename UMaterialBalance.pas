@@ -685,13 +685,13 @@ var
     if f(a, P, xi) * f(b, P, xi) / abs(f(b, P, xi)) < 0 then
       begin
         repeat
-          tmp := (a + b) / 2;
+          tmp := a + (b - a) / 2;
           if f(a, P, xi) * f(tmp, P, xi) < 0 then
             b := tmp
           else
             a := tmp
         until (abs(a - b) <= eps) or (f(tmp, P, xi) = 0);
-        tmp := (a + b) / 2;
+        tmp := a + (b - a) / 2;
       end
     else
       ShowMessage('Dihotomy GetTemp, No Roots!');
@@ -715,7 +715,7 @@ begin
       if j = 0 then
         begin
           for i := 0 to NComp-1 do
-            zf[i] := yij[i, 1];
+            zf[i] := yij[i, {1}2];
           //SecantIterations(forCondenser, temp);
           DihotomyIterations(forCondenser, a, b, tmp);
         end
@@ -1567,7 +1567,7 @@ begin
       tray_efficiency[j] := 1;
     end;
   Fj[FeedTray1] := {13.8}1618;
-  Fj[FeedTRay2] := 103.1;
+  Fj[FeedTray2] := 103.1;
   Pj[1] := P1;
   Pj[Ntrays] := PN;
   for j := 2 to NTrays-1 do
