@@ -685,13 +685,13 @@ var
     if f(a, P, xi) * f(b, P, xi) / abs(f(b, P, xi)) < 0 then
       begin
         repeat
-          tmp := (a + b) / 2;
+          tmp := a + (b - a) / 2;
           if f(a, P, xi) * f(tmp, P, xi) < 0 then
             b := tmp
           else
             a := tmp
         until (abs(a - b) <= eps) or (f(tmp, P, xi) = 0);
-        tmp := (a + b) / 2;
+        tmp := a + (b - a) / 2;
       end
     else
       ShowMessage('Dihotomy GetTemp, No Roots!');
@@ -715,7 +715,7 @@ begin
       if j = 0 then
         begin
           for i := 0 to NComp-1 do
-            zf[i] := yij[i, 1];
+            zf[i] := yij[i, {1}2];
           //SecantIterations(forCondenser, temp);
           DihotomyIterations(forCondenser, a, b, tmp);
         end
@@ -1395,11 +1395,11 @@ begin
   sV := 0;
   for j := 0 to NTrays-1 do
     sT := sT + sqr((calcTj[n-1, j] - calcTj[n-2, j]) / calcTj[n-1, j]);
-  for j := 0 to NTrays-2 do
+  {for j := 0 to NTrays-2 do
     sL := sL + sqr((calcLj[n-1, j] - calcLj[n-2, j]) / calcLj[n-1, j]);
   for j := 1 to NTrays-1 do
-    sV := sV + sqr((calcVj[n-1, j] - calcVj[n-2, j]) / calcVj[n-1, j]);
-  Result := sT + sL + sV;
+    sV := sV + sqr((calcVj[n-1, j] - calcVj[n-2, j]) / calcVj[n-1, j]); }
+  Result := sT {+ sL + sV};
 end;
 
 procedure TMatBalance.correction_with_tray_efficiencies(tray_efficiency: arrTrays; Kij: TArrOfArrOfDouble;
@@ -1419,7 +1419,8 @@ begin
       xij[i, 0] := yij[i, 0] / Kij[i, 0];
       yij[i, NTrays-1] := xij[i, NTrays-1] * Kij[i, NTrays-1];
     end;
-
+  xij := normalize(xij);
+  yij := normalize(yij);
 end;
 
 procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays;
@@ -1432,7 +1433,7 @@ procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays
   var calcVj: TArrOfArrOfDouble;
   var n: integer);
 const
-  tolerance = 1e-5;
+  tolerance = {1e-5} 0.01 * NTrays;
 var
   zf: TArrOfArrOfDouble;
   Res: TArrOfDouble;
@@ -1614,8 +1615,6 @@ begin
     CalculateVaporMoleFractions(xij, Kij, yij);
     yij := Normalize(yij);
     correction_with_tray_efficiencies(tray_efficiency, Kij, xij, yij);
-    xij := Normalize(xij);
-    yij := Normalize(yij);
     CalculateEnthalpies(Tj, Pj, xij, yij, H_l, H_v);
     getEquilibrium(zf, Tfj, Pj, xf, yf, ej);
     CalculateEnthalpies(Tfj, Pfj, xf, yf, Hf_l, Hf_v);
@@ -1649,10 +1648,9 @@ begin
         Tj_0[j] := Tj[j];
       end;
 
-  until {getErrorValue(n, calcTj, calcLj, calcVj)}(abs(Uj[1] - D)) + (abs(Lj[1] - LD)) <= tolerance;
+  until (getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance) and (abs(Uj[1] - D) + (abs(Lj[1] - LD)) <= tolerance);
   ShowMessage(IntToStr(n))
 
-
-  end;
+end;
 
 end.

@@ -550,7 +550,7 @@ begin
   SetLength(arr, NTrays, NTrays+1);
   SetLength(x, NTrays);
   l_j[1] := 0;
-  for j := 1 to NTrays do
+  for j := 1 to NTrays-1 do
     l_j[j+1] := Lj[j];
   for k := 1 to NComp do
     begin
@@ -992,7 +992,7 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {(dHf298[i] + (CompIntIdGasCp[i-1, j-1] - dHvap[i]
-          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.1868 * (Tsat[i] - Tj[j]) * xij[i-1, j-1];
+          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.184 * (Tsat[i] - Tj[j]) * xij[i-1, j-1];
       H_l[j] := s;
     end;
 
@@ -1001,7 +1001,7 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {compH_v[i-1, j-1] * yij[i-1, j-1] * Mr[i]}
-            (dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.1868) * yij[i-1, j-1];
+            (dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.184) * yij[i-1, j-1];
       H_v[j] := s;
     end;
 end;
@@ -1162,7 +1162,7 @@ var
 begin
   Vj[NTrays] := {Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays]{Lj[NTrays-1] * 1.15}rB * Lj[NTrays];
   Vj[2] := Lj[1] + LD + VD;
-  for j := NTrays-1 downto 2 do
+  for j := NTrays-1 downto 3 do
     begin
       s := 0;
       for k := 1 to j-1 do
@@ -1185,7 +1185,8 @@ begin
     + Lj[Ntrays-1] * H_l[NTrays-1] - (Vj[NTrays] + Wj[NTrays]) * H_v[NTrays] - Uj[NTrays] * H_l[NTrays];
 end;
 
-function TMatBalance.teta_method(Fj: arrTrays; zf, xij: TArrOfArrOfDouble; D: Double; B: Double; Dco: double): double;
+function TMatBalance.teta_method(Fj: arrTrays; zf, xij: TArrOfArrOfDouble;
+  D: Double; B: Double; Dco: double): double;
 const
   eps = 1e-5;
 var
@@ -1271,7 +1272,8 @@ begin
 end;
 
 procedure TMatBalance.CalculateSideFlows_and_LiquidFlows(dj, Fj: arrTrays; ej: arrTrays;
-  Vj: arrTrays; Lj0: arrTrays; LD, L0: double; zf, xij: TArrOfArrOfDouble; var Wj: arrTrays; var Uj: arrTrays; var Lj: arrTrays);
+  Vj: arrTrays; Lj0: arrTrays; LD, L0: double; zf, xij: TArrOfArrOfDouble;
+  var Wj: arrTrays; var Uj: arrTrays; var Lj: arrTrays);
 var
   {dj: arrTrays;}
   Rj: arrTrays;
@@ -1395,10 +1397,10 @@ begin
   sV := 0;
   for j := 0 to NTrays-1 do
     sT := sT + sqr((calcTj[n-1, j] - calcTj[n-2, j]) / calcTj[n-1, j]);
-  {for j := 0 to NTrays-2 do
+  for j := 0 to NTrays-2 do
     sL := sL + sqr((calcLj[n-1, j] - calcLj[n-2, j]) / calcLj[n-1, j]);
   for j := 1 to NTrays-1 do
-    sV := sV + sqr((calcVj[n-1, j] - calcVj[n-2, j]) / calcVj[n-1, j]); }
+    sV := sV + sqr((calcVj[n-1, j] - calcVj[n-2, j]) / calcVj[n-1, j]);
   Result := sT {+ sL + sV};
 end;
 
@@ -1590,7 +1592,7 @@ begin
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
   xij := Normalize(xij);
-  Secant(50, 500, Tj_0, Pj, xij, yij, Tj);
+  Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
   CalculateVaporMoleFractions(xij, Kij, yij);
   yij := Normalize(yij);
@@ -1610,7 +1612,7 @@ begin
   repeat
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
     xij := Normalize(xij);
-    Secant(50, 500, Tj_0, Pj, xij, yij, Tj);
+    Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
     WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
     CalculateVaporMoleFractions(xij, Kij, yij);
     yij := Normalize(yij);
@@ -1651,7 +1653,6 @@ begin
   until (getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance) and (abs(Uj[1] - D) + (abs(Lj[1] - LD)) <= tolerance);
   ShowMessage(IntToStr(n))
 
-
-  end;
+end;
 
 end.
