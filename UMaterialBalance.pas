@@ -1441,7 +1441,7 @@ procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays
   var calcVj: TArrOfArrOfDouble;
   var n: integer);
 const
-  tolerance = {1e-5} 0.01 * NTrays;
+  tolerance = 1e-3 {0.01 * NTrays};
 var
   zf: TArrOfArrOfDouble;
   Res: TArrOfDouble;
@@ -1503,69 +1503,58 @@ begin
   zf[7, FeedTray1-1] := 0.177777777777778;
   zf[8, FeedTray1-1] := 0.200000000000000;
   }
-  zf[ 0, FeedTray1-1] := 0;
-  zf[ 1, FeedTray1-1] := 0;
-  zf[ 2, FeedTray1-1] := 0;
-  zf[ 3, FeedTray1-1] := 0.532434510310423;
-  zf[ 4, FeedTray1-1] := 0.139469584691842;
-  zf[ 5, FeedTray1-1] := 0.0964475485590856;
-  zf[ 6, FeedTray1-1] := 0.0509975946839561;
-  zf[ 7, FeedTray1-1] := 0.0430189661776558;
-  zf[ 8, FeedTray1-1] := 0.011361250705204;
-  zf[ 9, FeedTray1-1] := 0.00924679155267898;
-  zf[10, FeedTray1-1] := 0.00799659213845727;
-  zf[11, FeedTray1-1] := 0;
-  zf[12, FeedTray1-1] := 0.00894327768172518;
-  zf[13, FeedTray1-1] := 0.000547052895275276;
-  zf[14, FeedTray1-1] := 0.000530266973209197;
-  zf[15, FeedTray1-1] := 0.00450934263732591;
-  zf[16, FeedTray1-1] := 0.00037493268704121;
-  zf[17, FeedTray1-1] := 0;
-  zf[18, FeedTray1-1] := 0.00723621406102272;
-  zf[19, FeedTray1-1] := 0;
-  zf[20, FeedTray1-1] := 0.0109478200055871;
-  zf[21, FeedTray1-1] := 0.0195150395003681;
-  zf[22, FeedTray1-1] := 0.0249593124719107;
-  zf[23, FeedTray1-1] := 0.012700891777383;
-  zf[24, FeedTray1-1] := 0;
-  zf[25, FeedTray1-1] := 0.00295291319519114;
-  zf[26, FeedTray1-1] := 0.00138658785404103;
-  zf[27, FeedTray1-1] := 0.00054943739468231;
-  zf[28, FeedTray1-1] := 0.00336017803832046;
-  zf[29, FeedTray1-1] := 0.0105138940076147;
-  zf[30, FeedTray1-1] := 0;
+  zf[ 0,FeedTray1-1] := 0;
+  zf[ 1,FeedTray1-1] := 0;
+  zf[ 2,FeedTray1-1] := 0;
+  zf[ 3,FeedTray1-1] := 0.608455417021371;
+  zf[ 4,FeedTray1-1] := 0.162170426974245;
+  zf[ 5,FeedTray1-1] := 0.0592103171867491;
+  zf[ 6,FeedTray1-1] := 0.0313106860517874;
+  zf[ 7,FeedTray1-1] := 0.026412259430701;
+  zf[ 8,FeedTray1-1] := 0.00697564880192708;
+  zf[ 9,FeedTray1-1] := 0.00567738493890165;
+  zf[10,FeedTray1-1] := 0.00490969009752359;
+  zf[11,FeedTray1-1] := 0;
+  zf[12,FeedTray1-1] := 0.00625924598498618;
+  zf[13,FeedTray1-1] := 0.000383177766517725;
+  zf[14,FeedTray1-1] := 0.000371013392977479;
+  zf[15,FeedTray1-1] := 0.00315597913516362;
+  zf[16,FeedTray1-1] := 0.000262209829645286;
+  zf[17,FeedTray1-1] := 0;
+  zf[18,FeedTray1-1] := 0.00444255223265416;
+  zf[19,FeedTray1-1] := 0;
+  zf[20,FeedTray1-1] := 0.00598625533528498;
+  zf[21,FeedTray1-1] := 0.0295247708236639;
+  zf[22,FeedTray1-1] := 0.0240253828630273;
+  zf[23,FeedTray1-1] := 0.0103363822712661;
+  zf[24,FeedTray1-1] := 0;
 
-  zf[ 0, FeedTray2-1] := 0.00075792344443219;
-  zf[ 1, FeedTray2-1] := 0;
-  zf[ 2, FeedTray2-1] := 0.00218269096480515;
-  zf[ 3, FeedTray2-1] := 0.95590636432036;
-  zf[ 4, FeedTray2-1] := 0.0362677562997908;
-  zf[ 5, FeedTray2-1] := 0;
-  zf[ 6, FeedTray2-1] := 0;
-  zf[ 7, FeedTray2-1] := 0;
-  zf[ 8, FeedTray2-1] := 0;
-  zf[ 9, FeedTray2-1] := 0;
-  zf[10, FeedTray2-1] := 0;
-  zf[11, FeedTray2-1] := 0;
-  zf[12, FeedTray2-1] := 0;
-  zf[13, FeedTray2-1] := 0;
-  zf[14, FeedTray2-1] := 0;
-  zf[15, FeedTray2-1] := 0;
-  zf[16, FeedTray2-1] := 0;
-  zf[17, FeedTray2-1] := 0;
-  zf[18, FeedTray2-1] := 0;
-  zf[19, FeedTray2-1] := 0;
-  zf[20, FeedTray2-1] := 0;
-  zf[21, FeedTray2-1] := 0.00488526497061137;
-  zf[22, FeedTray2-1] := 0;
-  zf[23, FeedTray2-1] := 0;
-  zf[24, FeedTray2-1] := 0;
-  zf[25, FeedTray2-1] := 0;
-  zf[26, FeedTray2-1] := 0;
-  zf[27, FeedTray2-1] := 0;
-  zf[28, FeedTray2-1] := 0;
-  zf[29, FeedTray2-1] := 0;
-  zf[30, FeedTray2-1] := 0;
+  zf[ 0,FeedTray2-1] := 0;
+  zf[ 1,FeedTray2-1] := 0.000827498633516203;
+  zf[ 2,FeedTray2-1] := 0.00237905857135908;
+  zf[ 3,FeedTray2-1] := 0.953459306881487;
+  zf[ 4,FeedTray2-1] := 0.0375432714826096;
+  zf[ 5,FeedTray2-1] := 0;
+  zf[ 6,FeedTray2-1] := 0;
+  zf[ 7,FeedTray2-1] := 0;
+  zf[ 8,FeedTray2-1] := 0;
+  zf[ 9,FeedTray2-1] := 0;
+  zf[10,FeedTray2-1] := 0;
+  zf[11,FeedTray2-1] := 0;
+  zf[12,FeedTray2-1] := 0;
+  zf[13,FeedTray2-1] := 0;
+  zf[14,FeedTray2-1] := 0;
+  zf[15,FeedTray2-1] := 0;
+  zf[16,FeedTray2-1] := 0;
+  zf[17,FeedTray2-1] := 0;
+  zf[18,FeedTray2-1] := 0;
+  zf[19,FeedTray2-1] := 0;
+  zf[20,FeedTray2-1] := 0;
+  zf[21,FeedTray2-1] := 0.00579086443102797;
+  zf[22,FeedTray2-1] := 0;
+  zf[23,FeedTray2-1] := 0;
+  zf[24,FeedTray2-1] := 0;
+
 
   for j := 1 to NTrays do
     begin
@@ -1656,7 +1645,7 @@ begin
         Tj_0[j] := Tj[j];
       end;
 
-  until (getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance) and (abs(Uj[1] - D) + (abs(Lj[1] - LD)) <= tolerance);
+  until (getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance) {and (abs(Uj[1] - D) + (abs(Lj[1] - LD)) <= tolerance)};
   ShowMessage(IntToStr(n))
 
 end;
