@@ -222,6 +222,12 @@ type
                      167.028009033203,	195.890008544922,	-88.5999969482422
 
                      );
+    // Liquid heat capasity
+    liq_cp: arrComp = (2.131,	2.135,	2.173,	2.233,	1.678,	2.088,	2.088,
+                       2.088,	2.088,	2.088,	2.088,	2.177,	3.56,	3.56,	3.56,
+                       3.56,	3.56,	3.56,	2.223,	2.216,	2.214,	2.231,	2.161,
+                       2.239,	2.239,	2.239,	2.239,	2.19,	2.206,	2.19,	3.48
+                       );
 
     { Public declarations }
   End;
@@ -992,7 +998,7 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {(dHf298[i] + (CompIntIdGasCp[i-1, j-1] - dHvap[i]
-          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.184 * (Tsat[i] - Tj[j]) * xij[i-1, j-1];
+          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.184 * (Tsat[i] - Tj[j]){liq_cp[i] * Mr[i]} * xij[i-1, j-1];
       H_l[j] := s;
     end;
 
