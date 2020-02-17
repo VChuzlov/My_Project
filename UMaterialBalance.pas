@@ -1623,7 +1623,7 @@ begin
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
     n := n + 1;
-    if n >= 1e3 then
+    if n >= 1e5 then
       begin
         ShowMessage('Main Calculation, No Solutions!');
         break
