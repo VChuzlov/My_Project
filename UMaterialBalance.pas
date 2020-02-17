@@ -34,7 +34,7 @@ type
     procedure CalculateLiquidMoleFractions(Fj, Lj, Vj, Uj, Wj: arrTrays; zij, Kij: TArrOfArrOfDouble;
       var xij: TArrOfArrOfDouble);
     function Normalize(xij: TArrOfArrOfDouble): TArrOfArrOfDouble;
-    procedure Secant(a, b: double; Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble; var rTj: arrTrays);
+    procedure Secant({a, b: double;} Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble; var rTj: arrTrays);
     procedure CalculateVaporMoleFractions(xij, Kij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble);
     function getIdealGasCompEnthalpy(Tj: arrTrays): TArrOfArrOfDouble;
     function getIdealGasCompHeatCapasity(Tj: arrTrays): TArrOfArrOfDouble;
@@ -643,7 +643,7 @@ function TMatBalance.forCondenser (T, P: double; zf: TArrOfDouble): double;
     Result := 1 - s {- 1};
   end;
 
-procedure TMatBalance.Secant(a: Double; b: Double; Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble;
+procedure TMatBalance.Secant({a: Double; b: Double;} Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble;
   var rTj: arrTrays);
 type
   Tfoo = function(T, P: double; xi: TArrOfDouble): double of object;
@@ -659,6 +659,7 @@ var
   temp: TArrOfDouble;
   zf: TArrOfDouble;
   tmp: double;
+  a, b: double;
 
   procedure SecantIterations(f: Tfoo; var temp: TArrOfDouble);
   begin
@@ -713,6 +714,8 @@ begin
       P := Pj[j+1];
       n := 1;
       SetLength(temp, n+1);
+      a := Tj[j+1] - 60;
+      b := Tj[j+1] + 60;
       temp[0] := a;
       temp[1] := b;
       for i := 0 to NComp-1 do
@@ -1238,8 +1241,11 @@ var
           begin
             s1 := s1 + Fj[j] * zf[i-1, j-1];
           end;
-        tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
-          / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+        if xij[i-1, 0] <> 0 then
+          tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
+            / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]))
+        else
+          tet[i] := 0;
         s := s + tet[i];
       end;
     Result := -s;
@@ -1270,7 +1276,7 @@ begin
         else
           _a := teta
       until (abs(_a - _b) <= eps) or (g(teta) = 0);
-      teta := (_a + _b) / 2;
+      teta := _a + (_b - _a) / 2;
       Result := teta;
     end
   else
@@ -1344,6 +1350,11 @@ begin
         begin
           di[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
           bi[i] := teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * di[i];
+        end
+      else
+        begin
+          di[i] := 0;
+          bi[i] := 0;
         end;
       sd := sd + di[i];
       sb := sb + bi[i];
@@ -1587,7 +1598,7 @@ begin
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
   xij := Normalize(xij);
-  Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
+  Secant({100, 500,} Tj_0, Pj, xij, yij, Tj);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
   CalculateVaporMoleFractions(xij, Kij, yij);
   yij := Normalize(yij);
@@ -1607,7 +1618,7 @@ begin
   repeat
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
     xij := Normalize(xij);
-    Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
+    Secant({100, 500,} Tj_0, Pj, xij, yij, Tj);
     WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
     CalculateVaporMoleFractions(xij, Kij, yij);
     yij := Normalize(yij);

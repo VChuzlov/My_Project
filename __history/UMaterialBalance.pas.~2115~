@@ -222,6 +222,12 @@ type
                      167.028009033203,	195.890008544922,	-88.5999969482422
 
                      );
+    // Liquid heat capasity
+    liq_cp: arrComp = (2.131,	2.135,	2.173,	2.233,	1.678,	2.088,	2.088,
+                       2.088,	2.088,	2.088,	2.088,	2.177,	3.56,	3.56,	3.56,
+                       3.56,	3.56,	3.56,	2.223,	2.216,	2.214,	2.231,	2.161,
+                       2.239,	2.239,	2.239,	2.239,	2.19,	2.206,	2.19,	3.48
+                       );
 
     { Public declarations }
   End;
@@ -550,7 +556,7 @@ begin
   SetLength(arr, NTrays, NTrays+1);
   SetLength(x, NTrays);
   l_j[1] := 0;
-  for j := 1 to NTrays do
+  for j := 1 to NTrays-1 do
     l_j[j+1] := Lj[j];
   for k := 1 to NComp do
     begin
@@ -992,7 +998,7 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {(dHf298[i] + (CompIntIdGasCp[i-1, j-1] - dHvap[i]
-          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.1868 * (Tsat[i] - Tj[j]) * xij[i-1, j-1];
+          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.184 * (Tsat[i] - Tj[j]){liq_cp[i] * Mr[i]} * xij[i-1, j-1];
       H_l[j] := s;
     end;
 
@@ -1001,7 +1007,7 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {compH_v[i-1, j-1] * yij[i-1, j-1] * Mr[i]}
-            (dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.1868) * yij[i-1, j-1];
+            (dHf298[i] + CompIntIdGasCp[i-1, j-1] * 4.184) * yij[i-1, j-1];
       H_v[j] := s;
     end;
 end;
@@ -1162,7 +1168,7 @@ var
 begin
   Vj[NTrays] := {Fj[NTrays] + Lj[NTrays-1] - Uj[NTrays] - Wj[NTrays]{Lj[NTrays-1] * 1.15}rB * Lj[NTrays];
   Vj[2] := Lj[1] + LD + VD;
-  for j := NTrays-1 downto 2 do
+  for j := NTrays-1 downto 3 do
     begin
       s := 0;
       for k := 1 to j-1 do
@@ -1185,7 +1191,8 @@ begin
     + Lj[Ntrays-1] * H_l[NTrays-1] - (Vj[NTrays] + Wj[NTrays]) * H_v[NTrays] - Uj[NTrays] * H_l[NTrays];
 end;
 
-function TMatBalance.teta_method(Fj: arrTrays; zf, xij: TArrOfArrOfDouble; D: Double; B: Double; Dco: double): double;
+function TMatBalance.teta_method(Fj: arrTrays; zf, xij: TArrOfArrOfDouble;
+  D: Double; B: Double; Dco: double): double;
 const
   eps = 1e-5;
 var
@@ -1271,7 +1278,8 @@ begin
 end;
 
 procedure TMatBalance.CalculateSideFlows_and_LiquidFlows(dj, Fj: arrTrays; ej: arrTrays;
-  Vj: arrTrays; Lj0: arrTrays; LD, L0: double; zf, xij: TArrOfArrOfDouble; var Wj: arrTrays; var Uj: arrTrays; var Lj: arrTrays);
+  Vj: arrTrays; Lj0: arrTrays; LD, L0: double; zf, xij: TArrOfArrOfDouble;
+  var Wj: arrTrays; var Uj: arrTrays; var Lj: arrTrays);
 var
   {dj: arrTrays;}
   Rj: arrTrays;
@@ -1395,10 +1403,10 @@ begin
   sV := 0;
   for j := 0 to NTrays-1 do
     sT := sT + sqr((calcTj[n-1, j] - calcTj[n-2, j]) / calcTj[n-1, j]);
-  {for j := 0 to NTrays-2 do
+  for j := 0 to NTrays-2 do
     sL := sL + sqr((calcLj[n-1, j] - calcLj[n-2, j]) / calcLj[n-1, j]);
   for j := 1 to NTrays-1 do
-    sV := sV + sqr((calcVj[n-1, j] - calcVj[n-2, j]) / calcVj[n-1, j]); }
+    sV := sV + sqr((calcVj[n-1, j] - calcVj[n-2, j]) / calcVj[n-1, j]);
   Result := sT {+ sL + sV};
 end;
 
@@ -1433,7 +1441,7 @@ procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays
   var calcVj: TArrOfArrOfDouble;
   var n: integer);
 const
-  tolerance = {1e-5} 0.01 * NTrays;
+  tolerance = 1e-3 {0.01 * NTrays};
 var
   zf: TArrOfArrOfDouble;
   Res: TArrOfDouble;
@@ -1495,69 +1503,58 @@ begin
   zf[7, FeedTray1-1] := 0.177777777777778;
   zf[8, FeedTray1-1] := 0.200000000000000;
   }
-  zf[ 0, FeedTray1-1] := 0;
-  zf[ 1, FeedTray1-1] := 0;
-  zf[ 2, FeedTray1-1] := 0;
-  zf[ 3, FeedTray1-1] := 0.532434510310423;
-  zf[ 4, FeedTray1-1] := 0.139469584691842;
-  zf[ 5, FeedTray1-1] := 0.0964475485590856;
-  zf[ 6, FeedTray1-1] := 0.0509975946839561;
-  zf[ 7, FeedTray1-1] := 0.0430189661776558;
-  zf[ 8, FeedTray1-1] := 0.011361250705204;
-  zf[ 9, FeedTray1-1] := 0.00924679155267898;
-  zf[10, FeedTray1-1] := 0.00799659213845727;
-  zf[11, FeedTray1-1] := 0;
-  zf[12, FeedTray1-1] := 0.00894327768172518;
-  zf[13, FeedTray1-1] := 0.000547052895275276;
-  zf[14, FeedTray1-1] := 0.000530266973209197;
-  zf[15, FeedTray1-1] := 0.00450934263732591;
-  zf[16, FeedTray1-1] := 0.00037493268704121;
-  zf[17, FeedTray1-1] := 0;
-  zf[18, FeedTray1-1] := 0.00723621406102272;
-  zf[19, FeedTray1-1] := 0;
-  zf[20, FeedTray1-1] := 0.0109478200055871;
-  zf[21, FeedTray1-1] := 0.0195150395003681;
-  zf[22, FeedTray1-1] := 0.0249593124719107;
-  zf[23, FeedTray1-1] := 0.012700891777383;
-  zf[24, FeedTray1-1] := 0;
-  zf[25, FeedTray1-1] := 0.00295291319519114;
-  zf[26, FeedTray1-1] := 0.00138658785404103;
-  zf[27, FeedTray1-1] := 0.00054943739468231;
-  zf[28, FeedTray1-1] := 0.00336017803832046;
-  zf[29, FeedTray1-1] := 0.0105138940076147;
-  zf[30, FeedTray1-1] := 0;
+  zf[ 0,FeedTray1-1] := 0;
+  zf[ 1,FeedTray1-1] := 0;
+  zf[ 2,FeedTray1-1] := 0;
+  zf[ 3,FeedTray1-1] := 0.608455417021371;
+  zf[ 4,FeedTray1-1] := 0.162170426974245;
+  zf[ 5,FeedTray1-1] := 0.0592103171867491;
+  zf[ 6,FeedTray1-1] := 0.0313106860517874;
+  zf[ 7,FeedTray1-1] := 0.026412259430701;
+  zf[ 8,FeedTray1-1] := 0.00697564880192708;
+  zf[ 9,FeedTray1-1] := 0.00567738493890165;
+  zf[10,FeedTray1-1] := 0.00490969009752359;
+  zf[11,FeedTray1-1] := 0;
+  zf[12,FeedTray1-1] := 0.00625924598498618;
+  zf[13,FeedTray1-1] := 0.000383177766517725;
+  zf[14,FeedTray1-1] := 0.000371013392977479;
+  zf[15,FeedTray1-1] := 0.00315597913516362;
+  zf[16,FeedTray1-1] := 0.000262209829645286;
+  zf[17,FeedTray1-1] := 0;
+  zf[18,FeedTray1-1] := 0.00444255223265416;
+  zf[19,FeedTray1-1] := 0;
+  zf[20,FeedTray1-1] := 0.00598625533528498;
+  zf[21,FeedTray1-1] := 0.0295247708236639;
+  zf[22,FeedTray1-1] := 0.0240253828630273;
+  zf[23,FeedTray1-1] := 0.0103363822712661;
+  zf[24,FeedTray1-1] := 0;
 
-  zf[ 0, FeedTray2-1] := 0.00075792344443219;
-  zf[ 1, FeedTray2-1] := 0;
-  zf[ 2, FeedTray2-1] := 0.00218269096480515;
-  zf[ 3, FeedTray2-1] := 0.95590636432036;
-  zf[ 4, FeedTray2-1] := 0.0362677562997908;
-  zf[ 5, FeedTray2-1] := 0;
-  zf[ 6, FeedTray2-1] := 0;
-  zf[ 7, FeedTray2-1] := 0;
-  zf[ 8, FeedTray2-1] := 0;
-  zf[ 9, FeedTray2-1] := 0;
-  zf[10, FeedTray2-1] := 0;
-  zf[11, FeedTray2-1] := 0;
-  zf[12, FeedTray2-1] := 0;
-  zf[13, FeedTray2-1] := 0;
-  zf[14, FeedTray2-1] := 0;
-  zf[15, FeedTray2-1] := 0;
-  zf[16, FeedTray2-1] := 0;
-  zf[17, FeedTray2-1] := 0;
-  zf[18, FeedTray2-1] := 0;
-  zf[19, FeedTray2-1] := 0;
-  zf[20, FeedTray2-1] := 0;
-  zf[21, FeedTray2-1] := 0.00488526497061137;
-  zf[22, FeedTray2-1] := 0;
-  zf[23, FeedTray2-1] := 0;
-  zf[24, FeedTray2-1] := 0;
-  zf[25, FeedTray2-1] := 0;
-  zf[26, FeedTray2-1] := 0;
-  zf[27, FeedTray2-1] := 0;
-  zf[28, FeedTray2-1] := 0;
-  zf[29, FeedTray2-1] := 0;
-  zf[30, FeedTray2-1] := 0;
+  zf[ 0,FeedTray2-1] := 0;
+  zf[ 1,FeedTray2-1] := 0.000827498633516203;
+  zf[ 2,FeedTray2-1] := 0.00237905857135908;
+  zf[ 3,FeedTray2-1] := 0.953459306881487;
+  zf[ 4,FeedTray2-1] := 0.0375432714826096;
+  zf[ 5,FeedTray2-1] := 0;
+  zf[ 6,FeedTray2-1] := 0;
+  zf[ 7,FeedTray2-1] := 0;
+  zf[ 8,FeedTray2-1] := 0;
+  zf[ 9,FeedTray2-1] := 0;
+  zf[10,FeedTray2-1] := 0;
+  zf[11,FeedTray2-1] := 0;
+  zf[12,FeedTray2-1] := 0;
+  zf[13,FeedTray2-1] := 0;
+  zf[14,FeedTray2-1] := 0;
+  zf[15,FeedTray2-1] := 0;
+  zf[16,FeedTray2-1] := 0;
+  zf[17,FeedTray2-1] := 0;
+  zf[18,FeedTray2-1] := 0;
+  zf[19,FeedTray2-1] := 0;
+  zf[20,FeedTray2-1] := 0;
+  zf[21,FeedTray2-1] := 0.00579086443102797;
+  zf[22,FeedTray2-1] := 0;
+  zf[23,FeedTray2-1] := 0;
+  zf[24,FeedTray2-1] := 0;
+
 
   for j := 1 to NTrays do
     begin
@@ -1590,7 +1587,7 @@ begin
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
   xij := Normalize(xij);
-  Secant(50, 500, Tj_0, Pj, xij, yij, Tj);
+  Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
   CalculateVaporMoleFractions(xij, Kij, yij);
   yij := Normalize(yij);
@@ -1610,7 +1607,7 @@ begin
   repeat
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
     xij := Normalize(xij);
-    Secant(50, 500, Tj_0, Pj, xij, yij, Tj);
+    Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
     WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
     CalculateVaporMoleFractions(xij, Kij, yij);
     yij := Normalize(yij);
@@ -1626,7 +1623,7 @@ begin
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
     n := n + 1;
-    if n >= 1e3 then
+    if n >= 1e5 then
       begin
         ShowMessage('Main Calculation, No Solutions!');
         break
@@ -1648,10 +1645,9 @@ begin
         Tj_0[j] := Tj[j];
       end;
 
-  until (getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance) and (abs(Uj[1] - D) + (abs(Lj[1] - LD)) <= tolerance);
+  until (getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance) {and (abs(Uj[1] - D) + (abs(Lj[1] - LD)) <= tolerance)};
   ShowMessage(IntToStr(n))
 
-
-  end;
+end;
 
 end.
