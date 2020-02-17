@@ -1313,7 +1313,7 @@ begin
       Uj[j] := (1 - ej[j]) * Rj[j];}
     end;
 
-  Uj[1] := 1313;
+  Uj[1] := {1313}LD;
   Uj[NTrays] := Fj[FeedTray1] + Fj[FeedTray2] - Uj[1];
 
   Lj[1] := L0;
@@ -1360,7 +1360,7 @@ begin
       sb := sb + bi[i];
     end;
   D := sd;
-  B := sB;
+  B := {sB} Fj[FeedTray1] + Fj[FeedTray2] - D;
 
   Uj[NTrays] := B;
   Uj[1] := D;
