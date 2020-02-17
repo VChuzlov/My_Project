@@ -12,6 +12,7 @@ object Form1: TForm1
   Font.Style = []
   OldCreateOrder = False
   Position = poScreenCenter
+  OnClose = FormClose
   PixelsPerInch = 96
   TextHeight = 13
   object Button1: TButton
@@ -19,8 +20,24 @@ object Form1: TForm1
     Top = 266
     Width = 75
     Height = 25
-    Caption = 'Button1'
+    Caption = 'Calculate'
     TabOrder = 0
     OnClick = Button1Click
+  end
+  object Button2: TButton
+    Left = 104
+    Top = 266
+    Width = 75
+    Height = 25
+    Caption = 'Report to exl'
+    TabOrder = 1
+    OnClick = Button2Click
+  end
+  object EA1: TExcelApplication
+    AutoConnect = False
+    ConnectKind = ckRunningOrNew
+    AutoQuit = False
+    Left = 280
+    Top = 16
   end
 end
