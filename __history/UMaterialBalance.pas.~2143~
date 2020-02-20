@@ -661,6 +661,32 @@ var
   tmp: double;
   a, b: double;
 
+  function get_borders(f: Tfoo; x: double): TArrOfDouble;
+    var
+      d: double;
+    begin
+      d := 30;
+      SetLength(Result, 2);
+      repeat
+        if f(x - d, P, xi) * f(x, P, xi) / abs(f(x, P, xi)) < 0 then
+          begin
+            Result[0] := x - d;
+            Result[1] := x;
+            break
+          end
+        else
+          if f(x, P, xi) * f(x + d, P, xi) / abs(f(x, P, xi)) < 0 then
+            begin
+              Result[0] := x;
+              Result[1] := x + d;
+              break
+            end
+          else
+            d := d + 5;
+      until d >= 800;
+      ShowMessage('Dihotomy Iterations, No Borders!');
+    end;
+
   procedure SecantIterations(f: Tfoo; var temp: TArrOfDouble);
   begin
     if f(temp[n-1], P, xi) * f(temp[n], P, xi) < 0 then
@@ -677,16 +703,6 @@ var
   end;
 
   procedure DihotomyIterations(f: Tfoo; a, b: double; var tmp: double);
-
-    function get_borders(x: double): double;
-    const
-      h = 1;
-    begin
-      while f(x, P, xi) * f(x + h, P, xi) / abs(f(x + h, P, xi)) >= 0 do
-        x := x + h;
-      Result := x + h;
-    end;
-
   begin
     //b := get_borders(a);
     if f(a, P, xi) * f(b, P, xi) / abs(f(b, P, xi)) < 0 then
@@ -714,8 +730,8 @@ begin
       P := Pj[j+1];
       n := 1;
       SetLength(temp, n+1);
-      a := Tj[j+1] - 50;
-      b := Tj[j+1] + 50;
+      {a := Tj[j+1] - 60;
+      b := Tj[j+1] + 60; }
       temp[0] := a;
       temp[1] := b;
       for i := 0 to NComp-1 do
@@ -725,12 +741,16 @@ begin
         begin
           for i := 0 to NComp-1 do
             zf[i] := yij[i, {1}2];
+          get_borders(forCondenser, Tj[j+1]);
           //SecantIterations(forCondenser, temp);
           DihotomyIterations(forCondenser, a, b, tmp);
         end
       else
         //SecantIterations(forRegularTrays, temp);
-        DihotomyIterations(forRegularTrays, a, b, tmp);
+        begin
+          get_borders(forRegularTrays, Tj[j+1]);
+          DihotomyIterations(forRegularTrays, a, b, tmp);
+        end;
 
       rTj[j+1] := {temp[n]}tmp;
         for i := 0 to n-1 do
@@ -1241,8 +1261,11 @@ var
           begin
             s1 := s1 + Fj[j] * zf[i-1, j-1];
           end;
-        tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
-          / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+        if xij[i-1, 0] <> 0 then
+          tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
+            / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]))
+        else
+          tet[i] := 0;
         s := s + tet[i];
       end;
     Result := -s;
@@ -1273,7 +1296,7 @@ begin
         else
           _a := teta
       until (abs(_a - _b) <= eps) or (g(teta) = 0);
-      teta := (_a + _b) / 2;
+      teta := _a + (_b - _a) / 2;
       Result := teta;
     end
   else
@@ -1310,7 +1333,7 @@ begin
       Uj[j] := (1 - ej[j]) * Rj[j];}
     end;
 
-  Uj[1] := 1313;
+  Uj[1] := {1313}LD;
   Uj[NTrays] := Fj[FeedTray1] + Fj[FeedTray2] - Uj[1];
 
   Lj[1] := L0;
@@ -1347,12 +1370,17 @@ begin
         begin
           di[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
           bi[i] := teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * di[i];
+        end
+      else
+        begin
+          di[i] := 0;
+          bi[i] := 0;
         end;
       sd := sd + di[i];
       sb := sb + bi[i];
     end;
   D := sd;
-  B := sB;
+  B := {sB} Fj[FeedTray1] + Fj[FeedTray2] - D;
 
   Uj[NTrays] := B;
   Uj[1] := D;

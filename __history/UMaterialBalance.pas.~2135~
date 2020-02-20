@@ -678,13 +678,26 @@ var
 
   procedure DihotomyIterations(f: Tfoo; a, b: double; var tmp: double);
 
-    function get_borders(x: double): double;
-    const
-      h = 1;
+    function get_borders(x: double): TArrOfDouble;
+    var
+      d: double;
     begin
-      while f(x, P, xi) * f(x + h, P, xi) / abs(f(x + h, P, xi)) >= 0 do
-        x := x + h;
-      Result := x + h;
+      d := 30;
+      if f(x - d, P, xi) * f(x, P, xi) / abs(f(x, P, xi)) < 0 then
+        begin
+          Result[0] := x - d;
+          Result[1] := x;
+          break
+        end
+      else
+        if f(x, P, xi) * f(x + d, P, xi) / abs(f(x, P, xi)) < 0 then
+          begin
+            Result[0] := x;
+            Result[1] := x + d;
+            break
+          end
+        else
+          d := d + 5;
     end;
 
   begin
@@ -714,8 +727,8 @@ begin
       P := Pj[j+1];
       n := 1;
       SetLength(temp, n+1);
-      a := Tj[j];
-      b := Tj[j];
+      a := Tj[j+1] - 60;
+      b := Tj[j+1] + 60;
       temp[0] := a;
       temp[1] := b;
       for i := 0 to NComp-1 do
@@ -1241,8 +1254,11 @@ var
           begin
             s1 := s1 + Fj[j] * zf[i-1, j-1];
           end;
-        tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
-          / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+        if xij[i-1, 0] <> 0 then
+          tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
+            / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]))
+        else
+          tet[i] := 0;
         s := s + tet[i];
       end;
     Result := -s;
@@ -1273,7 +1289,7 @@ begin
         else
           _a := teta
       until (abs(_a - _b) <= eps) or (g(teta) = 0);
-      teta := (_a + _b) / 2;
+      teta := _a + (_b - _a) / 2;
       Result := teta;
     end
   else
@@ -1310,7 +1326,7 @@ begin
       Uj[j] := (1 - ej[j]) * Rj[j];}
     end;
 
-  Uj[1] := 1313;
+  Uj[1] := {1313}LD;
   Uj[NTrays] := Fj[FeedTray1] + Fj[FeedTray2] - Uj[1];
 
   Lj[1] := L0;
@@ -1347,12 +1363,17 @@ begin
         begin
           di[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
           bi[i] := teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * di[i];
+        end
+      else
+        begin
+          di[i] := 0;
+          bi[i] := 0;
         end;
       sd := sd + di[i];
       sb := sb + bi[i];
     end;
   D := sd;
-  B := sB;
+  B := {sB} Fj[FeedTray1] + Fj[FeedTray2] - D;
 
   Uj[NTrays] := B;
   Uj[1] := D;
@@ -1590,7 +1611,7 @@ begin
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
   xij := Normalize(xij);
-  Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
+  Secant({100, 500,} Tj_0, Pj, xij, yij, Tj);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
   CalculateVaporMoleFractions(xij, Kij, yij);
   yij := Normalize(yij);
@@ -1610,7 +1631,7 @@ begin
   repeat
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
     xij := Normalize(xij);
-    Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
+    Secant({100, 500,} Tj_0, Pj, xij, yij, Tj);
     WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
     CalculateVaporMoleFractions(xij, Kij, yij);
     yij := Normalize(yij);

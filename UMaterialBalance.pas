@@ -661,6 +661,33 @@ var
   tmp: double;
   a, b: double;
 
+  function get_borders(f: Tfoo; x: double): TArrOfDouble;
+    var
+      d: double;
+    begin
+      d := 5;
+      SetLength(Result, 2);
+      repeat
+        if f(x - d, P, xi) * f(x, P, xi) / abs(f(x, P, xi)) < 0 then
+          begin
+            Result[0] := x - d;
+            Result[1] := x;
+            break
+          end
+        else
+          if f(x, P, xi) * f(x + d, P, xi) / abs(f(x + d, P, xi)) < 0 then
+            begin
+              Result[0] := x;
+              Result[1] := x + d;
+              break
+            end
+          else
+            d := d + 5;
+      until d >= 800;
+      if d >= 800 then
+        ShowMessage('Dihotomy Iterations, No Borders!');
+    end;
+
   procedure SecantIterations(f: Tfoo; var temp: TArrOfDouble);
   begin
     if f(temp[n-1], P, xi) * f(temp[n], P, xi) < 0 then
@@ -677,16 +704,6 @@ var
   end;
 
   procedure DihotomyIterations(f: Tfoo; a, b: double; var tmp: double);
-
-    function get_borders(x: double): double;
-    const
-      h = 1;
-    begin
-      while f(x, P, xi) * f(x + h, P, xi) / abs(f(x + h, P, xi)) >= 0 do
-        x := x + h;
-      Result := x + h;
-    end;
-
   begin
     //b := get_borders(a);
     if f(a, P, xi) * f(b, P, xi) / abs(f(b, P, xi)) < 0 then
@@ -714,8 +731,8 @@ begin
       P := Pj[j+1];
       n := 1;
       SetLength(temp, n+1);
-      a := Tj[j+1] - 60;
-      b := Tj[j+1] + 60;
+      {a := Tj[j+1] - 60;
+      b := Tj[j+1] + 60; }
       temp[0] := a;
       temp[1] := b;
       for i := 0 to NComp-1 do
@@ -725,12 +742,18 @@ begin
         begin
           for i := 0 to NComp-1 do
             zf[i] := yij[i, {1}2];
+          a := get_borders(forCondenser, Tj[j+1])[0];
+          b := get_borders(forCondenser, Tj[j+1])[1];
           //SecantIterations(forCondenser, temp);
           DihotomyIterations(forCondenser, a, b, tmp);
         end
       else
         //SecantIterations(forRegularTrays, temp);
-        DihotomyIterations(forRegularTrays, a, b, tmp);
+        begin
+          a := get_borders(forRegularTrays, Tj[j+1])[0];
+          b := get_borders(forRegularTrays, Tj[j+1])[1];
+          DihotomyIterations(forRegularTrays, a, b, tmp);
+        end;
 
       rTj[j+1] := {temp[n]}tmp;
         for i := 0 to n-1 do

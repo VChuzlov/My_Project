@@ -34,7 +34,7 @@ type
     procedure CalculateLiquidMoleFractions(Fj, Lj, Vj, Uj, Wj: arrTrays; zij, Kij: TArrOfArrOfDouble;
       var xij: TArrOfArrOfDouble);
     function Normalize(xij: TArrOfArrOfDouble): TArrOfArrOfDouble;
-    procedure Secant(a, b: double; Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble; var rTj: arrTrays);
+    procedure Secant({a, b: double;} Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble; var rTj: arrTrays);
     procedure CalculateVaporMoleFractions(xij, Kij: TArrOfArrOfDouble; var yij: TArrOfArrOfDouble);
     function getIdealGasCompEnthalpy(Tj: arrTrays): TArrOfArrOfDouble;
     function getIdealGasCompHeatCapasity(Tj: arrTrays): TArrOfArrOfDouble;
@@ -643,7 +643,7 @@ function TMatBalance.forCondenser (T, P: double; zf: TArrOfDouble): double;
     Result := 1 - s {- 1};
   end;
 
-procedure TMatBalance.Secant(a: Double; b: Double; Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble;
+procedure TMatBalance.Secant({a: Double; b: Double;} Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble;
   var rTj: arrTrays);
 type
   Tfoo = function(T, P: double; xi: TArrOfDouble): double of object;
@@ -659,6 +659,33 @@ var
   temp: TArrOfDouble;
   zf: TArrOfDouble;
   tmp: double;
+  a, b: double;
+
+  function get_borders(f: Tfoo; x: double): TArrOfDouble;
+    var
+      d: double;
+    begin
+      d := 30;
+      SetLength(Result, 2);
+      repeat
+        if f(x - d, P, xi) * f(x, P, xi) / abs(f(x, P, xi)) < 0 then
+          begin
+            Result[0] := x - d;
+            Result[1] := x;
+            break
+          end
+        else
+          if f(x, P, xi) * f(x + d, P, xi) / abs(f(x + d, P, xi)) < 0 then
+            begin
+              Result[0] := x;
+              Result[1] := x + d;
+              break
+            end
+          else
+            d := d + 5;
+      until d >= 800;
+      ShowMessage('Dihotomy Iterations, No Borders!');
+    end;
 
   procedure SecantIterations(f: Tfoo; var temp: TArrOfDouble);
   begin
@@ -676,16 +703,6 @@ var
   end;
 
   procedure DihotomyIterations(f: Tfoo; a, b: double; var tmp: double);
-
-    function get_borders(x: double): double;
-    const
-      h = 1;
-    begin
-      while f(x, P, xi) * f(x + h, P, xi) / abs(f(x + h, P, xi)) >= 0 do
-        x := x + h;
-      Result := x + h;
-    end;
-
   begin
     //b := get_borders(a);
     if f(a, P, xi) * f(b, P, xi) / abs(f(b, P, xi)) < 0 then
@@ -713,6 +730,8 @@ begin
       P := Pj[j+1];
       n := 1;
       SetLength(temp, n+1);
+      {a := Tj[j+1] - 60;
+      b := Tj[j+1] + 60; }
       temp[0] := a;
       temp[1] := b;
       for i := 0 to NComp-1 do
@@ -722,12 +741,18 @@ begin
         begin
           for i := 0 to NComp-1 do
             zf[i] := yij[i, {1}2];
+          a := get_borders(forCondenser, Tj[j+1])[0];
+          b := get_borders(forCondenser, Tj[j+1])[1];
           //SecantIterations(forCondenser, temp);
           DihotomyIterations(forCondenser, a, b, tmp);
         end
       else
         //SecantIterations(forRegularTrays, temp);
-        DihotomyIterations(forRegularTrays, a, b, tmp);
+        begin
+          a := get_borders(forRegularTrays, Tj[j+1])[0];
+          b := get_borders(forRegularTrays, Tj[j+1])[1];
+          DihotomyIterations(forRegularTrays, a, b, tmp);
+        end;
 
       rTj[j+1] := {temp[n]}tmp;
         for i := 0 to n-1 do
@@ -1238,8 +1263,11 @@ var
           begin
             s1 := s1 + Fj[j] * zf[i-1, j-1];
           end;
-        tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
-          / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
+        if xij[i-1, 0] <> 0 then
+          tet[i] := (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * s1
+            / sqr(1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]))
+        else
+          tet[i] := 0;
         s := s + tet[i];
       end;
     Result := -s;
@@ -1270,7 +1298,7 @@ begin
         else
           _a := teta
       until (abs(_a - _b) <= eps) or (g(teta) = 0);
-      teta := (_a + _b) / 2;
+      teta := _a + (_b - _a) / 2;
       Result := teta;
     end
   else
@@ -1307,7 +1335,7 @@ begin
       Uj[j] := (1 - ej[j]) * Rj[j];}
     end;
 
-  Uj[1] := 1313;
+  Uj[1] := {1313}LD;
   Uj[NTrays] := Fj[FeedTray1] + Fj[FeedTray2] - Uj[1];
 
   Lj[1] := L0;
@@ -1344,12 +1372,17 @@ begin
         begin
           di[i] := s1 / (1 + teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]));
           bi[i] := teta * (B * xij[i-1, NTrays-1]) / (D * xij[i-1, 0]) * di[i];
+        end
+      else
+        begin
+          di[i] := 0;
+          bi[i] := 0;
         end;
       sd := sd + di[i];
       sb := sb + bi[i];
     end;
   D := sd;
-  B := sB;
+  B := {sB} Fj[FeedTray1] + Fj[FeedTray2] - D;
 
   Uj[NTrays] := B;
   Uj[1] := D;
@@ -1441,7 +1474,7 @@ procedure TMatBalance.MatBalCalculation(Fl: arrTrays; Fv: arrTrays; Wl: arrTrays
   var calcVj: TArrOfArrOfDouble;
   var n: integer);
 const
-  tolerance = {1e-5} 0.01 * NTrays;
+  tolerance = 1e-3 {0.01 * NTrays};
 var
   zf: TArrOfArrOfDouble;
   Res: TArrOfDouble;
@@ -1529,38 +1562,32 @@ begin
   zf[23,FeedTray1-1] := 0.0103363822712661;
   zf[24,FeedTray1-1] := 0;
 
+  zf[ 0,FeedTray2-1] := 0;
+  zf[ 1,FeedTray2-1] := 0.000827498633516203;
+  zf[ 2,FeedTray2-1] := 0.00237905857135908;
+  zf[ 3,FeedTray2-1] := 0.953459306881487;
+  zf[ 4,FeedTray2-1] := 0.0375432714826096;
+  zf[ 5,FeedTray2-1] := 0;
+  zf[ 6,FeedTray2-1] := 0;
+  zf[ 7,FeedTray2-1] := 0;
+  zf[ 8,FeedTray2-1] := 0;
+  zf[ 9,FeedTray2-1] := 0;
+  zf[10,FeedTray2-1] := 0;
+  zf[11,FeedTray2-1] := 0;
+  zf[12,FeedTray2-1] := 0;
+  zf[13,FeedTray2-1] := 0;
+  zf[14,FeedTray2-1] := 0;
+  zf[15,FeedTray2-1] := 0;
+  zf[16,FeedTray2-1] := 0;
+  zf[17,FeedTray2-1] := 0;
+  zf[18,FeedTray2-1] := 0;
+  zf[19,FeedTray2-1] := 0;
+  zf[20,FeedTray2-1] := 0;
+  zf[21,FeedTray2-1] := 0.00579086443102797;
+  zf[22,FeedTray2-1] := 0;
+  zf[23,FeedTray2-1] := 0;
+  zf[24,FeedTray2-1] := 0;
 
-  zf[ 0, FeedTray2-1] := 0.00075792344443219;
-  zf[ 1, FeedTray2-1] := 0;
-  zf[ 2, FeedTray2-1] := 0.00218269096480515;
-  zf[ 3, FeedTray2-1] := 0.95590636432036;
-  zf[ 4, FeedTray2-1] := 0.0362677562997908;
-  zf[ 5, FeedTray2-1] := 0;
-  zf[ 6, FeedTray2-1] := 0;
-  zf[ 7, FeedTray2-1] := 0;
-  zf[ 8, FeedTray2-1] := 0;
-  zf[ 9, FeedTray2-1] := 0;
-  zf[10, FeedTray2-1] := 0;
-  zf[11, FeedTray2-1] := 0;
-  zf[12, FeedTray2-1] := 0;
-  zf[13, FeedTray2-1] := 0;
-  zf[14, FeedTray2-1] := 0;
-  zf[15, FeedTray2-1] := 0;
-  zf[16, FeedTray2-1] := 0;
-  zf[17, FeedTray2-1] := 0;
-  zf[18, FeedTray2-1] := 0;
-  zf[19, FeedTray2-1] := 0;
-  zf[20, FeedTray2-1] := 0;
-  zf[21, FeedTray2-1] := 0.00488526497061137;
-  zf[22, FeedTray2-1] := 0;
-  zf[23, FeedTray2-1] := 0;
-  zf[24, FeedTray2-1] := 0;
-  zf[25, FeedTray2-1] := 0;
-  zf[26, FeedTray2-1] := 0;
-  zf[27, FeedTray2-1] := 0;
-  zf[28, FeedTray2-1] := 0;
-  zf[29, FeedTray2-1] := 0;
-  zf[30, FeedTray2-1] := 0;
 
   for j := 1 to NTrays do
     begin
@@ -1593,7 +1620,7 @@ begin
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj_0, Pj, Kij);
   CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
   xij := Normalize(xij);
-  Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
+  Secant({100, 500,} Tj_0, Pj, xij, yij, Tj);
   WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
   CalculateVaporMoleFractions(xij, Kij, yij);
   yij := Normalize(yij);
@@ -1613,7 +1640,7 @@ begin
   repeat
     CalculateLiquidMoleFractions(Fj, Lj0, Vj0, Uj, Wj, zf, Kij, xij);
     xij := Normalize(xij);
-    Secant(100, 500, Tj_0, Pj, xij, yij, Tj);
+    Secant({100, 500,} Tj_0, Pj, xij, yij, Tj);
     WilsonCorrelation(Tcc, Pcc, omega, NTrays, Tj, Pj, Kij);
     CalculateVaporMoleFractions(xij, Kij, yij);
     yij := Normalize(yij);
@@ -1629,7 +1656,7 @@ begin
     TrayMaterialBalanceError := getTrayMaterialBalanceError(Fj, Uj, Wj, Lj, Vj);
     TrayHeatBalanceError := getTrayHeatBalanceError(Fj, Uj, Wj, Lj, Vj, ej, Hf_l, Hf_v, H_l, H_v);
     n := n + 1;
-    if n >= 1e3 then
+    if n >= 1e5 then
       begin
         ShowMessage('Main Calculation, No Solutions!');
         break
@@ -1651,7 +1678,7 @@ begin
         Tj_0[j] := Tj[j];
       end;
 
-  until (getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance) and (abs(Uj[1] - D) + (abs(Lj[1] - LD)) <= tolerance);
+  until (getErrorValue(n, calcTj, calcLj, calcVj) <= tolerance) {and (abs(Uj[1] - D) + (abs(Lj[1] - LD)) <= tolerance)};
   ShowMessage(IntToStr(n))
 
 end;
