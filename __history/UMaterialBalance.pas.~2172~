@@ -649,7 +649,7 @@ type
   Tfoo = function(T, P: double; xi: TArrOfDouble): double of object;
 
 const
-  eps = 1e-1;
+  eps = 1e-5;
 
 var
   xi: TArrOfDouble;
@@ -665,7 +665,7 @@ var
     var
       d: double;
     begin
-      d := 20;
+      d := 5;
       SetLength(Result, 2);
       repeat
         if f(x - d, P, xi) * f(x, P, xi) / abs(f(x, P, xi)) < 0 then
@@ -719,6 +719,31 @@ var
       end
     else
       ShowMessage('Dihotomy GetTemp, No Roots!');
+  end;
+
+  function get_tray_temp(f: Tfoo; temp: double): double;
+  const
+    eps = 1e-5;
+  var
+    tmp: TArrOfDouble;
+    a: double;
+    i, n: integer;
+  begin
+    n := 0;
+    a := -0.1;
+    repeat
+      if n >= 1e5 then
+        begin
+          ShowMessage('get_tray_temp, No Roots!');
+          break
+        end;
+      SetLength(tmp, n+1);
+      tmp[n] := temp;
+      tmp[n+1] := tmp[n] * exp(a * ln(f(tmp[n], P, xi)));
+      a := (ln(tmp[n]) - ln(tmp[n+1])) / (ln(f(tmp[n+1], P, xi)) - ln(f(tmp[n], P, xi)));
+      n := n + 1;
+    until abs(f(tmp[n+1], P, xi)) <= eps;
+    Result := tmp[n];
   end;
 
 begin

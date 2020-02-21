@@ -625,7 +625,7 @@ function TMatBalance.forRegularTrays(T, P: double; xi: TArrOfDouble): double;
         Ki := Wilson(T, P, Tcc[i+1], Pcc[i+1], omega[i+1]);
         s := s + Ki * xi[i];
       end;
-    Result := 1 - s;
+    Result := {1 -} s;
   end;
 
 function TMatBalance.forCondenser (T, P: double; zf: TArrOfDouble): double;
@@ -640,7 +640,7 @@ function TMatBalance.forCondenser (T, P: double; zf: TArrOfDouble): double;
         Ki := Wilson(T, P, Tcc[i+1], Pcc[i+1], omega[i+1]);
         s := s + zf[i] / (Ki {- 1});
       end;
-    Result := 1 - s {- 1};
+    Result := {1 - }s {- 1};
   end;
 
 procedure TMatBalance.Secant({a: Double; b: Double;} Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble;
@@ -665,7 +665,7 @@ var
     var
       d: double;
     begin
-      d := 10;
+      d := 5;
       SetLength(Result, 2);
       repeat
         if f(x - d, P, xi) * f(x, P, xi) / abs(f(x, P, xi)) < 0 then
@@ -721,6 +721,31 @@ var
       ShowMessage('Dihotomy GetTemp, No Roots!');
   end;
 
+  function get_tray_temp(f: Tfoo; temp: double): double;
+  const
+    eps = 1e-5;
+  var
+    tmp: TArrOfDouble;
+    a: double;
+    i, n: integer;
+  begin
+    n := 0;
+    a := -0.1;
+    repeat
+      if n >= 1e5 then
+        begin
+          ShowMessage('get_tray_temp, No Roots!');
+          break
+        end;
+      SetLength(tmp, n+2);
+      tmp[n] := temp;
+      tmp[n+1] := tmp[n] * exp(a * ln(f(tmp[n], P, xi)));
+      a := (ln(tmp[n]) - ln(tmp[n+1])) / (ln(f(tmp[n+1], P, xi)) - ln(f(tmp[n], P, xi)));
+      n := n + 1;
+    until abs(f(tmp[n], P, xi) - 1) <= eps;
+    Result := tmp[n];
+  end;
+
 begin
   SetLength(xi, NComp);
   SetLength(zf, NComp);
@@ -742,17 +767,19 @@ begin
         begin
           for i := 0 to NComp-1 do
             zf[i] := yij[i, {1}2];
-          a := get_borders(forCondenser, Tj[j+1])[0];
-          b := get_borders(forCondenser, Tj[j+1])[1];
+          //a := get_borders(forCondenser, Tj[j+1])[0];
+          //b := get_borders(forCondenser, Tj[j+1])[1];
           //SecantIterations(forCondenser, temp);
-          DihotomyIterations(forCondenser, a, b, tmp);
+          //DihotomyIterations(forCondenser, a, b, tmp);
+          tmp := get_tray_temp(forCondenser, Tj[j+1]);
         end
       else
         //SecantIterations(forRegularTrays, temp);
         begin
-          a := get_borders(forRegularTrays, Tj[j+1])[0];
-          b := get_borders(forRegularTrays, Tj[j+1])[1];
-          DihotomyIterations(forRegularTrays, a, b, tmp);
+          //a := get_borders(forRegularTrays, Tj[j+1])[0];
+          //b := get_borders(forRegularTrays, Tj[j+1])[1];
+          //DihotomyIterations(forRegularTrays, a, b, tmp);
+          tmp := get_tray_temp(forRegularTrays, Tj[j+1]);
         end;
 
       rTj[j+1] := {temp[n]}tmp;

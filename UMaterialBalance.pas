@@ -625,7 +625,7 @@ function TMatBalance.forRegularTrays(T, P: double; xi: TArrOfDouble): double;
         Ki := Wilson(T, P, Tcc[i+1], Pcc[i+1], omega[i+1]);
         s := s + Ki * xi[i];
       end;
-    Result := 1 - s;
+    Result := {1 -} s;
   end;
 
 function TMatBalance.forCondenser (T, P: double; zf: TArrOfDouble): double;
@@ -640,7 +640,7 @@ function TMatBalance.forCondenser (T, P: double; zf: TArrOfDouble): double;
         Ki := Wilson(T, P, Tcc[i+1], Pcc[i+1], omega[i+1]);
         s := s + zf[i] / (Ki {- 1});
       end;
-    Result := 1 - s {- 1};
+    Result := {1 -} s {- 1};
   end;
 
 procedure TMatBalance.Secant({a: Double; b: Double;} Tj, Pj: arrTrays; xij, yij: TArrOfArrOfDouble;
@@ -721,6 +721,31 @@ var
       ShowMessage('Dihotomy GetTemp, No Roots!');
   end;
 
+  function get_tray_temp(f: Tfoo; temp: double): double;
+  const
+    eps = 1e-5;
+  var
+    tmp: TArrOfDouble;
+    a: double;
+    i, n: integer;
+  begin
+    n := 0;
+    a := -0.1;
+    repeat
+      if n >= 1e5 then
+        begin
+          ShowMessage('get_tray_temp, No Roots!');
+          break
+        end;
+      SetLength(tmp, n+2);
+      tmp[n] := temp;
+      tmp[n+1] := tmp[n] * exp(a * ln(f(tmp[n], P, xi)));
+      a := (ln(tmp[n]) - ln(tmp[n+1])) / (ln(f(tmp[n+1], P, xi)) - ln(f(tmp[n], P, xi)));
+      n := n + 1;
+    until abs(f(tmp[n], P, xi) - 1) <= eps;
+    Result := tmp[n];
+  end;
+
 begin
   SetLength(xi, NComp);
   SetLength(zf, NComp);
@@ -742,17 +767,19 @@ begin
         begin
           for i := 0 to NComp-1 do
             zf[i] := yij[i, {1}2];
-          a := get_borders(forCondenser, Tj[j+1])[0];
-          b := get_borders(forCondenser, Tj[j+1])[1];
+          //a := get_borders(forCondenser, Tj[j+1])[0];
+          //b := get_borders(forCondenser, Tj[j+1])[1];
           //SecantIterations(forCondenser, temp);
-          DihotomyIterations(forCondenser, a, b, tmp);
+          //DihotomyIterations(forCondenser, a, b, tmp);
+          tmp := get_tray_temp(forCondenser, Tj[j+1]);
         end
       else
         //SecantIterations(forRegularTrays, temp);
         begin
-          a := get_borders(forRegularTrays, Tj[j+1])[0];
-          b := get_borders(forRegularTrays, Tj[j+1])[1];
-          DihotomyIterations(forRegularTrays, a, b, tmp);
+          //a := get_borders(forRegularTrays, Tj[j+1])[0];
+          //b := get_borders(forRegularTrays, Tj[j+1])[1];
+          //DihotomyIterations(forRegularTrays, a, b, tmp);
+          tmp := get_tray_temp(forRegularTrays, Tj[j+1]);
         end;
 
       rTj[j+1] := {temp[n]}tmp;
@@ -942,12 +969,12 @@ var
   end;
 
   begin
-  for i := 1 to NComp do
+  //for i := 1 to NComp do
     begin
-      if T1[i] > 298 then
-        IntegralIdealGasCompCp[i] := IntegralIdealGasCp(298, T1)[i]
-      else
-        IntegralIdealGasCompCp[i] := -IntegralIdealGasCp(298, T1)[i]
+      //if T1[i] > 298 then
+        IntegralIdealGasCompCp{[i]} := IntegralIdealGasCp(298, T1){[i] }
+      //else
+        //IntegralIdealGasCompCp[i] := -IntegralIdealGasCp(298, T1)[i]
     end;
   k := get_k;
   for i := 1 to NComp do
@@ -992,6 +1019,8 @@ var
   Tsat: arrComp;
   Tdp: arrComp;
   s: double;
+  tmp_integral_IG_CP: arrComp;
+  tmp_integral_Liq_CP: arrComp;
 
 begin
   SetLength(compH_v, NComp, NTrays);
@@ -1002,20 +1031,19 @@ begin
 
   compH_v := getIdealGasCompEnthalpy(Tj);
   LiquidCompHeatCapasity := getLiquidCompHeatCapasity(Tj);
-  {
-  for i := 1 to NComp do
-    Tsat[i] := Tbpi[i] + 273.15;
-     }
+  
   for j := 1 to Ntrays do
     begin
       Tsat := TbpVsPressure(Tbpi, Pj[j]);
       dHvap := getComp_dHvap(Tsat);
+      tmp_integral_IG_CP := IntegralIdealGasCp(298, {Tdp}Tsat);
+      tmp_integral_Liq_CP := IntegralLiquidCp(Tsat, Tj[j]);
       for i := 1 to NComp do
         begin
           if Tsat[i] >= 298 then
-            CompIntIdGasCp[i-1, j-1] := IntegralIdealGasCp(298, {Tdp}Tsat)[i];
+            CompIntIdGasCp[i-1, j-1] := (*IntegralIdealGasCp(298, {Tdp}Tsat)[i]*)tmp_integral_IG_CP[i];
           if Tsat[i] >= Tj[j] then
-            CompIntLiqCp[i-1, j-1] := IntegralLiquidCp(Tsat, Tj[j])[i];
+            CompIntLiqCp[i-1, j-1] := {IntegralLiquidCp(Tsat, Tj[j])[i]}tmp_integral_Liq_CP[i];
         end;
     end;
 
@@ -1024,7 +1052,8 @@ begin
       s := 0;
       for i := 1 to NComp do
         s := s + {(dHf298[i] + (CompIntIdGasCp[i-1, j-1] - dHvap[i]
-          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] * 4.184 * (Tsat[i] - Tj[j]){liq_cp[i] * Mr[i]} * xij[i-1, j-1];
+          + CompItnLiqCp[i-1, j-1]) * 4.1868)} LiquidCompHeatCapasity[i-1, j-1] 
+          * 4.184 * (Tsat[i] - Tj[j]){liq_cp[i] * Mr[i]} * xij[i-1, j-1];
       H_l[j] := s;
     end;
 
