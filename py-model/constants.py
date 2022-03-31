@@ -19,3 +19,5 @@ DENSITY = (
 COEF_MASS_CP = (
 
 )
+
+R = 8.314
