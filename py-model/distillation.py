@@ -4,6 +4,7 @@
 import numpy as np
 import PRmodel as pr
 from scipy.optimize import root_scalar
+import json
 
 
 def get_t_sat(t, p, tc, pc, omega, v, model=pr.get_component_pressure_by_pr):
@@ -99,7 +100,15 @@ class DistillationColumn:
         self.vj0 = []
 
     def __repr__(self):
-        return
+        column = {
+            'Number of trays': self.trays_number,
+            'Feed Tray': self.feed_tray
+            'Tj0': self.initial_temperature_profile,
+            'Lj0': self.lj0,
+            'Vj0': self.vj0,
+        }
+        json_string = json.dumps(column, indent=4)
+        return json_string
 
     def t_profile_initial_guess_for(self, fprofile, zfprofile, pressure_profile,
                                     tc, pc, omega, v, method='secant', method_args={}):
@@ -153,4 +162,9 @@ class DistillationColumn:
 
 
 if __name__ == '__main__':
-    pass
+    column = DistillationColumn(12, 5)
+
+    ntrays = 12
+    feed_tray = 5
+    fprofile = [100 if i == feed_tray else 0 for i in range(ntrays)]
+    column.t_profile_initial_guess_for()
