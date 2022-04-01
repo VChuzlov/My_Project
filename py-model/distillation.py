@@ -5,6 +5,7 @@ import numpy as np
 import PRmodel as pr
 from scipy.optimize import root_scalar
 import json
+import constants as const
 
 
 def get_t_sat(t, p, tc, pc, omega, v, model=pr.get_component_pressure_by_pr):
@@ -102,7 +103,7 @@ class DistillationColumn:
     def __repr__(self):
         column = {
             'Number of trays': self.trays_number,
-            'Feed Tray': self.feed_tray
+            'Feed Tray': self.feed_tray,
             'Tj0': self.initial_temperature_profile,
             'Lj0': self.lj0,
             'Vj0': self.vj0,
@@ -113,9 +114,9 @@ class DistillationColumn:
     def t_profile_initial_guess_for(self, fprofile, zfprofile, pressure_profile,
                                     tc, pc, omega, v, method='secant', method_args={}):
         p = np.median(pressure_profile)
-        t_sat = [root_scalar(get_t_sat, method=method,
+        t_sat = [root_scalar(get_t_sat, method=method, x0=10, x1=1000,
                              args=(p, t_c, p_c, omega_, v_,),
-                             **method_args)
+                             **method_args).root
                  for t_c, p_c, omega_, v_ in zip(tc, pc, omega, v)]
 
         sum_zf_times_f = [0 for _ in range(zfprofile.shape[0])]
@@ -126,8 +127,8 @@ class DistillationColumn:
         sum_f = sum(f for f in fprofile)
         t_ave = s / sum_f
 
-        t_min = sum(abs(ts - ta) * s
-                    for ts, ta, s in zip(t_sat, t_ave, sum_zf_times_f)) / sum_f
+        t_min = sum(abs(ts - t_ave) * s
+                    for ts, s in zip(t_sat, sum_zf_times_f)) / sum_f
 
         t_0 = [t_min + 2 * j / zfprofile.shape[1] * (t_ave - t_min)
                for j in range(zfprofile.shape[1])]
@@ -167,4 +168,10 @@ if __name__ == '__main__':
     ntrays = 12
     feed_tray = 5
     fprofile = [100 if i == feed_tray else 0 for i in range(ntrays)]
-    column.t_profile_initial_guess_for()
+    z = [[1 for i in range(ntrays)] for _ in range(const.COMP_COUNT)]
+    pressure_profile = [0.1 for _ in range(ntrays)]
+    column.t_profile_initial_guess_for(
+        fprofile, np.array(z), pressure_profile,
+        const.TC, const.PC, const.OMEGA, const.V
+    )
+    print(column.initial_temperature_profile)

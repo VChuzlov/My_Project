@@ -21,7 +21,7 @@ def get_component_pressure_by_pr(t, v, tc, pc, omega):
     ac_i = 0.457235 * (const.R * tc) ** 2 / pc
     m_i = 0.37646 + 1.54226 * omega - 0.26992 * omega ** 2 if omega <= 0.49 \
         else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omega) * omega) * omega
-    alpha_i = 1 + m_i * (1 - (t / tс) ** 0.5) ** 2
+    alpha_i = 1 + m_i * (1 - (t / tc) ** 0.5) ** 2
     a_i = ac_i * alpha_i
 
     return const.R * t / (v - b_i) - a_i / (v * (v + b_i) + b_i * (v - b_i))
