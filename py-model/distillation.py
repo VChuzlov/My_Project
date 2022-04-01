@@ -112,9 +112,9 @@ class DistillationColumn:
         return json_string
 
     def t_profile_initial_guess_for(self, fprofile, zfprofile, pressure_profile,
-                                    tc, pc, omega, v, method='secant', method_args={}):
+                                    tc, pc, omega, v, method='bisect', method_args={}):
         p = np.median(pressure_profile)
-        t_sat = [root_scalar(get_t_sat, method=method, x0=10, x1=1000,
+        t_sat = [root_scalar(get_t_sat, method=method, bracket=(90, 1000),
                              args=(p, t_c, p_c, omega_, v_,),
                              **method_args).root
                  for t_c, p_c, omega_, v_ in zip(tc, pc, omega, v)]
