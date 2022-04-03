@@ -72,4 +72,45 @@ class PRSolution:
 
 
 if __name__ == '__main__':
-    pass
+    import flow
+
+    f = flow.Flow(mass_flows=[2 * i for i in range(const.COMP_COUNT)],
+                  temperature=273.15,
+                  pressure=101.325 * 1e3)
+
+    ki = []
+    for i, component in enumerate(f.mole_fractions):
+        p = get_component_pressure_by_pr(
+            f.temperature,
+            const.MOLAR_VOLUME[i],
+            const.TC[i] + 273.15,
+            const.PC[i] * 1e3,
+            const.OMEGA[i]
+        )
+        ki.append(p / f.pressure)
+
+    s1 = sum(zf * k for zf, k in zip(f.mole_fractions, ki))
+    s2 = sum(zf / k for zf, k in zip(f.mole_fractions, ki))
+
+    xi = [0 for _ in range(const.COMP_COUNT)]
+    yi = [0 for _ in range(const.COMP_COUNT)]
+    e = 0
+
+    foo = lambda x: sum(zf * (k - 1) / (1 + x * (k - 1))
+                        for zf, k in zip(f.mole_fractions, ki))
+
+    if s1 < 1:
+        xi = f.mole_fractions[:]
+    elif s2 < 1:
+        yi = f.mole_fractions[:]
+    else:
+        e, *_ = fsolve(foo, np.array([0.5]))
+        xi = [zf / (1 + e * (k - 1)) for zf, k in zip(f.mole_fractions, ki)]
+        yi = [zf * k / (1 + e * (k - 1)) for zf, k in zip(f.mole_fractions, ki)]
+
+    print(xi)
+    print(sum(xi))
+    print(yi)
+    print(sum(yi))
+    print(e)
+
