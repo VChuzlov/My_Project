@@ -7,7 +7,7 @@ import numpy as np
 from scipy.optimize import fsolve
 
 
-def get_component_pressure_by_pr(t, v, tc, pc, omega):
+def get_component_pressure_by_pr(t, v, tc, pc, omega, kij, x):
     """
     Peng-Robinson equation for component pressure
     :param t: <float> temperature
@@ -17,14 +17,26 @@ def get_component_pressure_by_pr(t, v, tc, pc, omega):
     :param omega: <float> acentric factor
     :return: <float> component pressure
     """
-    b_i = 0.0077796 * const.R * tc / pc
-    ac_i = 0.457235 * (const.R * tc) ** 2 / pc
-    m_i = 0.37646 + 1.54226 * omega - 0.26992 * omega ** 2 if omega <= 0.49 \
-        else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omega) * omega) * omega
-    alpha_i = 1 + m_i * (1 - (t / tc) ** 0.5) ** 2
-    a_i = ac_i * alpha_i
+    b_i = [0.077796 * const.R * t / p for t, p in zip(tc, pc)]
+    b = sum(b * xi for b, xi in zip(b_i, x))
 
-    return const.R * t / (v - b_i) - a_i / (v * (v + b_i) + b_i * (v - b_i))
+    ac_i = [0.457235 * (const.R * t) ** 2 / p for t, p in zip(tc, pc)]
+    m_i = [0.37646 + 1.54226 * om - 0.26992 * om ** 2 if om <= 0.49
+           else 0.379642 + (1.48503 - (0.164423 - 1.016666 * om) * om) * om
+           for om in omega]
+    alpha_i = [(1 + m * (1 - (t / t_c) ** 0.5)) ** 2 for m, t_c in zip(m_i, tc)]
+    a_i = [ac * alpha for ac, alpha in zip(ac_i, alpha_i)]
+
+    aij = [[(1 - kij[i][j]) * (a_i[i] * a_i[j]) ** 0.5 for j in range(const.COMP_COUNT)]
+           for i in range(const.COMP_COUNT)]
+
+    a = 0
+    for i in range(const.COMP_COUNT):
+        for j in range(const.COMP_COUNT):
+            a += aij[i][j] * x[i] * x[j]
+
+    return [const.R * t / (vi - b) - a / (vi * (vi + b) + b * (vi - b))
+            for vi in v]
 
 
 def get_zfactor(t, v, tc, pc, omega, kij, x):
@@ -78,16 +90,16 @@ if __name__ == '__main__':
                   temperature=273.15,
                   pressure=101.325 * 1e3)
 
-    ki = []
-    for i, component in enumerate(f.mole_fractions):
-        p = get_component_pressure_by_pr(
+    pi = get_component_pressure_by_pr(
             f.temperature,
-            const.MOLAR_VOLUME[i],
-            const.TC[i] + 273.15,
-            const.PC[i] * 1e3,
-            const.OMEGA[i]
+            const.MOLAR_VOLUME,
+            [tc + 273.15 for tc in const.TC],
+            [pc * 1e3 for pc in const.PC],
+            const.OMEGA,
+            const.PR_Kij,
+            f.mole_fractions
         )
-        ki.append(p / f.pressure)
+    ki = [p / f.pressure for p in pi]
 
     s1 = sum(zf * k for zf, k in zip(f.mole_fractions, ki))
     s2 = sum(zf / k for zf, k in zip(f.mole_fractions, ki))
@@ -113,4 +125,3 @@ if __name__ == '__main__':
     print(yi)
     print(sum(yi))
     print(e)
-
