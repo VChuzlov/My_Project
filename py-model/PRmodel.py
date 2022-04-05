@@ -4,7 +4,7 @@
 
 import constants as const
 import numpy as np
-from scipy.optimize import fsolve
+from scipy.optimize import fsolve, root_scalar
 
 
 def p_sat_by_wilson(t, pc, tc, omega):
@@ -16,8 +16,12 @@ def p_sat_by_wilson(t, pc, tc, omega):
     :param omega:
     :return:
     """
-    return [pci * np.exp(5.373 * (1 - omi) * (1 - tci / t))
-            for pci, omi, tci in zip(pc, omega, tc)]
+    tr = t * 1.8 + 491.67
+    tcr = [ti * 1.8 + 491.67 for ti in tc]
+    pcr = [p * 1.4504e-4 for p in pc]
+
+    return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / tr))
+            for pci, omi, tci in zip(pcr, omega, tcr)]
 
 
 def rachford_rice(e, zi, ki):
@@ -35,11 +39,11 @@ def rachford_rice(e, zi, ki):
 def first_guess(t, p, zi, pc, tc, omega):
     psat_i = p_sat_by_wilson(t, pc, tc, omega)
 
-    ki = [psat / p for psat in psat_i]
+    ki = [psat / p / 1.4504e-4 for psat in psat_i]
 
-    e0 = np.array([0.5])
-    e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
-
+    e0 = np.array([0.0])
+    # e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
+    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 1), args=(zi, ki)).root
     s1 = sum(z * k for z, k in zip(zi, ki))
     s2 = sum(z / k for z, k in zip(zi, ki))
 
@@ -89,7 +93,7 @@ def second_guess(t, p, xi, yi, tc, pc, omega, kij):
     bv = sum(y * b for y, b in zip(yi, bi))
     bl = sum(x * b for x, b in zip(xi, bi))
 
-    ni = [0.37646 + 1.5422 * omi - 0.26992 * omi ** 2 if omi <= 0.49
+    ni = [0.37646 + 1.54226 * omi - 0.26992 * omi ** 2 if omi <= 0.49
           else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omi) * omi) * omi
           for omi in omega]
 
@@ -125,12 +129,7 @@ def cubic_pr(z, a, b):
 def get_z(foo, z, a, b, flag):
     z0 = np.array([0.1, 0.5, 1.0])
     sol = fsolve(foo, z0, args=(a, b))
-    # sol = np.roots([
-    #     1,
-    #     b - 1,
-    #     a - 2 * b - 3 * b ** 2,
-    #     b ** 2, b ** 3 - a * b
-    # ])
+
     if flag == 'l':
         return sol[np.where(sol > 0)].min()
 
@@ -141,13 +140,19 @@ def get_z(foo, z, a, b, flag):
 def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, kij):
     log_f_yp = [0 for _ in range(const.COMP_COUNT)]
 
+    aij = [[(1 - kij[i][j]) * (ai[i] * ai[j]) ** 0.5 for j in range(const.COMP_COUNT)]
+           for i in range(const.COMP_COUNT)]
     for i in range(const.COMP_COUNT):
-        s = sum(mole_frac[i] * (ai[i] * a) ** 0.5 * (1 - k)
-                for a, k in zip(ai, kij[i]))
+        # s = sum(mole_frac[i] * (ai[i] * a) ** 0.5 * (1 - k)
+        #         for a, k in zip(ai, kij[i]))
+        s = sum(mf * k / a for mf, k in zip(mole_frac, aij[i]))
 
-        log_f_yp[i] = (-np.log(z - b) + bi[i] / b * (z - 1)
-                       - a / (2.8284 * b) * (s / a - bi[i] / b)
-                       * np.log((z + 2.4142 * b) / (z - 0.4142 * b)))
+        # log_f_yp[i] = (-np.log(z - b) + bi[i] / b * (z - 1)
+        #                - a / (2.8284 * b) * (s / a - bi[i] / b)
+        #                * np.log((z + 2.4142 * b) / (z - 0.4142 * b)))
+
+        log_f_yp[i] = (bi[i] / b * (z - 1) - np.log(z - b) - a / (2 * 2 ** 0.5 * b) * (2 * s - bi[i] / b)
+                       * np.log((z + 2.414 * b) / (z - 0.414 * b)))
 
         phi = [np.exp(lg) for lg in log_f_yp]
         fi = [np.exp(lg) * mf * p for lg, mf in zip(log_f_yp, mole_frac)]
@@ -166,7 +171,7 @@ def condition(fiv, fil, zi, yi, xi, e):
 
 def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond=condition):
     xi, yi, e = first_guess(t, p, zi, pc, tc, omega)
-
+    i = 0
     while True:
         aav, aal, bbv, bbl, ai, bi = second_guess(t, p, xi, yi, tc, pc, omega, kij)
 
@@ -182,7 +187,10 @@ def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond
 
         if cond(fiv, fil, zi, yi, xi, e):
             return xi, yi, e
-    return
+
+        i += 1
+        if i > 10000:
+            return
 
 
 class PRSolution:
