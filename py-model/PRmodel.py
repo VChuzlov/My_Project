@@ -88,9 +88,9 @@ def second_guess(t, p, xi, yi, tc, pc, omega, kij):
     aal = al * p / (const.R * t) ** 2
 
     bbv = bv * p / (const.R * t)
-    bbvl = bl * p / (const.R * t)
+    bbl = bl * p / (const.R * t)
 
-    return aav, aal, bbv, bbvl
+    return aav, aal, bbv, bbl, ai, bi
 
 
 def cubic_pr(z, a, b):
@@ -110,6 +110,42 @@ def get_z(foo, z, a, b, flag):
         return sol[np.where(sol > 0)].max()
 
 
+def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, kij):
+    log_f_yp = [0 for _ in range(const.COMP_COUNT)]
+
+    for i in range(const.COMP_COUNT):
+        s = 0
+        for j in range(const.COMP_COUNT):
+            s += mole_frac[i] * (ai[i] * ai[j]) ** 0.5 * (1 - kij[i][j])
+        log_f_yp[i] = (-np.log(z - b) + bi[i] / b * (z - 1)
+                       - a / (2.8284 * b) * (s / a - bi[i] / b)
+                       * np.log((z + 2.4142 * b) / (z - 0.4142 * b)))
+
+    return [np.exp(lg) * mf * p for lg, mf in zip(log_f_yp, mole_frac)]
+
+
+def condition(fiv, fil, zi, yi, xi, e):
+    cond1 = sum(fv - fl for fv, fl in zip(fiv, fil)) == 0
+    cond2 = sum(z - y * e - (1 - e) * x for z, y, x in zip(zi, yi, xi))
+    cond3 = sum(xi) == 1
+    cond4 = sum(yi) == 1
+
+    return cond1 and cond2 and cond3 and cond4
+
+
+def calculate_equilibrium_by_pr(zi, t, p, tc, pc, v, omega, kij, foo=cubic_pr):
+    xi, yi, first_guess(t, p, zi, pc, tc, omega)
+    aav, aal, bbv, bbl, ai, bi = second_guess(t, p, xi, yi, tc, pc, omega, kij)
+
+    zv = get_z(foo, zi, aav, bbv, flag='v')
+    zl = get_z(foo, zi, aal, bbl, flag='l')
+
+    fiv = calculate_components_fugacity(yi, p, bi, bbv, ai, aav, zi, kij)
+    fil = calculate_components_fugacity(xi, p, bi, bbl, ai, aal, zi, kij)
+
+    return
+
+
 class PRSolution:
     pass
 
@@ -122,14 +158,14 @@ if __name__ == '__main__':
                   pressure=101.325 * 1e3)
 
     pi = get_component_pressure_by_pr(
-            f.temperature,
-            const.MOLAR_VOLUME,
-            [tc + 273.15 for tc in const.TC],
-            [pc * 1e3 for pc in const.PC],
-            const.OMEGA,
-            const.PR_Kij,
-            f.mole_fractions
-        )
+        f.temperature,
+        const.MOLAR_VOLUME,
+        [tc + 273.15 for tc in const.TC],
+        [pc * 1e3 for pc in const.PC],
+        const.OMEGA,
+        const.PR_Kij,
+        f.mole_fractions
+    )
     ki = [p / f.pressure for p in pi]
 
     s1 = sum(zf * k for zf, k in zip(f.mole_fractions, ki))
