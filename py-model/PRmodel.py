@@ -56,7 +56,30 @@ def first_guess(t, p, zi, pc, tc, omega):
         xi = [z / (1 + e * (k - 1)) for z, k in zip(zi, ki)]
         yi = [z * k / (1 + e * (k - 1)) for z, k in zip(zi, ki)]
 
-    return xi, yi
+    return xi, yi, e
+
+
+def for_loop(zi, ki):
+    e0 = np.array([0.5])
+    e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
+
+    s1 = sum(z * k for z, k in zip(zi, ki))
+    s2 = sum(z / k for z, k in zip(zi, ki))
+
+    xi = [0 for _ in range(const.COMP_COUNT)]
+    yi = [0 for _ in range(const.COMP_COUNT)]
+
+    if s1 < 1:
+        xi = zi[:]
+
+    elif s2 < 1:
+        yi = zi[:]
+
+    else:
+        xi = [z / (1 + e * (k - 1)) for z, k in zip(zi, ki)]
+        yi = [z * k / (1 + e * (k - 1)) for z, k in zip(zi, ki)]
+
+    return xi, yi, e
 
 
 def second_guess(t, p, xi, yi, tc, pc, omega, kij):
@@ -102,7 +125,12 @@ def cubic_pr(z, a, b):
 def get_z(foo, z, a, b, flag):
     z0 = np.array([0.1, 0.5, 1.0])
     sol = fsolve(foo, z0, args=(a, b))
-
+    # sol = np.roots([
+    #     1,
+    #     b - 1,
+    #     a - 2 * b - 3 * b ** 2,
+    #     b ** 2, b ** 3 - a * b
+    # ])
     if flag == 'l':
         return sol[np.where(sol > 0)].min()
 
@@ -114,14 +142,17 @@ def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, kij):
     log_f_yp = [0 for _ in range(const.COMP_COUNT)]
 
     for i in range(const.COMP_COUNT):
-        s = 0
-        for j in range(const.COMP_COUNT):
-            s += mole_frac[i] * (ai[i] * ai[j]) ** 0.5 * (1 - kij[i][j])
+        s = sum(mole_frac[i] * (ai[i] * a) ** 0.5 * (1 - k)
+                for a, k in zip(ai, kij[i]))
+
         log_f_yp[i] = (-np.log(z - b) + bi[i] / b * (z - 1)
                        - a / (2.8284 * b) * (s / a - bi[i] / b)
                        * np.log((z + 2.4142 * b) / (z - 0.4142 * b)))
 
-    return [np.exp(lg) * mf * p for lg, mf in zip(log_f_yp, mole_frac)]
+        phi = [np.exp(lg) for lg in log_f_yp]
+        fi = [np.exp(lg) * mf * p for lg, mf in zip(log_f_yp, mole_frac)]
+
+    return phi, fi
 
 
 def condition(fiv, fil, zi, yi, xi, e):
@@ -133,16 +164,24 @@ def condition(fiv, fil, zi, yi, xi, e):
     return cond1 and cond2 and cond3 and cond4
 
 
-def calculate_equilibrium_by_pr(zi, t, p, tc, pc, v, omega, kij, foo=cubic_pr):
-    xi, yi, first_guess(t, p, zi, pc, tc, omega)
-    aav, aal, bbv, bbl, ai, bi = second_guess(t, p, xi, yi, tc, pc, omega, kij)
+def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond=condition):
+    xi, yi, e = first_guess(t, p, zi, pc, tc, omega)
 
-    zv = get_z(foo, zi, aav, bbv, flag='v')
-    zl = get_z(foo, zi, aal, bbl, flag='l')
+    while True:
+        aav, aal, bbv, bbl, ai, bi = second_guess(t, p, xi, yi, tc, pc, omega, kij)
 
-    fiv = calculate_components_fugacity(yi, p, bi, bbv, ai, aav, zi, kij)
-    fil = calculate_components_fugacity(xi, p, bi, bbl, ai, aal, zi, kij)
+        zv = get_z(foo, zi, aav, bbv, flag='v')
+        zl = get_z(foo, zi, aal, bbl, flag='l')
 
+        phiv, fiv = calculate_components_fugacity(yi, p, bi, bbv, ai, aav, zv, kij)
+        phil, fil = calculate_components_fugacity(xi, p, bi, bbl, ai, aal, zl, kij)
+
+        ki = [pv / pl for pv, pl in zip(phiv, phil)]
+
+        xi, yi, e, = for_loop(zi, ki)
+
+        if cond(fiv, fil, zi, yi, xi, e):
+            return xi, yi, e
     return
 
 
@@ -157,38 +196,12 @@ if __name__ == '__main__':
                   temperature=273.15,
                   pressure=101.325 * 1e3)
 
-    pi = get_component_pressure_by_pr(
-        f.temperature,
-        const.MOLAR_VOLUME,
+    xi, yi, e = calculate_equilibrium_by_pr(
+        f.mole_fractions, f.temperature,
+        f.pressure,
         [tc + 273.15 for tc in const.TC],
         [pc * 1e3 for pc in const.PC],
-        const.OMEGA,
-        const.PR_Kij,
-        f.mole_fractions
+        const.OMEGA, const.PR_Kij
     )
-    ki = [p / f.pressure for p in pi]
 
-    s1 = sum(zf * k for zf, k in zip(f.mole_fractions, ki))
-    s2 = sum(zf / k for zf, k in zip(f.mole_fractions, ki))
-
-    xi = [0 for _ in range(const.COMP_COUNT)]
-    yi = [0 for _ in range(const.COMP_COUNT)]
-    e = 0
-
-    foo = lambda x: sum(zf * (k - 1) / (1 + x * (k - 1))
-                        for zf, k in zip(f.mole_fractions, ki))
-
-    if s1 < 1:
-        xi = f.mole_fractions[:]
-    elif s2 < 1:
-        yi = f.mole_fractions[:]
-    else:
-        e, *_ = fsolve(foo, np.array([0.5]))
-        xi = [zf / (1 + e * (k - 1)) for zf, k in zip(f.mole_fractions, ki)]
-        yi = [zf * k / (1 + e * (k - 1)) for zf, k in zip(f.mole_fractions, ki)]
-
-    print(xi)
-    print(sum(xi))
-    print(yi)
-    print(sum(yi))
     print(e)
