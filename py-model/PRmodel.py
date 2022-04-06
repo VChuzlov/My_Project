@@ -18,7 +18,7 @@ def p_sat_by_wilson(t, pc, tc, omega):
     """
     tr = t * 1.8 + 491.67
     tcr = [ti * 1.8 + 491.67 for ti in tc]
-    pcr = [p * 1.4504e-4 for p in pc]
+    pcr = [p * 1.4504e-1 for p in pc]
 
     return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / tr))
             for pci, omi, tci in zip(pcr, omega, tcr)]
@@ -39,11 +39,13 @@ def rachford_rice(e, zi, ki):
 def first_guess(t, p, zi, pc, tc, omega):
     psat_i = p_sat_by_wilson(t, pc, tc, omega)
 
-    ki = [psat / p / 1.4504e-4 for psat in psat_i]
+    ki = [psat / p * 1e-1 for psat in psat_i]
 
-    e0 = np.array([0.0])
+    # e0 = np.array([0.0])
     # e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
-    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 1), args=(zi, ki)).root
+    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 10), args=(zi, ki)).root
+    e = 1 if e > 1 else e
+
     s1 = sum(z * k for z, k in zip(zi, ki))
     s2 = sum(z / k for z, k in zip(zi, ki))
 
@@ -111,13 +113,13 @@ def second_guess(t, p, xi, yi, tc, pc, omega, kij):
             av += yi[i] * yi[j] * (ai[i] * ai[j]) ** 0.5 * (1 - kij[i][j])
             al += xi[i] * xi[j] * (ai[i] * ai[j]) ** 0.5 * (1 - kij[i][j])
 
-    aav = av * p * (const.R * t) ** 2
+    aav = av * p / (const.R * t) ** 2
     aal = al * p / (const.R * t) ** 2
 
     bbv = bv * p / (const.R * t)
     bbl = bl * p / (const.R * t)
 
-    return aav, aal, bbv, bbl, ai, bi
+    return aav, aal, bbv, bbl, ai, bi, al, av, bl, bv
 
 
 def cubic_pr(z, a, b):
@@ -137,22 +139,22 @@ def get_z(foo, z, a, b, flag):
         return sol[np.where(sol > 0)].max()
 
 
-def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, kij):
+def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, aa, bb, kij):
     log_f_yp = [0 for _ in range(const.COMP_COUNT)]
 
-    aij = [[(1 - kij[i][j]) * (ai[i] * ai[j]) ** 0.5 for j in range(const.COMP_COUNT)]
-           for i in range(const.COMP_COUNT)]
+    # aij = [[(1 - kij[i][j]) * (ai[i] * ai[j]) ** 0.5 for j in range(const.COMP_COUNT)]
+    #        for i in range(const.COMP_COUNT)]
     for i in range(const.COMP_COUNT):
-        # s = sum(mole_frac[i] * (ai[i] * a) ** 0.5 * (1 - k)
-        #         for a, k in zip(ai, kij[i]))
-        s = sum(mf * k / a for mf, k in zip(mole_frac, aij[i]))
+        s = sum(mole_frac[i] * (ai[i] * a) ** 0.5 * (1 - k)
+                for a, k in zip(ai, kij[i]))
+        # s = sum(mf * k / a for mf, k in zip(mole_frac, aij[i]))
 
-        # log_f_yp[i] = (-np.log(z - b) + bi[i] / b * (z - 1)
-        #                - a / (2.8284 * b) * (s / a - bi[i] / b)
-        #                * np.log((z + 2.4142 * b) / (z - 0.4142 * b)))
+        log_f_yp[i] = (-np.log(z - bb) + bi[i] / b * (z - 1))
+                       # - aa / (2.8284 * bb) * (2 * s / a - bi[i] / b)
+                       # * np.log((z + 2.4142 * bb) / (z - 0.4142 * bb)))
 
-        log_f_yp[i] = (bi[i] / b * (z - 1) - np.log(z - b) - a / (2 * 2 ** 0.5 * b) * (2 * s - bi[i] / b)
-                       * np.log((z + 2.414 * b) / (z - 0.414 * b)))
+        # log_f_yp[i] = (bi[i] / b * (z - 1) - np.log(z - b) - a / (2 * 2 ** 0.5 * b) * (2 * s - bi[i] / b)
+        #                * np.log((z + 2.414 * b) / (z - 0.414 * b)))
 
         phi = [np.exp(lg) for lg in log_f_yp]
         fi = [np.exp(lg) * mf * p for lg, mf in zip(log_f_yp, mole_frac)]
@@ -160,37 +162,43 @@ def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, kij):
     return phi, fi
 
 
-def condition(fiv, fil, zi, yi, xi, e):
-    cond1 = sum(fv - fl for fv, fl in zip(fiv, fil)) == 0
+def condition(fiv, fil, zi, yi, xi, e, ki_prev, ki):
+    cond1 = round(sum(fv - fl for fv, fl in zip(fiv, fil)), 9) == 0
     cond2 = sum(z - y * e - (1 - e) * x for z, y, x in zip(zi, yi, xi))
     cond3 = sum(xi) == 1
     cond4 = sum(yi) == 1
+    cond5 = sum([(k_prev - k) ** 2 for k_prev, k in zip(ki_prev, ki)]) <= 1e-15
 
-    return cond1 and cond2 and cond3 and cond4
+    return cond5 or cond1 and cond2 and cond3 and cond4
 
 
 def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond=condition):
     xi, yi, e = first_guess(t, p, zi, pc, tc, omega)
     i = 0
     while True:
-        aav, aal, bbv, bbl, ai, bi = second_guess(t, p, xi, yi, tc, pc, omega, kij)
+        aav, aal, bbv, bbl, ai, bi, al, av, bl, bv = second_guess(t, p, xi, yi, tc, pc, omega, kij)
 
         zv = get_z(foo, zi, aav, bbv, flag='v')
         zl = get_z(foo, zi, aal, bbl, flag='l')
 
-        phiv, fiv = calculate_components_fugacity(yi, p, bi, bbv, ai, aav, zv, kij)
-        phil, fil = calculate_components_fugacity(xi, p, bi, bbl, ai, aal, zl, kij)
+        phiv, fiv = calculate_components_fugacity(
+            yi, p, bi, bv, ai, av, zv, aav, bbv, kij
+        )
+        phil, fil = calculate_components_fugacity(
+            xi, p, bi, bl, ai, al, zl, aal, bbl, kij
+        )
 
-        ki = [pv / pl for pv, pl in zip(phiv, phil)]
-
+        ki = [pl / pv for pv, pl in zip(phiv, phil)]
+        ki_prev = ki[:]
+        print(ki)
         xi, yi, e, = for_loop(zi, ki)
 
-        if cond(fiv, fil, zi, yi, xi, e):
+        if cond(fiv, fil, zi, yi, xi, e, ki_prev, ki):
             return xi, yi, e
 
         i += 1
         if i > 10000:
-            return
+            return xi, yi, e
 
 
 class PRSolution:
@@ -200,16 +208,18 @@ class PRSolution:
 if __name__ == '__main__':
     import flow
 
-    f = flow.Flow(mass_flows=[2 * i for i in range(const.COMP_COUNT)],
-                  temperature=273.15,
-                  pressure=101.325 * 1e3)
+    #[2 * i for i in range(const.COMP_COUNT)]
+    f = flow.Flow(mass_flows=const.mass_flows,
+                  temperature=273.15+39.99,
+                  pressure=1.2e4)
 
     xi, yi, e = calculate_equilibrium_by_pr(
         f.mole_fractions, f.temperature,
         f.pressure,
         [tc + 273.15 for tc in const.TC],
-        [pc * 1e3 for pc in const.PC],
+        [pc for pc in const.PC],
         const.OMEGA, const.PR_Kij
     )
 
     print(e)
+    print(xi)
