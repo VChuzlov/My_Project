@@ -16,12 +16,13 @@ def p_sat_by_wilson(t, pc, tc, omega):
     :param omega:
     :return:
     """
-    tr = t * 1.8 + 491.67
-    tcr = [ti * 1.8 + 491.67 for ti in tc]
+    tr = t * 1.8 + 491.67 - 273.15
+    tcr = [ti * 1.8 + 491.67 - 273.15 for ti in tc]
     pcr = [p * 1.4504e-1 for p in pc]
+    # pcr = [p / 100 for p in pc]
 
-    return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / tr))
-            for pci, omi, tci in zip(pcr, omega, tcr)]
+    return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / t))
+            for pci, omi, tci in zip(pc, omega, tc)]
 
 
 def rachford_rice(e, zi, ki):
@@ -39,11 +40,11 @@ def rachford_rice(e, zi, ki):
 def first_guess(t, p, zi, pc, tc, omega):
     psat_i = p_sat_by_wilson(t, pc, tc, omega)
 
-    ki = [psat / p * 1e-1 for psat in psat_i]
+    ki = [psat / p for psat in psat_i]
 
     # e0 = np.array([0.0])
     # e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
-    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 10), args=(zi, ki)).root
+    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 100), args=(zi, ki)).root
     e = 1 if e > 1 else e
 
     s1 = sum(z * k for z, k in zip(zi, ki))
@@ -62,7 +63,7 @@ def first_guess(t, p, zi, pc, tc, omega):
         xi = [z / (1 + e * (k - 1)) for z, k in zip(zi, ki)]
         yi = [z * k / (1 + e * (k - 1)) for z, k in zip(zi, ki)]
 
-    return xi, yi, e
+    return xi, yi, e, ki
 
 
 def for_loop(zi, ki):
@@ -142,19 +143,17 @@ def get_z(foo, z, a, b, flag):
 def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, aa, bb, kij):
     log_f_yp = [0 for _ in range(const.COMP_COUNT)]
 
-    # aij = [[(1 - kij[i][j]) * (ai[i] * ai[j]) ** 0.5 for j in range(const.COMP_COUNT)]
-    #        for i in range(const.COMP_COUNT)]
     for i in range(const.COMP_COUNT):
-        s = sum(mole_frac[i] * (ai[i] * a) ** 0.5 * (1 - k)
-                for a, k in zip(ai, kij[i]))
-        # s = sum(mf * k / a for mf, k in zip(mole_frac, aij[i]))
+        # s = sum(mole_frac[i] * (ai[i] * a) ** 0.5 * (1 - k)
+        #         for a, k in zip(ai, kij[i]))
+        s = 0
+        for j in range(const.COMP_COUNT):
+            s += mole_frac[i] * (ai[i] * ai[j]) ** 0.5 * (1 - kij[i][j])
 
-        log_f_yp[i] = (-np.log(z - bb) + bi[i] / b * (z - 1))
-                       # - aa / (2.8284 * bb) * (2 * s / a - bi[i] / b)
-                       # * np.log((z + 2.4142 * bb) / (z - 0.4142 * bb)))
-
-        # log_f_yp[i] = (bi[i] / b * (z - 1) - np.log(z - b) - a / (2 * 2 ** 0.5 * b) * (2 * s - bi[i] / b)
-        #                * np.log((z + 2.414 * b) / (z - 0.414 * b)))
+        if b and a:
+            log_f_yp[i] = (-np.log(z - bb) + bi[i] / b * (z - 1)
+                           - aa / (2.8284 * bb) * (2 * s / a - bi[i] / b)
+                           * np.log((z + 2.4142 * bb) / (z - 0.4142 * bb)))
 
         phi = [np.exp(lg) for lg in log_f_yp]
         fi = [np.exp(lg) * mf * p for lg, mf in zip(log_f_yp, mole_frac)]
@@ -163,17 +162,17 @@ def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, aa, bb, kij):
 
 
 def condition(fiv, fil, zi, yi, xi, e, ki_prev, ki):
-    cond1 = round(sum(fv - fl for fv, fl in zip(fiv, fil)), 9) == 0
+    cond1 = round(sum(abs(fv - fl) for fv, fl in zip(fiv, fil)), 9) <= 1e-4
     cond2 = sum(z - y * e - (1 - e) * x for z, y, x in zip(zi, yi, xi))
     cond3 = sum(xi) == 1
     cond4 = sum(yi) == 1
-    cond5 = sum([(k_prev - k) ** 2 for k_prev, k in zip(ki_prev, ki)]) <= 1e-15
-
+    cond5 = (s := sum([abs(k_prev - k) for k_prev, k in zip(ki_prev, ki)])) <= 1e-4
+    print(s)
     return cond5 or cond1 and cond2 and cond3 and cond4
 
 
 def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond=condition):
-    xi, yi, e = first_guess(t, p, zi, pc, tc, omega)
+    xi, yi, e, ki_prev = first_guess(t, p, zi, pc, tc, omega)
     i = 0
     while True:
         aav, aal, bbv, bbl, ai, bi, al, av, bl, bv = second_guess(t, p, xi, yi, tc, pc, omega, kij)
@@ -189,16 +188,17 @@ def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond
         )
 
         ki = [pl / pv for pv, pl in zip(phiv, phil)]
-        ki_prev = ki[:]
-        print(ki)
-        xi, yi, e, = for_loop(zi, ki)
 
+        xi, yi, e, = for_loop(zi, ki)
+        print(i, e)
         if cond(fiv, fil, zi, yi, xi, e, ki_prev, ki):
             return xi, yi, e
 
         i += 1
         if i > 10000:
             return xi, yi, e
+
+        ki_prev = ki[:]
 
 
 class PRSolution:
@@ -209,15 +209,15 @@ if __name__ == '__main__':
     import flow
 
     #[2 * i for i in range(const.COMP_COUNT)]
-    f = flow.Flow(mass_flows=const.mass_flows,
-                  temperature=273.15+39.99,
-                  pressure=1.2e4)
+    f = flow.Flow(mass_flows=[2 * i for i in range(const.COMP_COUNT)],
+                  temperature=273.15,
+                  pressure=101325)
 
     xi, yi, e = calculate_equilibrium_by_pr(
         f.mole_fractions, f.temperature,
         f.pressure,
         [tc + 273.15 for tc in const.TC],
-        [pc for pc in const.PC],
+        [pc * 1000 for pc in const.PC],
         const.OMEGA, const.PR_Kij
     )
 
