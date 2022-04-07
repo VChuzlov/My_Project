@@ -18,11 +18,11 @@ def p_sat_by_wilson(t, pc, tc, omega):
     """
     tr = t * 1.8 + 491.67 - 273.15
     tcr = [ti * 1.8 + 491.67 - 273.15 for ti in tc]
-    pcr = [p * 1.4504e-1 for p in pc]
+    pcr = [p * 1.4504e-4 for p in pc]
     # pcr = [p / 100 for p in pc]
 
-    return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / t))
-            for pci, omi, tci in zip(pc, omega, tc)]
+    return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / tr))
+            for pci, omi, tci in zip(pcr, omega, tcr)]
 
 
 def rachford_rice(e, zi, ki):
@@ -40,7 +40,7 @@ def rachford_rice(e, zi, ki):
 def first_guess(t, p, zi, pc, tc, omega):
     psat_i = p_sat_by_wilson(t, pc, tc, omega)
 
-    ki = [psat / p for psat in psat_i]
+    ki = [psat / p / 1.4504e-4 for psat in psat_i]
 
     # e0 = np.array([0.0])
     # e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
@@ -209,7 +209,7 @@ if __name__ == '__main__':
     import flow
 
     #[2 * i for i in range(const.COMP_COUNT)]
-    f = flow.Flow(mass_flows=[2 * i for i in range(const.COMP_COUNT)],
+    f = flow.Flow(mass_flows=const.mass_flows,
                   temperature=273.15,
                   pressure=101325)
 
