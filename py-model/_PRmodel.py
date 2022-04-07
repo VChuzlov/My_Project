@@ -27,6 +27,57 @@ def get_pr(p, pc):
     return [p / pci for pci in pc]
 
 
+def solve_cubic_equation(a, b, c):
+    """
+    x ** 3 + a * x ** 2 + b * x + 1 = 0
+    :param a:
+    :param b:
+    :param c:
+    :return:
+    """
+
+    def sgn(x):
+        if x > 0:
+            return 1
+        if x == 0:
+            return 0
+        if x < 0:
+            return -1
+
+    x1, x2, x3 = [None] * 3
+
+    q = (a ** 2 - 3 * b) / 9
+    r = (2 * a ** 3 - 9 * a * b + 27 * c) / 54
+    s = q ** 3 - r ** 2
+
+    if s > 0:
+        fi = 1 / 3 * np.arccos(r / q ** (3 / 2))
+        x1 = -2 * q ** 0.5 * np.cos(fi) - a / 3
+        x2 = -2 * q ** 0.5 * np.cos(fi + 2 / 3 * 3.14) - a / 3
+        x3 = -2 * q ** 0.5 * np.cos(fi - 2 / 3 * 3.14) - a / 3
+
+    elif s < 0:
+        if q > 0:
+            fi = 1 / 3 * np.arccosh(abs(r) / q ** (3 / 2))
+            x1 = -2 * sgn(r) * q ** 0.5 * np.cosh(fi) - a / 3
+        elif q < 0:
+            sss = abs(r) / abs(q) ** (3 / 2)
+            fi = 1 / 3 * np.arcsinh(sss)
+            x1 = -2 * sgn(r) * abs(q) ** 0.5 * np.sinh(fi) - a / 3
+        else:
+            x1 = -(c - a * a * a / 27) ** (1 / 3) - a / 3
+
+    else:
+        x1 = -2 * sgn(r) * q ** 0.5 - a / 3
+        x2 = sgn(r) * q ** 0.5 - a / 3
+
+    x1 = None if not x1 or x1 < 0 else x1
+    x2 = None if not x2 or x2 < 0 else x2
+    x3 = None if not x3 or x3 < 0 else x3
+
+    return [x for x in [x1, x2, x3] if x]
+
+
 def p_sat_by_wilson(t, pc, tc, omega):
     """
     Wilson equation for Psat calculation/
@@ -48,8 +99,8 @@ def rachford_rice(e, zi, ki):
     :param ki: phase equilibrium constant
     :return:
     """
-    return sum(z * (k - 1) / (e * (k - 1) + 1)
-               for z, k in zip(zi, ki))
+    return sum(z * (k - 1) / (1 + e * (k - 1))
+               for z, k in zip(zi, ki) if k > 0)
 
 
 def first_guess(t, p, zi, pc, tc, omega):
@@ -58,8 +109,8 @@ def first_guess(t, p, zi, pc, tc, omega):
     ki = [psat / p for psat in psat_i]
 
     e0 = np.array([0.0])
-    e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
-    # e = root_scalar(rachford_rice, method='bisect', bracket=(0, 100), args=(zi, ki)).root
+    # e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
+    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 1), args=(zi, ki)).root
     e = 1 if e > 1 else e
     e = 0 if e < 0 else e
 
@@ -114,7 +165,7 @@ def second_guess(xi, yi, tr, pr, omega, kij):
     bv = sum(y * b for y, b in zip(yi, bi))
     bl = sum(x * b for x, b in zip(xi, bi))
 
-    ni = [0.37646 + 1.54226 * omi - 0.26992 * omi ** 2 if omi <= 0.49
+    ni = [0.37464 + 1.54226 * omi - 0.26992 * omi ** 2 if omi <= 0.49
           else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omi) * omi) * omi
           for omi in omega]
 
@@ -165,11 +216,9 @@ def calculate_components_fugacity(mole_frac, bi, b, a, z, qij):
             s += mole_frac[i] * qij[i][j]
 
         if b:
-            phi[i] = (
-                    np.exp(z - 1) * bi[i] / b - np.log(z - b)
-                    - a / (2 ** 0.5 * b) * (s / a - bi[i] / b / 2)
-                    * np.log((z + (1 + 2 ** 0.5) * b) / (z - (-1 + 2 ** 0.5 * b)))
-            )
+            phi[i] = np.exp((z - 1) * bi[i] / b - np.log(z - b) -
+                            a / (2 ** 0.5 * b) * (s / a - bi[i] / b / 2)
+                            * np.log((z + (1 + 2 ** 0.5) * b) / (z - (-1 + 2 ** 0.5) * b)))
 
     return phi
 
@@ -201,22 +250,32 @@ def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond
             xi, yi, tr, pr, omega, kij
         )
 
-        zv = get_z(
-            foo, flag='v',
+        # zv = get_z(
+        #     foo, flag='v',
+        #     a=(bv - 1),
+        #     b=(av - 2 * bv - 3 * bv ** 2),
+        #     c=((-av + bv ** 2 + bv) * bv)
+        # )
+        zv, *_ = solve_cubic_equation(
             a=(bv - 1),
             b=(av - 2 * bv - 3 * bv ** 2),
             c=((-av + bv ** 2 + bv) * bv)
         )
-        zl = get_z(
-            foo, flag='l',
+        # zl = get_z(
+        #     foo, flag='l',
+        #     a=(bl - 1),
+        #     b=(al - 2 * bl - 3 * bl ** 2),
+        #     c=((-al + bl ** 2 + bl) * bl)
+        # )
+        zl, *_ = solve_cubic_equation(
             a=(bl - 1),
             b=(al - 2 * bl - 3 * bl ** 2),
             c=((-al + bl ** 2 + bl) * bl)
         )
 
-        # phiv = calculate_components_fugacity(
-        #     yi, bi, bv, av, zv, qij
-        # )
+        phiv = calculate_components_fugacity(
+            yi, bi, bv, av, zv, qij
+        )
         phil = calculate_components_fugacity(
             xi, bi, bl, al, zl, qij
         )
