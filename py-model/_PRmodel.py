@@ -16,7 +16,7 @@ def celsius_to_kelvin(t):
 
 
 def kpa_to_psi(p):
-    return p * 0.1145
+    return p * 0.145
 
 
 def get_tr(t, tc):
@@ -75,7 +75,9 @@ def solve_cubic_equation(a, b, c):
     x2 = None if not x2 or x2 < 0 else x2
     x3 = None if not x3 or x3 < 0 else x3
 
-    return [x for x in [x1, x2, x3] if x]
+    x = [x for x in [x1, x2, x3] if x]
+
+    return x
 
 
 def p_sat_by_wilson(t, pc, tc, omega):
@@ -165,7 +167,8 @@ def second_guess(xi, yi, tr, pr, omega, kij):
     bv = sum(y * b for y, b in zip(yi, bi))
     bl = sum(x * b for x, b in zip(xi, bi))
 
-    ni = [0.37464 + 1.54226 * omi - 0.26992 * omi ** 2 if omi <= 0.49
+    ni = [0.37464 + 1.54226 * omi - 0.26992 * omi ** 2
+          if omi <= 0.49
           else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omi) * omi) * omi
           for omi in omega]
 
@@ -208,28 +211,31 @@ def get_z(foo, a, b, c, flag):
 
 def calculate_components_fugacity(mole_frac, bi, b, a, z, qij):
     phi = [0 for _ in range(const.COMP_COUNT)]
+    fi = phi[:]
 
     for i in range(const.COMP_COUNT):
         s = 0
 
         for j in range(const.COMP_COUNT):
-            s += mole_frac[i] * qij[i][j]
+            s += mole_frac[j] * qij[i][j]
 
         if b:
             phi[i] = np.exp((z - 1) * bi[i] / b - np.log(z - b) -
                             a / (2 ** 0.5 * b) * (s / a - bi[i] / b / 2)
                             * np.log((z + (1 + 2 ** 0.5) * b) / (z - (-1 + 2 ** 0.5) * b)))
 
+        fi[i] = phi[i] * mole_frac[i]
+
     return phi
 
 
 def condition(zi, yi, xi, e, ki_prev, ki):
     cond2 = sum(z - y * e - (1 - e) * x for z, y, x in zip(zi, yi, xi))
-    cond3 = sum(xi) == 1
-    cond4 = sum(yi) == 1
-    cond5 = (s := sum([abs(k_prev - k) for k_prev, k in zip(ki_prev, ki)])) <= 1e-4
+    cond3 = round(sum(xi), 4) == 1
+    cond4 = round(sum(yi), 4) == 1
+    cond5 = sum(abs(k_prev - k) for k_prev, k in zip(ki_prev, ki)) <= 1e-4
 
-    return cond5 or cond2 and cond3 and cond4
+    return cond5 and cond2 and cond3 and cond4
 
 
 def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond=condition):
