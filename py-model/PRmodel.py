@@ -21,8 +21,8 @@ def p_sat_by_wilson(t, pc, tc, omega):
     pcr = [p * 1.4504e-4 for p in pc]
     # pcr = [p / 100 for p in pc]
 
-    return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / tr))
-            for pci, omi, tci in zip(pcr, omega, tcr)]
+    return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / t))
+            for pci, omi, tci in zip(pc, omega, tc)]
 
 
 def rachford_rice(e, zi, ki):
@@ -40,11 +40,11 @@ def rachford_rice(e, zi, ki):
 def first_guess(t, p, zi, pc, tc, omega):
     psat_i = p_sat_by_wilson(t, pc, tc, omega)
 
-    ki = [psat / p / 1.4504e-4 for psat in psat_i]
+    ki = [psat / p for psat in psat_i]
 
-    # e0 = np.array([0.0])
-    # e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
-    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 100), args=(zi, ki)).root
+    e0 = np.array([0.0])
+    e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
+    # e = root_scalar(rachford_rice, method='bisect', bracket=(0, 100), args=(zi, ki)).root
     e = 1 if e > 1 else e
 
     s1 = sum(z * k for z, k in zip(zi, ki))
@@ -96,8 +96,9 @@ def second_guess(t, p, xi, yi, tc, pc, omega, kij):
     bv = sum(y * b for y, b in zip(yi, bi))
     bl = sum(x * b for x, b in zip(xi, bi))
 
-    ni = [0.37646 + 1.54226 * omi - 0.26992 * omi ** 2 if omi <= 0.49
-          else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omi) * omi) * omi
+    ni = [0.37646 + 1.54226 * omi - 0.26992 * omi ** 2
+          # if omi <= 0.49
+          # else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omi) * omi) * omi
           for omi in omega]
 
     alphai = [(1 + n * (1 - (t / tci) ** 0.5)) ** 2
@@ -148,7 +149,7 @@ def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, aa, bb, kij):
         #         for a, k in zip(ai, kij[i]))
         s = 0
         for j in range(const.COMP_COUNT):
-            s += mole_frac[i] * (ai[i] * ai[j]) ** 0.5 * (1 - kij[i][j])
+            s += mole_frac[j] * (ai[i] * ai[j]) ** 0.5 * (1 - kij[i][j])
 
         if b and a:
             log_f_yp[i] = (-np.log(z - bb) + bi[i] / b * (z - 1)
@@ -166,9 +167,9 @@ def condition(fiv, fil, zi, yi, xi, e, ki_prev, ki):
     cond2 = sum(z - y * e - (1 - e) * x for z, y, x in zip(zi, yi, xi))
     cond3 = sum(xi) == 1
     cond4 = sum(yi) == 1
-    cond5 = (s := sum([abs(k_prev - k) for k_prev, k in zip(ki_prev, ki)])) <= 1e-4
-    print(s)
-    return cond5 or cond1 and cond2 and cond3 and cond4
+    cond5 = sum([abs(k_prev - k) for k_prev, k in zip(ki_prev, ki)]) <= 1e-4
+
+    return cond5 and cond1 and cond2 and cond3 and cond4
 
 
 def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond=condition):
@@ -190,7 +191,7 @@ def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond
         ki = [pl / pv for pv, pl in zip(phiv, phil)]
 
         xi, yi, e, = for_loop(zi, ki)
-        print(i, e)
+
         if cond(fiv, fil, zi, yi, xi, e, ki_prev, ki):
             return xi, yi, e
 
@@ -208,18 +209,32 @@ class PRSolution:
 if __name__ == '__main__':
     import flow
 
-    #[2 * i for i in range(const.COMP_COUNT)]
     f = flow.Flow(mass_flows=const.mass_flows,
-                  temperature=273.15,
-                  pressure=101325)
+                  temperature=273.15 + 39.99,
+                  pressure=12000)
 
     xi, yi, e = calculate_equilibrium_by_pr(
         f.mole_fractions, f.temperature,
         f.pressure,
         [tc + 273.15 for tc in const.TC],
-        [pc * 1000 for pc in const.PC],
+        [pc for pc in const.PC],
         const.OMEGA, const.PR_Kij
     )
 
     print(e)
     print(xi)
+
+    import matplotlib.pyplot as plt
+
+    plt.style.use('seaborn-whitegrid')
+
+    plt.scatter(const.y, yi, label='Пар')
+    plt.scatter(const.x, xi, label='Жидкость')
+    data = sorted(const.x + const.y)
+    plt.plot(data, data, '--k')
+    plt.xlabel('Расчет UniSim')
+    plt.ylabel('Наш расчет')
+    plt.legend()
+    plt.annotate(f'e = {e:.4f};\nUnisim = 0.9118', (0.6, 0.5))
+    plt.tight_layout()
+    plt.show()
