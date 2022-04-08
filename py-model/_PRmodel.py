@@ -168,8 +168,8 @@ def second_guess(xi, yi, tr, pr, omega, kij):
     bl = sum(x * b for x, b in zip(xi, bi))
 
     ni = [0.37464 + 1.54226 * omi - 0.26992 * omi ** 2
-          if omi <= 0.49
-          else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omi) * omi) * omi
+          # if omi <= 0.49
+          # else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omi) * omi) * omi
           for omi in omega]
 
     alphai = [(1 + n * (1 - tri ** 0.5)) ** 2
@@ -322,3 +322,18 @@ if __name__ == '__main__':
 
     print(e)
     print(xi)
+
+    import matplotlib.pyplot as plt
+
+    plt.style.use('seaborn-whitegrid')
+
+    plt.scatter(const.y, yi, label='Пар')
+    plt.scatter(const.x, xi, label='Жидкость')
+    data = sorted(const.x + const.y)
+    plt.plot(data, data, '--k')
+    plt.xlabel('Расчет UniSim')
+    plt.ylabel('Наш расчет')
+    plt.legend()
+    plt.annotate(f'e = {e:.4f};\nUnisim = 0.9118', (0.6, 0.5))
+    plt.tight_layout()
+    plt.show()
