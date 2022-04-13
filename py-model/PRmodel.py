@@ -224,17 +224,17 @@ if __name__ == '__main__':
     print(e)
     print(xi)
 
-    import matplotlib.pyplot as plt
-
-    plt.style.use('seaborn-whitegrid')
-
-    plt.scatter(const.y, yi, label='Пар')
-    plt.scatter(const.x, xi, label='Жидкость')
-    data = sorted(const.x + const.y)
-    plt.plot(data, data, '--k')
-    plt.xlabel('Расчет UniSim')
-    plt.ylabel('Наш расчет')
-    plt.legend()
-    plt.annotate(f'e = {e:.4f};\nUnisim = 0.9118', (0.6, 0.5))
-    plt.tight_layout()
-    plt.show()
+    # import matplotlib.pyplot as plt
+    #
+    # plt.style.use('seaborn-whitegrid')
+    #
+    # plt.scatter(const.y, yi, label='Пар')
+    # plt.scatter(const.x, xi, label='Жидкость')
+    # data = sorted(const.x + const.y)
+    # plt.plot(data, data, '--k')
+    # plt.xlabel('Расчет UniSim')
+    # plt.ylabel('Наш расчет')
+    # plt.legend()
+    # plt.annotate(f'e = {e:.4f};\nUnisim = 0.9118', (0.6, 0.5))
+    # plt.tight_layout()
+    # plt.show()
