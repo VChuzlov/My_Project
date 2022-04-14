@@ -5,6 +5,7 @@
 import constants as const
 import numpy as np
 from scipy.optimize import fsolve, root_scalar
+import _PRmodel as pr
 
 
 def p_sat_by_wilson(t, pc, tc, omega):
@@ -16,11 +17,6 @@ def p_sat_by_wilson(t, pc, tc, omega):
     :param omega:
     :return:
     """
-    tr = t * 1.8 + 491.67 - 273.15
-    tcr = [ti * 1.8 + 491.67 - 273.15 for ti in tc]
-    pcr = [p * 1.4504e-4 for p in pc]
-    # pcr = [p / 100 for p in pc]
-
     return [pci * np.exp(5.372697 * (1 + omi) * (1 - tci / t))
             for pci, omi, tci in zip(pc, omega, tc)]
 
@@ -42,9 +38,7 @@ def first_guess(t, p, zi, pc, tc, omega):
 
     ki = [psat / p for psat in psat_i]
 
-    e0 = np.array([0.0])
-    e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
-    # e = root_scalar(rachford_rice, method='bisect', bracket=(0, 100), args=(zi, ki)).root
+    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 1), args=(zi, ki)).root
     e = 1 if e > 1 else e
 
     s1 = sum(z * k for z, k in zip(zi, ki))
@@ -69,6 +63,7 @@ def first_guess(t, p, zi, pc, tc, omega):
 def for_loop(zi, ki):
     e0 = np.array([0.5])
     e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
+    e = 1 if e > 1 else e
 
     s1 = sum(z * k for z, k in zip(zi, ki))
     s2 = sum(z / k for z, k in zip(zi, ki))
@@ -130,7 +125,7 @@ def cubic_pr(z, a, b):
             + (b ** 2 + b ** 3 - a * b))
 
 
-def get_z(foo, z, a, b, flag):
+def get_z(foo, a, b, flag):
     z0 = np.array([0.1, 0.5, 1.0])
     sol = fsolve(foo, z0, args=(a, b))
 
@@ -145,11 +140,8 @@ def calculate_components_fugacity(mole_frac, p, bi, b, ai, a, z, aa, bb, kij):
     log_f_yp = [0 for _ in range(const.COMP_COUNT)]
 
     for i in range(const.COMP_COUNT):
-        # s = sum(mole_frac[i] * (ai[i] * a) ** 0.5 * (1 - k)
-        #         for a, k in zip(ai, kij[i]))
-        s = 0
-        for j in range(const.COMP_COUNT):
-            s += mole_frac[j] * (ai[i] * ai[j]) ** 0.5 * (1 - kij[i][j])
+        s = sum(mf * (ai[i] * a) ** 0.5 * (1 - k)
+                for mf, a, k in zip(mole_frac, ai, kij[i]))
 
         if b and a:
             log_f_yp[i] = (-np.log(z - bb) + bi[i] / b * (z - 1)
@@ -169,7 +161,7 @@ def condition(fiv, fil, zi, yi, xi, e, ki_prev, ki):
     cond4 = sum(yi) == 1
     cond5 = sum([abs(k_prev - k) for k_prev, k in zip(ki_prev, ki)]) <= 1e-4
 
-    return cond5 and cond1 and cond2 and cond3 and cond4
+    return cond5 or cond1 and cond2 and cond3 and cond4
 
 
 def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond=condition):
@@ -178,8 +170,8 @@ def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond
     while True:
         aav, aal, bbv, bbl, ai, bi, al, av, bl, bv = second_guess(t, p, xi, yi, tc, pc, omega, kij)
 
-        zv = get_z(foo, zi, aav, bbv, flag='v')
-        zl = get_z(foo, zi, aal, bbl, flag='l')
+        zv = get_z(foo, aav, bbv, flag='v')
+        zl = get_z(foo, aal, bbl, flag='l')
 
         phiv, fiv = calculate_components_fugacity(
             yi, p, bi, bv, ai, av, zv, aav, bbv, kij
@@ -203,26 +195,48 @@ def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond
 
 
 class PRSolution:
-    pass
+    def __init__(
+            self, zi, t, p,
+            tc=const.TC,
+            pc=const.PC,
+            omega=const.OMEGA,
+            kij=const.PR_Kij
+    ):
+        self.zi = zi[:]
+        self.temperature = t
+        self.pressure = p
+        self.xi, self.yi, self.e, self.ki = pr.calculate_equilibrium_by_pr(
+            self.zi, self.temperature, self.pressure,
+            [t for t in tc],
+            pc, omega, kij
+        )
 
 
 if __name__ == '__main__':
     import flow
 
     f = flow.Flow(mass_flows=const.mass_flows,
-                  temperature=273.15 + 39.99,
+                  temperature=39.99,
                   pressure=12000)
 
-    xi, yi, e = calculate_equilibrium_by_pr(
-        f.mole_fractions, f.temperature,
-        f.pressure,
-        [tc + 273.15 for tc in const.TC],
-        [pc for pc in const.PC],
-        const.OMEGA, const.PR_Kij
+    # xi, yi, e = calculate_equilibrium_by_pr(
+    #     f.mole_fractions, f.temperature,
+    #     f.pressure,
+    #     [tc + 273.15 for tc in const.TC],
+    #     [pc for pc in const.PC],
+    #     const.OMEGA, const.PR_Kij
+    # )
+    #
+    # print(e)
+    # print(xi)
+
+    p = PRSolution(
+        f.mole_fractions,
+        f.temperature,
+        f.pressure
     )
 
-    print(e)
-    print(xi)
+    print(p.e)
 
     # import matplotlib.pyplot as plt
     #

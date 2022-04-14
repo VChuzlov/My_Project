@@ -110,8 +110,6 @@ def first_guess(t, p, zi, pc, tc, omega):
 
     ki = [psat / p for psat in psat_i]
 
-    e0 = np.array([0.0])
-    # e, *_ = fsolve(rachford_rice, e0, args=(zi, ki))
     e = root_scalar(rachford_rice, method='bisect', bracket=(0, 1), args=(zi, ki)).root
     e = 1 if e > 1 else e
     e = 0 if e < 0 else e
@@ -168,8 +166,6 @@ def second_guess(xi, yi, tr, pr, omega, kij):
     bl = sum(x * b for x, b in zip(xi, bi))
 
     ni = [0.37464 + 1.54226 * omi - 0.26992 * omi ** 2
-          # if omi <= 0.49
-          # else 0.379642 + (1.48503 - (0.164423 - 1.016666 * omi) * omi) * omi
           for omi in omega]
 
     alphai = [(1 + n * (1 - tri ** 0.5)) ** 2
@@ -177,7 +173,6 @@ def second_guess(xi, yi, tr, pr, omega, kij):
 
     aci = [a0 * alph * pri / tri ** 2 for alph, pri, tri in zip(alphai, pr, tr)]
 
-    # ai = [a * alph for a, alph in zip(aci, alphai)]
     qij = [
         [(1 - kij[i][j]) * (aci[i] * aci[j]) ** 0.5
          for j in range(const.COMP_COUNT)
@@ -231,11 +226,11 @@ def calculate_components_fugacity(mole_frac, bi, b, a, z, qij):
 
 def condition(zi, yi, xi, e, ki_prev, ki):
     cond2 = sum(z - y * e - (1 - e) * x for z, y, x in zip(zi, yi, xi))
-    cond3 = round(sum(xi), 4) == 1
-    cond4 = round(sum(yi), 4) == 1
+    # cond3 = round(sum(xi), 4) == 1
+    # cond4 = round(sum(yi), 4) == 1
     cond5 = sum(abs(k_prev - k) for k_prev, k in zip(ki_prev, ki)) <= 1e-4
 
-    return cond5 and cond2 and cond3 and cond4
+    return cond5 and cond2  # and cond3 and cond4
 
 
 def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond=condition):
@@ -256,23 +251,12 @@ def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond
             xi, yi, tr, pr, omega, kij
         )
 
-        # zv = get_z(
-        #     foo, flag='v',
-        #     a=(bv - 1),
-        #     b=(av - 2 * bv - 3 * bv ** 2),
-        #     c=((-av + bv ** 2 + bv) * bv)
-        # )
         zv, *_ = solve_cubic_equation(
             a=(bv - 1),
             b=(av - 2 * bv - 3 * bv ** 2),
             c=((-av + bv ** 2 + bv) * bv)
         )
-        # zl = get_z(
-        #     foo, flag='l',
-        #     a=(bl - 1),
-        #     b=(al - 2 * bl - 3 * bl ** 2),
-        #     c=((-al + bl ** 2 + bl) * bl)
-        # )
+
         zl, *_ = solve_cubic_equation(
             a=(bl - 1),
             b=(al - 2 * bl - 3 * bl ** 2),
@@ -289,13 +273,13 @@ def calculate_equilibrium_by_pr(zi, t, p, tc, pc, omega, kij, foo=cubic_pr, cond
         ki = [pl / pv for pv, pl in zip(phiv, phil)]
 
         xi, yi, e, = for_loop(zi, ki)
-        print(i, e)
+
         if cond(zi, yi, xi, e, ki_prev, ki):
-            return xi, yi, e
+            return xi, yi, e, ki
 
         i += 1
         if i > 10000:
-            return xi, yi, e
+            return xi, yi, e, ki
 
         ki_prev = ki[:]
 
@@ -307,12 +291,11 @@ class PRSolution:
 if __name__ == '__main__':
     import flow
 
-    # [2 * i for i in range(const.COMP_COUNT)]
     f = flow.Flow(mass_flows=const.mass_flows,
                   temperature=39.99,
                   pressure=12000)
 
-    xi, yi, e = calculate_equilibrium_by_pr(
+    xi, yi, e, *_ = calculate_equilibrium_by_pr(
         f.mole_fractions, f.temperature,
         f.pressure,
         [tc for tc in const.TC],
@@ -323,17 +306,17 @@ if __name__ == '__main__':
     print(e)
     print(xi)
 
-    import matplotlib.pyplot as plt
-
-    plt.style.use('seaborn-whitegrid')
-
-    plt.scatter(const.y, yi, label='Пар')
-    plt.scatter(const.x, xi, label='Жидкость')
-    data = sorted(const.x + const.y)
-    plt.plot(data, data, '--k')
-    plt.xlabel('Расчет UniSim')
-    plt.ylabel('Наш расчет')
-    plt.legend()
-    plt.annotate(f'e = {e:.4f};\nUnisim = 0.9118', (0.6, 0.5))
-    plt.tight_layout()
-    plt.show()
+    # import matplotlib.pyplot as plt
+    #
+    # plt.style.use('seaborn-whitegrid')
+    #
+    # plt.scatter(const.y, yi, label='Пар')
+    # plt.scatter(const.x, xi, label='Жидкость')
+    # data = sorted(const.x + const.y)
+    # plt.plot(data, data, '--k')
+    # plt.xlabel('Расчет UniSim')
+    # plt.ylabel('Наш расчет')
+    # plt.legend()
+    # plt.annotate(f'e = {e:.4f};\nUnisim = 0.9118', (0.6, 0.5))
+    # plt.tight_layout()
+    # plt.show()

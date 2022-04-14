@@ -3,15 +3,16 @@
 """
 import numpy as np
 import PRmodel as pr
-from scipy.optimize import root_scalar
+from scipy.optimize import root_scalar, fsolve
 import json
 import constants as const
 
 
-def get_t_sat(t, p, tc, pc, omega, v, model=pr.get_component_pressure_by_pr):
-    ps = model(t, v, tc, pc, omega)
-    ki = ps / p
-    return ki - 1
+def get_t_sat(t, p, zi):
+    ki = pr.PRSolution(
+        zi, t, p
+    ).ki
+    return [k - 1 for k in ki]
 
 
 def calculation(rb, rd, wd, ld, ntrays):
@@ -56,13 +57,13 @@ def get_tray_material_balance_error(fj, uj, wj, lj, vj, ntrays):
     output = [0 for _ in range(ntrays)]
 
     input_[1] = fj[1] + vj[2]
-    input_[ntrays-1] = fj[ntrays-1] + lj[ntrays-2]
-    output[ntrays-1] = wj[ntrays-1] + lj[ntrays-1] + vj[ntrays-1]
+    input_[ntrays - 1] = fj[ntrays - 1] + lj[ntrays - 2]
+    output[ntrays - 1] = wj[ntrays - 1] + lj[ntrays - 1] + vj[ntrays - 1]
 
-    for j in range(1, ntrays-1):
-        input_[j] = fj[j] + lj[j-1] + vj[j+1]
+    for j in range(1, ntrays - 1):
+        input_[j] = fj[j] + lj[j - 1] + vj[j + 1]
 
-    for j in range(ntrays-1):
+    for j in range(ntrays - 1):
         output[j] = uj[j] + wj[j] + lj[j] + vj[j]
 
     tray_errors = [inp - outp for inp, outp in zip(input_, output)]
@@ -87,6 +88,7 @@ def get_rb(a, b, fj, uj, wj, lj0,
                 break
     else:
         print('There is not solutions for rB!')
+        return
 
     return rb
 
@@ -114,10 +116,15 @@ class DistillationColumn:
     def t_profile_initial_guess_for(self, fprofile, zfprofile, pressure_profile,
                                     tc, pc, omega, v, method='bisect', method_args={}):
         p = np.median(pressure_profile)
-        t_sat = [root_scalar(get_t_sat, method=method, bracket=(90, 1000),
-                             args=(p, t_c, p_c, omega_, v_,),
-                             **method_args).root
-                 for t_c, p_c, omega_, v_ in zip(tc, pc, omega, v)]
+        # t_sat = [root_scalar(
+        #     get_t_sat, method=method, bracket=(-273, 1000),
+        #     args=(p, zi,), **method_args).root
+        #          for p, zi in zip(pressure_profile, zfprofile)]
+
+        t_sat = [fsolve(
+            get_t_sat, np.array([10]),
+            args=(p, zi))[0]
+                 for p, zi in zip(pressure_profile, zfprofile.T)]
 
         sum_zf_times_f = [0 for _ in range(zfprofile.shape[0])]
         for i in range(zfprofile.shape[0]):
@@ -147,7 +154,7 @@ class DistillationColumn:
         rb = 3
         uj[0] = ld
         wj[0] = wd
-        uj[self.trays_number-1] = fprofile[self.feed_tray-1] - (ld + wd)  # д.б.сумма Fj
+        uj[self.trays_number - 1] = fprofile[self.feed_tray - 1] - (ld + wd)  # д.б.сумма Fj
         vj0[0] = 0  # должно зависеть от типа конденсатора
         lj0[0] = ld * rd
 
@@ -168,8 +175,9 @@ if __name__ == '__main__':
     ntrays = 12
     feed_tray = 5
     fprofile = [100 if i == feed_tray else 0 for i in range(ntrays)]
-    z = [[1 for i in range(ntrays)] for _ in range(const.COMP_COUNT)]
-    pressure_profile = [0.1 for _ in range(ntrays)]
+    z = [[1 for i in range(ntrays)]
+         for _ in range(const.COMP_COUNT)]
+    pressure_profile = [101 for _ in range(ntrays)]
     column.t_profile_initial_guess_for(
         fprofile, np.array(z), pressure_profile,
         const.TC, const.PC, const.OMEGA, const.V
