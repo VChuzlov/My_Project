@@ -12,7 +12,22 @@ def get_t_sat(t, p, zi):
     ki = pr.PRSolution(
         zi, t, p
     ).ki
-    return [k - 1 for k in ki]
+    x = [k - 1 for k in ki]
+
+    return int(any(x))
+
+
+def _get_t_sat(p_profile, zi):
+    tsat_profile = []
+
+    for p in p_profile:
+        tsat_profile.append(
+            fsolve(
+                get_t_sat, np.array([273]), args=(p, zi)
+            )[0]
+        )
+
+    return tsat_profile
 
 
 def calculation(rb, rd, wd, ld, ntrays):
@@ -178,8 +193,9 @@ if __name__ == '__main__':
     z = [[1 for i in range(ntrays)]
          for _ in range(const.COMP_COUNT)]
     pressure_profile = [101 for _ in range(ntrays)]
-    column.t_profile_initial_guess_for(
-        fprofile, np.array(z), pressure_profile,
-        const.TC, const.PC, const.OMEGA, const.V
-    )
-    print(column.initial_temperature_profile)
+    # column.t_profile_initial_guess_for(
+    #     fprofile, np.array(z), pressure_profile,
+    #     const.TC, const.PC, const.OMEGA, const.V
+    # )
+    # print(column.initial_temperature_profile)
+    t = _get_t_sat(pressure_profile, const.x)
