@@ -23,7 +23,7 @@ def _get_t_sat(p_profile, zi):
     for p in p_profile:
         tsat_profile.append(
             fsolve(
-                get_t_sat, np.array([273]), args=(p, zi)
+                get_t_sat, np.array([10]), args=(p, zi)
             )[0]
         )
 

@@ -110,7 +110,13 @@ def first_guess(t, p, zi, pc, tc, omega):
 
     ki = [psat / p for psat in psat_i]
 
-    e = root_scalar(rachford_rice, method='bisect', bracket=(0, 1), args=(zi, ki)).root
+    # e = root_scalar(rachford_rice, method='bisect', bracket=(0, 1), args=(zi, ki)).root
+    e0 = np.array([0.5])
+    e = fsolve(
+        rachford_rice,
+        e0,
+        args=(zi, ki)
+    )[0]
     e = 1 if e > 1 else e
     e = 0 if e < 0 else e
 
