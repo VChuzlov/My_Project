@@ -17,15 +17,18 @@ def get_t_sat(t, p, zi):
     return int(any(x))
 
 
-def _get_t_sat(p_profile, zi):
+def _get_t_sat(
+        p, zi, foo=pr.ki_by_wilson_for_component,
+        tc=const.TC, pc=const.PC, omega=const.OMEGA, tboil=const.TBOIL,
+):
     tsat_profile = []
 
-    for p in p_profile:
-        tsat_profile.append(
-            fsolve(
-                get_t_sat, np.array([10]), args=(p, zi)
-            )[0]
-        )
+    for i, z in enumerate(zi):
+        tsat = fsolve(
+            func=lambda t: foo(t, p, tc=tc[i]+273.15, pc=pc[i], omega=omega[i]),
+            x0=np.array([tboil[i]+273.15])
+        )[0]
+        tsat_profile.append(tsat)
 
     return tsat_profile
 
@@ -198,4 +201,6 @@ if __name__ == '__main__':
     #     const.TC, const.PC, const.OMEGA, const.V
     # )
     # print(column.initial_temperature_profile)
-    t = _get_t_sat(pressure_profile, const.x)
+    t = _get_t_sat(101.325, const.x)
+    for t_ in t:
+        print(t_ - 273.15)

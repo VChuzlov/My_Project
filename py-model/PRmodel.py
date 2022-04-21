@@ -21,6 +21,15 @@ def p_sat_by_wilson(t, pc, tc, omega):
             for pci, omi, tci in zip(pc, omega, tc)]
 
 
+def ki_by_wilson_for_component(
+        t, p, tc, pc, omega
+):
+    ps = pc * np.exp(5.372697 * (1 + omega) * (1 - tc / t))
+    ki = ps / p
+
+    return ki
+
+
 def rachford_rice(e, zi, ki):
     """
     Rachford-Rice equation
