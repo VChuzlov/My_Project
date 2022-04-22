@@ -25,16 +25,28 @@ def _get_t_sat(
 
     for i, z in enumerate(zi):
         tsat = fsolve(
-            func=lambda t: foo(t, p, tc=tc[i]+273.15, pc=pc[i], omega=omega[i]),
+            func=lambda t: foo(t, p, tc=tc[i]+273.15,
+                               pc=pc[i],
+                               omega=omega[i])-1,
             x0=np.array([tboil[i]+273.15])
         )[0]
+        # tsat = root_scalar(lambda t: foo(t, p, tc=tc[i]+273.15, pc=pc[i], omega=omega[i]),
+        #                    method='secant',
+        #                    bracket=(90, 900),
+        #                    x0=90,
+        #                    x1=900
+        #                    ).root
         tsat_profile.append(tsat)
 
     return tsat_profile
 
 
 def calculation(rb, rd, wd, ld, ntrays):
-    fj, uj, wj, lj0, vj0 = [], [], [], [], []
+    fj = [0 for _ in range(ntrays)]
+    uj = [0 for _ in range(ntrays)]
+    wj = [0 for _ in range(ntrays)]
+    lj0 = [0 for _ in range(ntrays)]
+    vj0 = [0 for _ in range(ntrays)]
 
     # Lj0[1] := L0;
     lj0[1] = rd * ld
@@ -48,10 +60,12 @@ def calculation(rb, rd, wd, ld, ntrays):
     dj = [0 for _ in range(ntrays)]
     qj = [1 for _ in range(ntrays)]  # по идее надо его считать через энтальпию в зависимсоти от состояния
     for j in range(ntrays):
-        dj[j] = (uj[j] + wj[j]) / (vj0[j] + lj0[j])
+        if vj0[j] or lj0[j]:
+            dj[j] = (uj[j] + wj[j]) / (vj0[j] + lj0[j])
 
     vj0[ntrays - 1] = rb * lj0[ntrays - 1]
-    for j in range(ntrays - 1, 1, -1):
+    print(rb)
+    for j in range(ntrays - 2, 1, -1):
         vj0[j] = ((1 - qj[j]) * fj[j] + vj0[j + 1]) / (dj[j] + 1)
 
     for j in range(1, ntrays - 1):
@@ -106,7 +120,7 @@ def get_rb(a, b, fj, uj, wj, lj0,
                 break
     else:
         print('There is not solutions for rB!')
-        return
+        return 3
 
     return rb
 
@@ -131,18 +145,8 @@ class DistillationColumn:
         json_string = json.dumps(column, indent=4)
         return json_string
 
-    def t_profile_initial_guess_for(self, fprofile, zfprofile, pressure_profile,
-                                    tc, pc, omega, v, method='bisect', method_args={}):
+    def t_profile_initial_guess_for(self, t_sat, fprofile, zfprofile, pressure_profile,):
         p = np.median(pressure_profile)
-        # t_sat = [root_scalar(
-        #     get_t_sat, method=method, bracket=(-273, 1000),
-        #     args=(p, zi,), **method_args).root
-        #          for p, zi in zip(pressure_profile, zfprofile)]
-
-        t_sat = [fsolve(
-            get_t_sat, np.array([10]),
-            args=(p, zi))[0]
-                 for p, zi in zip(pressure_profile, zfprofile.T)]
 
         sum_zf_times_f = [0 for _ in range(zfprofile.shape[0])]
         for i in range(zfprofile.shape[0]):
@@ -193,14 +197,23 @@ if __name__ == '__main__':
     ntrays = 12
     feed_tray = 5
     fprofile = [100 if i == feed_tray else 0 for i in range(ntrays)]
-    z = [[1 for i in range(ntrays)]
-         for _ in range(const.COMP_COUNT)]
+    z = [[x if i == feed_tray else 0 for i in range(ntrays)]
+         for x in const.x]
     pressure_profile = [101 for _ in range(ntrays)]
-    # column.t_profile_initial_guess_for(
-    #     fprofile, np.array(z), pressure_profile,
-    #     const.TC, const.PC, const.OMEGA, const.V
-    # )
-    # print(column.initial_temperature_profile)
-    t = _get_t_sat(101.325, const.x)
-    for t_ in t:
-        print(t_ - 273.15)
+
+    tsat = _get_t_sat(101.325, const.x)
+
+    column.t_profile_initial_guess_for(
+        tsat, fprofile, np.array(z), pressure_profile,
+    )
+
+    column.lv_initial_guess(fprofile, wd=0, ld=4.5, l0=10.5)
+
+    print(column.lj0)
+    print(column.vj0)
+
+    import matplotlib.pyplot as plt
+
+    plt.plot(column.lj0)
+    plt.plot(column.vj0)
+    plt.show()
