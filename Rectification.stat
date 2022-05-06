@@ -1,10 +1,10 @@
 [Stats]
 <<<<<<< Updated upstream
-EditorSecs=174542
-DesignerSecs=105
+EditorSecs=174838
+DesignerSecs=110
 InspectorSecs=62
-CompileSecs=821388
-OtherSecs=2144
+CompileSecs=826108
+OtherSecs=2152
 =======
 EditorSecs=173585
 DesignerSecs=116
