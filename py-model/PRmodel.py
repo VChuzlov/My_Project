@@ -228,17 +228,6 @@ if __name__ == '__main__':
                   temperature=39.99,
                   pressure=12000)
 
-    # xi, yi, e = calculate_equilibrium_by_pr(
-    #     f.mole_fractions, f.temperature,
-    #     f.pressure,
-    #     [tc + 273.15 for tc in const.TC],
-    #     [pc for pc in const.PC],
-    #     const.OMEGA, const.PR_Kij
-    # )
-    #
-    # print(e)
-    # print(xi)
-
     p = PRSolution(
         f.mole_fractions,
         f.temperature,
@@ -246,18 +235,3 @@ if __name__ == '__main__':
     )
 
     print(p.e)
-
-    # import matplotlib.pyplot as plt
-    #
-    # plt.style.use('seaborn-whitegrid')
-    #
-    # plt.scatter(const.y, yi, label='Пар')
-    # plt.scatter(const.x, xi, label='Жидкость')
-    # data = sorted(const.x + const.y)
-    # plt.plot(data, data, '--k')
-    # plt.xlabel('Расчет UniSim')
-    # plt.ylabel('Наш расчет')
-    # plt.legend()
-    # plt.annotate(f'e = {e:.4f};\nUnisim = 0.9118', (0.6, 0.5))
-    # plt.tight_layout()
-    # plt.show()
