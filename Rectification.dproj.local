@@ -1,13 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<Transactions>
-    <Transaction>1899.12.30 00:00:00.000.581,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit1.pas=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.247,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Unit2.pas=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\UPhase_Equilibrium.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.962,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Project1.dproj=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Rectification.dproj</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.082,=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.514,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit2.pas=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\UMaterialBalance.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.553,=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit2.pas</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.878,=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Unit2.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.581,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit1.dfm=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Unit1.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.581,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit1.pas=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.082,=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.962,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Project1.dproj=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Rectification.dproj</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.553,=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit2.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.514,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Unit2.pas=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\UMaterialBalance.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.878,=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Unit2.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.247,C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\Unit2.pas=C:\Users\Vyacheslav\Documents\Embarcadero\Studio\Projects\Rectification\UPhase_Equilibrium.pas</Transaction>
   </Transactions>
 </BorlandProject>

@@ -1,4 +1,4 @@
-unit UMaterialBalance;
+п»їunit UMaterialBalance;
 
 interface
 uses
@@ -64,11 +64,11 @@ type
     { Private declarations }
   public
     const
-      // Критическая температура
+      // ГЉГ°ГЁГІГЁГ·ГҐГ±ГЄГ Гї ГІГҐГ¬ГЇГҐГ°Г ГІГіГ°Г 
       Tcc: arrComp = (-82.45, 32.28, 96.75, 134.9, 152, 187.2, 196.5, 234.7, 267);
-      // Критическое давление
+      // ГЉГ°ГЁГІГЁГ·ГҐГ±ГЄГ®ГҐ Г¤Г ГўГ«ГҐГ­ГЁГҐ
       Pcc: arrComp = (4641, 4484, 4257, 3648, 3797, 3375, 3334, 3032, 2737);
-      // Ацентрический фактор
+      // ГЂГ¶ГҐГ­ГІГ°ГЁГ·ГҐГ±ГЄГЁГ© ГґГ ГЄГІГ®Г°
       omega: arrComp = (0.0115, 0.0986, 0.1524, 0.1848, 0.201, 0.2539, 0.2222, 0.3007, 0.3498);
 
      // Ideal Gas Comp Heat Capasity
@@ -298,8 +298,8 @@ var
   i, j: integer;
   dj: arrTrays;
   qj: arrTrays; // feed quality
-  rD: double; // флегмовое число // принял за 1
-  rB: double; // паравое число // принял за 1
+  rD: double; // ГґГ«ГҐГЈГ¬Г®ГўГ®ГҐ Г·ГЁГ±Г«Г® // ГЇГ°ГЁГ­ГїГ« Г§Г  1
+  rB: double; // ГЇГ Г°Г ГўГ®ГҐ Г·ГЁГ±Г«Г® // ГЇГ°ГЁГ­ГїГ« Г§Г  1
   D, B: double;
   s: double;
   TrayMaterialBalanceError: arrTrays;
@@ -313,7 +313,7 @@ var
     Lj0[1] := rD * LD;
     for j := 2 to NTrays-1 do
     Lj0[j] := Lj0[j-1] + Fj[j] - Uj[j];
-    Lj0[NTrays] := 9.3; // нужен пересчет
+    Lj0[NTrays] := 9.3; // Г­ГіГ¦ГҐГ­ ГЇГҐГ°ГҐГ±Г·ГҐГІ
 
     for j := 2 to NTrays do
       Vj0[j] := WD + LD + Lj0[1] - Wj[j];
@@ -321,7 +321,7 @@ var
     for j := 1 to NTrays do
       begin
         dj[j] := (Uj[j] + Wj[j]) / (Vj0[j] + Lj0[j]);
-        qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
+        qj[j] := 1; //ГЇГ® ГЁГ¤ГҐГҐ Г­Г Г¤Г® ГҐГЈГ® Г±Г·ГЁГІГ ГІГј Г·ГҐГ°ГҐГ§ ГЅГ­ГІГ Г«ГјГЇГЁГѕ Гў Г§Г ГўГЁГ±ГЁГ¬Г±Г®ГІГЁ Г®ГІ Г±Г®Г±ГІГ®ГїГ­ГЁГї
       end;
 
     Vj0[NTrays] := rB * Lj0[NTrays];
@@ -373,8 +373,8 @@ begin
   rB := {1.93548387096774}3;
   Uj[1] := LD;
   Wj[1] := WD;
-  Uj[NTrays] := Fj[FeedTray] - (LD + WD);  // д.б. сумма Fj
-  Vj0[1] := 0; // должно зависеть от типа конденсатора
+  Uj[NTrays] := Fj[FeedTray] - (LD + WD);  // Г¤.ГЎ. Г±ГіГ¬Г¬Г  Fj
+  Vj0[1] := 0; // Г¤Г®Г«Г¦Г­Г® Г§Г ГўГЁГ±ГҐГІГј Г®ГІ ГІГЁГЇГ  ГЄГ®Г­Г¤ГҐГ­Г±Г ГІГ®Г°Г 
   Lj0[1] := LD * rD;
 
   Calculation(rB, Fj, Uj, Wj, Lj0, Vj0);
@@ -608,7 +608,7 @@ end;
 
 function TMatBalance.getIdealGasCompEnthalpy(Tj: arrTrays): TArrOfArrOfDouble; {kJ / kg}
 const
-// Параметры для расчета энтальпии идеального газа
+// ГЏГ Г°Г Г¬ГҐГІГ°Г» Г¤Г«Гї Г°Г Г±Г·ГҐГІГ  ГЅГ­ГІГ Г«ГјГЇГЁГЁ ГЁГ¤ГҐГ Г«ГјГ­Г®ГЈГ® ГЈГ Г§Г 
   a: arrComp = (-12.98,	-1.7675,	39.4889,	30.903,	67.721,	64.25,	63.198,
                 74.513,	71.41);
   b: arrComp = (2.36459,	1.1429,	0.395,	0.1533,	0.00854058,	-0.131798,
@@ -626,7 +626,7 @@ const
 var
   i, j: integer;
 begin
-  // Температура должна быть в Кельвинах
+  // Г’ГҐГ¬ГЇГҐГ°Г ГІГіГ°Г  Г¤Г®Г«Г¦Г­Г  ГЎГ»ГІГј Гў ГЉГҐГ«ГјГўГЁГ­Г Гµ
   for j := 1 to NTrays do
     for i := 1 to NComp do
       Result[i-1, j-1] := a[i] + b[i] * Tj[j] + c[i] * sqr(Tj[j]) + d[i] * sqr(Tj[j]) * Tj[j]
@@ -638,7 +638,7 @@ var
   i, j: integer;
 
 begin
-  // Температура должна быть в Кельвинах
+  // Г’ГҐГ¬ГЇГҐГ°Г ГІГіГ°Г  Г¤Г®Г«Г¦Г­Г  ГЎГ»ГІГј Гў ГЉГҐГ«ГјГўГЁГ­Г Гµ
   for j := 1 to NTrays do
     for i := 1 to NComp do
       Result[i-1, j-1] := IdealGasCp_a[i] + IdealGasCp_b[i] * Tj[j] + IdealGasCp_c[i] * sqr(Tj[j])
@@ -879,13 +879,13 @@ begin
       yf[i] := 0;
     end;
   case f2(zf, T, P) of
-    1://Жидкость
+    1://Г†ГЁГ¤ГЄГ®Г±ГІГј
       for i := 1 to NComp do
         xf[i] := zf[i];
-    2://Пар
+    2://ГЏГ Г°
       for i := 1 to NComp do
         yf[i] := zf[i];
-    3:// 2 фазы
+    3:// 2 ГґГ Г§Г»
       if f(a) * f(b) < 0 then
         begin
           repeat
@@ -1015,7 +1015,7 @@ var
   var
     j: integer;
     qj: arrTrays;
-    WD: double; // избавиться
+    WD: double; // ГЁГ§ГЎГ ГўГЁГІГјГ±Гї
     s: double;
 
   begin
@@ -1023,7 +1023,7 @@ var
     Lj[1] := rD * LD;
     for j := 2 to NTrays-1 do
     Lj[j] := Lj[j-1] + Fj[j] - Uj[j];
-    Lj[NTrays] := 9.3; // нужен пересчет
+    Lj[NTrays] := 9.3; // Г­ГіГ¦ГҐГ­ ГЇГҐГ°ГҐГ±Г·ГҐГІ
 
     for j := 2 to NTrays do
       Vj[j] := WD + LD + Lj[1] - Wj[j];
@@ -1031,7 +1031,7 @@ var
     for j := 1 to NTrays do
       begin
         dj[j] := (Uj[j] + Wj[j]) / (Vj[j] + Lj[j]);
-        qj[j] := 1; //по идее надо его считать через энтальпию в зависимсоти от состояния
+        qj[j] := 1; //ГЇГ® ГЁГ¤ГҐГҐ Г­Г Г¤Г® ГҐГЈГ® Г±Г·ГЁГІГ ГІГј Г·ГҐГ°ГҐГ§ ГЅГ­ГІГ Г«ГјГЇГЁГѕ Гў Г§Г ГўГЁГ±ГЁГ¬Г±Г®ГІГЁ Г®ГІ Г±Г®Г±ГІГ®ГїГ­ГЁГї
       end;
 
     Vj[NTrays] := rB * Lj[NTrays];
@@ -1175,7 +1175,7 @@ var
   calcLj: TArrOfArrOfDouble;
   calcVj: TArrOfArrOfDouble;
   n: integer;
-  omegaj: ArrTrays; // доля пара в боковых отборах
+  omegaj: ArrTrays; // Г¤Г®Г«Гї ГЇГ Г°Г  Гў ГЎГ®ГЄГ®ГўГ»Гµ Г®ГІГЎГ®Г°Г Гµ
   TrayMaterialBalanceError: arrTrays;
   TrayHeatBalanceError: arrTrays;
   rB: double;
@@ -1266,7 +1266,7 @@ begin
     begin
       Tfj[j] := 50 + 273.15;
       Pfj[j] := Pj[j];
-      omegaj[j] := 0; // Т.к. все отбры в виде жидкости
+      omegaj[j] := 0; // Г’.ГЄ. ГўГ±ГҐ Г®ГІГЎГ°Г» Гў ГўГЁГ¤ГҐ Г¦ГЁГ¤ГЄГ®Г±ГІГЁ
     end;
 
   Tj_0 := getTj_0(Fj, zf);
@@ -1313,7 +1313,7 @@ begin
     Calculation(rB, TrayMaterialBalanceError);
     global_energy_balance_error := global_energy_balance(Fj, ej, Uj, Wj, Qj, Hf_l, Hf_v, H_l, H_v) - Qc - Qr;
      }
-    ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // как оказалось, это не нужно
+    ej_tr := getTrays_ej(Fj, Lj, Vj, zf, xij, yij, Tj, Pj); // ГЄГ ГЄ Г®ГЄГ Г§Г Г«Г®Г±Гј, ГЅГІГ® Г­ГҐ Г­ГіГ¦Г­Г®
     n := n + 1;
     if n >= 1e5 then
       begin
