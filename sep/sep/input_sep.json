@@ -1,0 +1,27 @@
+{
+    "flow1_temperature": 20,
+    "flow1_pressure": 4000,
+    "flow1_mass_flow": 10000, 
+    "flow1_composition": {
+        "methane": 0.9253,
+        "ethane": 0.0436,
+        "propane": 0.0153,
+        "i-butane": 0.0043,
+        "n-butane": 0.0034,
+        "i-pentane": 0.0017,
+        "n-pentane": 0.0010,
+        "hexane": 0.0008,
+        "heptane": 0.0011,
+        "octane": 0.0012,
+        "h2o": 0.0020,
+        "methanol": 0.0002
+    },
+    "flow1_composition_basis": "molar",
+    "compressor_efficiency_value": 75,
+    "compressor_efficiency_type": "adiabatic",
+    "compressor_key_value_type": "pressure_out",
+    "compressor_key_value": 8200,
+    "chiller_key_value_type": "temperature_out",
+    "chiller_key_value": 10,
+    "valve_pressure_drop": 6200
+}
