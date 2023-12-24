@@ -1,0 +1,36 @@
+unit ConvertersUnit;
+
+interface
+
+type
+  TTemperature = class
+    function CelsiusToKelvin(c: double): double;
+    function KelvinToCelsius(k: double): double;
+    function CelciusToFahrenheit(c: double): double;
+    function FahrenheitToCelsius(f: double): double;
+    function CelsiusToRankine(c: double): double;
+    function RankineToCelsius(r: double): double;
+    function KelvinToRankine(k: double): double;
+    function RankineToKelvin(r: double): double;
+  end;
+
+  TUnitsConverter = class
+    //
+  end;
+
+implementation
+
+
+{ TTemperature }
+
+function TTemperature.CelsiusToKelvin(c: double): double;
+begin
+  Result := c + 273.15;
+end;
+
+function TTemperature.KelvinToCelsius(k: double): double;
+begin
+  Result := k - 273.15;
+end;
+
+end.

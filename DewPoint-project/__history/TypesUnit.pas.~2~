@@ -1,0 +1,11 @@
+unit TypesUnit;
+
+interface
+
+type
+  TArrOfDouble = array of double;
+  TMatrixOfDouble = array of array of double;
+
+implementation
+
+end.
