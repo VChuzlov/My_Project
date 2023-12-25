@@ -45,6 +45,8 @@ type
       function SelectCubicEquationRoot(z1, z2, z3: Double; f: TFoo): Double;
       function CalculateZv(
         av, bv: Double; method: TCubicEquationMethod): Double;
+      function CalculateZl(
+        al, bl: Double; method: TCubicEquationMethod): Double;
 
     public
       constructor Create(
@@ -232,6 +234,24 @@ begin
         - 0.1644 * Power(af[i], 2)
         + 0.016667 * Power(af[i], 3)
       );
+end;
+
+function TDewPoint.CalculateZl(al, bl: Double;
+  method: TCubicEquationMethod): Double;
+var
+  roots: TArrOfDouble;
+begin
+  roots := method(
+    bl - 1,
+    al - 2 * bl - 3 * Power(bl, 2),
+    (-al + Power(bl, 2) + bl) * bl
+  );
+  Result := self.SelectCubicEquationRoot(
+    roots[0],
+    roots[1],
+    roots[2],
+    FunctionsUnit.Min
+  );
 end;
 
 function TDewPoint.CalculateZv(av, bv: Double;
