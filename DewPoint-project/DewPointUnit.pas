@@ -82,6 +82,9 @@ type
       function CalculateKij(vc: TArrOfDouble; n: Integer = 1): TMatrixOfDouble;
       procedure PreCalculation(
         t: Double; kij: TMatrixOfDouble; m: TArrOfDouble);
+      function InsideJob(t: Double; kij: TMatrixOfDouble; m: TArrOfDouble;
+        xi: TArrOfDouble): Double;
+      function Condition(tol: Double = 1e-6): Boolean;
   end;
 
 
@@ -406,6 +409,20 @@ begin
   );
 end;
 
+function TDewPoint.Condition(tol: Double): Boolean;
+var
+  i: Integer;
+  n: Integer;
+  s: Double;
+begin
+  n := Length(self.XiNew);
+  s := 0.0;
+  for i := 0 to High(self.XiNew) do
+    s := s + (Power(self.Xi[i] - self.XiNew[i], 2) / self.XiNew[i]) / n;
+
+  Result := s <= tol;
+end;
+
 constructor TDewPoint.Create(
   pressure: Double;
   yi: TArrOfDouble;
@@ -491,6 +508,58 @@ var
   end;
 
 
+function TDewPoint.InsideJob(t: Double; kij: TMatrixOfDouble; m,
+  xi: TArrOfDouble): Double;
+var
+  vc: TValuesConverter;
+  Tr: TArrOfDouble;
+  Alpha: TArrOfDouble;
+  Ap: TArrOfDouble;
+  Bp: TArrOfDouble;
+  Ab: TMatrixOfDouble;
+  ki: TArrOfDouble;
+  Av: Double;
+  Bv: Double;
+  Zv: Double;
+  Al: Double;
+  Bl: Double;
+  Zl: Double;
+  Fiv: TArrOfDouble;
+  Fil: TArrOfDouble;
+  XiNew: TArrOfDouble;
+  s: Double;
+  i: Integer;
+
+begin
+  SetLength(XiNew, Length(m));
+  vc := TValuesConverter.Create();
+  Tr := vc.ReducedParam(t, self.Tc);
+  Alpha := self.CalculateAlpha(m, Tr);
+  Ap := self.CalculateAp(Alpha, Tr, self.Pr);
+  Bp := self.CalculateBp(self.Pr, Tr);
+  Ab := self.CalculateAb(kij, Ap);
+  Av := self.CalculateAl(self.Yi, Ab);
+  Bv := self.CalculateBv(self.Yi, Bp);
+  Zv := self.CalculateZv(Av, Bv, VietaMethod);
+  Al := self.CalculateAl(xi, Ab);
+  Bl := self.CalculateBv(xi, Bp);
+  Zl := self.CalculateZv(Al, Bl, VietaMethod);
+  Fiv := self.CalculateFiv(Ab, self.Yi, Zv, Bp, Av, Bv);
+  Fil := self.CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
+
+  s := 0.0;
+  for i := 0 to High(m) do
+  begin
+    XiNew[i] := self.Yi[i] * Fiv[i] / Fil[i];
+    s := s + XiNew[i];
+  end;
+
+  self.Xi := xi;
+  self.XiNew := XiNew;
+
+  Result := 1 - s;
+end;
+
 procedure TDewPoint.PreCalculation(t: Double; kij: TMatrixOfDouble;
   m: TArrOfDouble);
 var
@@ -514,7 +583,6 @@ var
   i: Integer;
 
 begin
-  SetLength(Tr, Length(m));
   SetLength(XiNew, Length(m));
   vc := TValuesConverter.Create();
   Tr := vc.ReducedParam(t, self.Tc);
@@ -524,6 +592,9 @@ begin
   Ab := self.CalculateAb(kij, Ap);
   ki := self.EstimateKi(t);
   xi := self.CalculateXi(ki);
+  Av := self.CalculateAl(self.Yi, Ab);
+  Bv := self.CalculateBv(self.Yi, Bp);
+  Zv := self.CalculateZv(Av, Bv, VietaMethod);
   Al := self.CalculateAl(xi, Ab);
   Bl := self.CalculateBv(xi, Bp);
   Zl := self.CalculateZv(Al, Bl, VietaMethod);
