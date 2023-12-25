@@ -73,6 +73,8 @@ type
         af: TArrOfDouble;
         volc: TArrOfDouble
       );
+      function EstimateTSati(): TArrOfDouble;
+      function EstimateKi(t: Double): TArrOfDouble;
   end;
 
 
@@ -371,6 +373,31 @@ begin
     end;
 end;
 
+
+function TDewPoint.EstimateKi(t: Double): TArrOfDouble;
+var
+  i: Integer;
+begin
+  SetLength(Result, Length(self.Yi));
+  for i := 0 to High(Result) do
+    Result[i] := exp(
+        ln(self.Pc[i] / self.Pressure)
+        + ln(10) * (7 / 3) * (1 + self.Af[i])
+        * (1 - self.Tc[i] / t)
+    );
+end;
+
+function TDewPoint.EstimateTSati: TArrOfDouble;
+
+begin
+  SetLength(Result, Length(self.Yi));
+  for var i := 0 to High(Result) do
+    Result[i] := (
+      self.Tc[i] / (1 - 3 * ln(self.Pressure / self.Pc[i])
+                    / (ln(10) * (7 + 7 * self.Af[i]))
+                    )
+    );
+end;
 
 function TDewPoint.SelectCubicEquationRoot(z1, z2, z3: Double; f: TFoo): Double;
 var
