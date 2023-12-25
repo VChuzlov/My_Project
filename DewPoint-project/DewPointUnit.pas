@@ -18,7 +18,7 @@ type
       Tr: TArrOfDouble;
       Pr: TArrOfDouble;
       Xi: TArrOfDouble;
-      Xi_new: TArrOfDouble;
+      XiNew: TArrOfDouble;
       function CalculateM(af: TArrOfDouble): TArrOfDouble;
       function CalculateAlpha(m, tr: TArrOfDouble): TArrOfDouble;
       function CalculateAp(alpha, tr, pr: TArrOfDouble): TArrOfDouble;
@@ -80,6 +80,8 @@ type
       function EstimateTFromXiAndTSati(xi, tsati: TArrOfDouble): Double;
       function CalculateInitialValueForT(): Double;
       function CalculateKij(vc: TArrOfDouble; n: Integer = 1): TMatrixOfDouble;
+      procedure PreCalculation(
+        t: Double; kij: TMatrixOfDouble; m: TArrOfDouble);
   end;
 
 
@@ -414,9 +416,11 @@ constructor TDewPoint.Create(
 );
 var
   uc: TUnitsConverter;
+  vc: TValuesConverter;
   i: Integer;
 begin
   uc := TUnitsConverter.Create();
+  vc := TValuesConverter.Create();
   self.Pressure := uc.Pressure.kPaToPsi(pressure);
   self.Yi := yi;
   self.Af := af;
@@ -427,13 +431,14 @@ begin
   SetLength(self.Tr, Length(tc));
   SetLength(self.Pr, Length(pc));
   SetLength(self.Xi, Length(yi));
-  SetLength(self.Xi_new, Length(yi));
+  SetLength(self.XiNew, Length(yi));
 
   for i := 0 to High(tc) do
     begin
       self.Tc[i] := uc.Temperature.CelsiusToRankine(tc[i]);
       self.Pc[i] := uc.Pressure.kPaToPsi(pc[i]);
     end;
+  self.Pr := vc.ReducedParam(self.Pressure, self.Pc);
 end;
 
 
@@ -485,6 +490,53 @@ var
     Result := t - t_;
   end;
 
+
+procedure TDewPoint.PreCalculation(t: Double; kij: TMatrixOfDouble;
+  m: TArrOfDouble);
+var
+  vc: TValuesConverter;
+  Tr: TArrOfDouble;
+  Alpha: TArrOfDouble;
+  Ap: TArrOfDouble;
+  Bp: TArrOfDouble;
+  Ab: TMatrixOfDouble;
+  ki: TArrOfDouble;
+  xi: TArrOfDouble;
+  Av: Double;
+  Bv: Double;
+  Zv: Double;
+  Al: Double;
+  Bl: Double;
+  Zl: Double;
+  Fiv: TArrOfDouble;
+  Fil: TArrOfDouble;
+  XiNew: TArrOfDouble;
+  i: Integer;
+
+begin
+  SetLength(Tr, Length(m));
+  SetLength(XiNew, Length(m));
+  vc := TValuesConverter.Create();
+  Tr := vc.ReducedParam(t, self.Tc);
+  Alpha := self.CalculateAlpha(m, Tr);
+  Ap := self.CalculateAp(Alpha, Tr, self.Pr);
+  Bp := self.CalculateBp(self.Pr, Tr);
+  Ab := self.CalculateAb(kij, Ap);
+  ki := self.EstimateKi(t);
+  xi := self.CalculateXi(ki);
+  Al := self.CalculateAl(xi, Ab);
+  Bl := self.CalculateBv(xi, Bp);
+  Zl := self.CalculateZv(Al, Bl, VietaMethod);
+  Fiv := self.CalculateFiv(Ab, self.Yi, Zv, Bp, Av, Bv);
+  Fil := self.CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
+
+  for i := 0 to High(m) do
+    XiNew[i] := self.Yi[i] * Fiv[i] / Fil[i];
+
+  self.Xi := xi;
+  self.XiNew := XiNew;
+
+end;
 
 function TDewPoint.SelectCubicEquationRoot(z1, z2, z3: Double; f: TFoo): Double;
 var
