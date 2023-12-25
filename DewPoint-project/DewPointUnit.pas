@@ -63,6 +63,7 @@ type
         al: Double;
         bl: Double
       ): TArrOfDouble;
+      function ForInitialTValue(t: Double): Double;
 
     public
       constructor Create(
@@ -294,23 +295,10 @@ end;
 
 function TDewPoint.CalculateInitialValueForT: Double;
 
-function foo(t: Double): Double;
-var
-  ki: TArrOfDouble;
-  xi: TArrOfDouble;
-  tsati: TArrOfDouble;
-  t_: Double;
-  begin
-    ki := self.EstimateKi(t);
-    xi := self.CalculateXi(ki);
-    tsati := self.EstimateTSati();
-    t_ := self.EstimateTFromXiAndTSati(xi, tsati);
-    Result := t - t_;
-  end;
-
-
 begin
-
+  Result := Bisections(
+    foo, 1e-5, 1000.0
+  );
 end;
 
 function TDewPoint.CalculateM(af: TArrOfDouble): TArrOfDouble;
@@ -444,6 +432,21 @@ begin
                     )
     );
 end;
+
+function TDewPoint.ForInitialTValue(t: Double): Double;
+var
+  ki: TArrOfDouble;
+  xi: TArrOfDouble;
+  tsati: TArrOfDouble;
+  t_: Double;
+  begin
+    ki := self.EstimateKi(t);
+    xi := self.CalculateXi(ki);
+    tsati := self.EstimateTSati();
+    t_ := self.EstimateTFromXiAndTSati(xi, tsati);
+    Result := t - t_;
+  end;
+
 
 function TDewPoint.SelectCubicEquationRoot(z1, z2, z3: Double; f: TFoo): Double;
 var
