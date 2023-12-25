@@ -47,6 +47,14 @@ type
         av, bv: Double; method: TCubicEquationMethod): Double;
       function CalculateZl(
         al, bl: Double; method: TCubicEquationMethod): Double;
+      function CalculateFiv(
+        ab: TMatrixOfDouble;
+        y: TArrOfDouble;
+        zv: Double;
+        bp: TArrOfDouble;
+        av: Double;
+        bv: Double
+      ): TArrOfDouble;
 
     public
       constructor Create(
@@ -218,6 +226,31 @@ begin
   SetLength(Result, Length(m));
   for i := 0 to High(m) do
     Result[i] := m[i] * ai[i] * alpha[i] * Power(tr[i] / alpha[i], 0.5);
+end;
+
+function TDewPoint.CalculateFiv(ab: TMatrixOfDouble; y: TArrOfDouble;
+  zv: Double; bp: TArrOfDouble; av, bv: Double): TArrOfDouble;
+var
+  s: Double;
+  i: Integer;
+  j: Integer;
+begin
+  SetLength(Result, Length(y));
+  for i := 0 to High(y) do
+  begin
+    s := 0.0;
+
+    for j := 0 to High(y) do
+      s := s + ab[i, j] * y[j];
+
+    Result[i] := exp(
+      (zv - 1) * bp[i] / bv - ln(zv - bv)
+      - av / (2 * Power(2, 0.5) * bv)
+      * (2 * s / av - bp[i] / bv)
+      * ln((zv + (1 + Power(2, 0.5)) * bv)
+            / (zv - (-1 + Power(2, 0.5)) * bv))
+    );
+  end;
 end;
 
 function TDewPoint.CalculateM(af: TArrOfDouble): TArrOfDouble;
