@@ -7,7 +7,7 @@ type
   TMatrixOfDouble = array of array of Double;
   TFoo = function(x: TArrOfDouble): Double;
   TCubicEquationMethod = function(a, b, c: Double): TArrOfDouble;
-  TObjectiveFunction = function (x: Double): Double;
+  TObjectiveFunction = reference to function(x: Double): Double;
 
 implementation
 

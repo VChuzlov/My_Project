@@ -295,9 +295,22 @@ end;
 
 function TDewPoint.CalculateInitialValueForT: Double;
 
+function foo(x: Double): Double;
 begin
+  Result := self.ForInitialTValue(x);
+end;
+
+var
+  f: TObjectiveFunction;
+begin
+  f :=
+  function(t: Double): Double
+  begin
+    Result := self.ForInitialTValue(t);
+  end;
+
   Result := Bisections(
-    ForInitialTValue, 1e-5, 1000.0
+    f, 1e-5, 1000.0
   );
 end;
 
