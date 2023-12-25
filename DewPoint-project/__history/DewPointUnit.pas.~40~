@@ -3,7 +3,7 @@ unit DewPointUnit;
 interface
 
 uses
-  ConvertersUnit, TypesUnit, Math;
+  ConvertersUnit, TypesUnit, Math, FunctionsUnit;
 
 type
 
@@ -40,6 +40,29 @@ type
         ai: TArrOfDouble;
         alpha: TArrOfDouble
       ): Double;
+      function CalculateD(mf, m: TArrOfDouble; kij: TMatrixOfDouble;
+        ai, alpha, tr: TArrOfDouble): Double;
+      function SelectCubicEquationRoot(z1, z2, z3: Double; f: TFoo): Double;
+      function CalculateZv(
+        av, bv: Double; method: TCubicEquationMethod): Double;
+      function CalculateZl(
+        al, bl: Double; method: TCubicEquationMethod): Double;
+      function CalculateFiv(
+        ab: TMatrixOfDouble;
+        y: TArrOfDouble;
+        zv: Double;
+        bp: TArrOfDouble;
+        av: Double;
+        bv: Double
+      ): TArrOfDouble;
+      function CalculateFil(
+        ab: TMatrixOfDouble;
+        x: TArrOfDouble;
+        zl: Double;
+        bp: TArrOfDouble;
+        al: Double;
+        bl: Double
+      ): TArrOfDouble;
 
     public
       constructor Create(
@@ -50,6 +73,8 @@ type
         af: TArrOfDouble;
         volc: TArrOfDouble
       );
+      function EstimateTSati(): TArrOfDouble;
+      function EstimateKi(t: Double): TArrOfDouble;
   end;
 
 
@@ -189,6 +214,21 @@ begin
     Result := Result + y[i] * bp[i];
 end;
 
+function TDewPoint.CalculateD(mf, m: TArrOfDouble; kij: TMatrixOfDouble; ai,
+  alpha, tr: TArrOfDouble): Double;
+var
+  i: Integer;
+  j: Integer;
+begin
+  Result := 0.0;
+  for i := 0 to High(m) do
+    for j := 0 to High(m) do
+      Result := (
+        Result + mf[i] * mf[j] * m[j] * (1 - kij[i, j])
+        * Power(ai[i] * alpha[i] * alpha[j] * tr[j], 0.5)
+      );
+end;
+
 function TDewPoint.CalculateDi(m, ai, alpha, tr: TArrOfDouble): TArrOfDouble;
 var
   i: Integer;
@@ -196,6 +236,57 @@ begin
   SetLength(Result, Length(m));
   for i := 0 to High(m) do
     Result[i] := m[i] * ai[i] * alpha[i] * Power(tr[i] / alpha[i], 0.5);
+end;
+
+function TDewPoint.CalculateFil(ab: TMatrixOfDouble; x: TArrOfDouble;
+  zl: Double; bp: TArrOfDouble; al, bl: Double): TArrOfDouble;
+var
+  s: Double;
+  i: Integer;
+  j: Integer;
+begin
+  SetLength(Result, Length(x));
+  for i := 0 to High(x) do
+  begin
+    s := 0.0;
+
+    for j := 0 to High(x) do
+      s := s + ab[i, j] * x[j];
+
+    Result[i] := exp(
+      (zl - 1) * bp[i] / bl - ln(zl - bl)
+      - al / (2 * Power(2, 0.5) * bl)
+      * (2 * s / al - bp[i] / bl)
+      * ln((zl + (1 + Power(2, 0.5)) * bl)
+            / (zl - (-1 + Power(2, 0.5)) * bl))
+    );
+  end;
+
+end;
+
+function TDewPoint.CalculateFiv(ab: TMatrixOfDouble; y: TArrOfDouble;
+  zv: Double; bp: TArrOfDouble; av, bv: Double): TArrOfDouble;
+var
+  s: Double;
+  i: Integer;
+  j: Integer;
+begin
+  SetLength(Result, Length(y));
+  for i := 0 to High(y) do
+  begin
+    s := 0.0;
+
+    for j := 0 to High(y) do
+      s := s + ab[i, j] * y[j];
+
+    Result[i] := exp(
+      (zv - 1) * bp[i] / bv - ln(zv - bv)
+      - av / (2 * Power(2, 0.5) * bv)
+      * (2 * s / av - bp[i] / bv)
+      * ln((zv + (1 + Power(2, 0.5)) * bv)
+            / (zv - (-1 + Power(2, 0.5)) * bv))
+    );
+  end;
 end;
 
 function TDewPoint.CalculateM(af: TArrOfDouble): TArrOfDouble;
@@ -212,6 +303,42 @@ begin
         - 0.1644 * Power(af[i], 2)
         + 0.016667 * Power(af[i], 3)
       );
+end;
+
+function TDewPoint.CalculateZl(al, bl: Double;
+  method: TCubicEquationMethod): Double;
+var
+  roots: TArrOfDouble;
+begin
+  roots := method(
+    bl - 1,
+    al - 2 * bl - 3 * Power(bl, 2),
+    (-al + Power(bl, 2) + bl) * bl
+  );
+  Result := self.SelectCubicEquationRoot(
+    roots[0],
+    roots[1],
+    roots[2],
+    FunctionsUnit.Min
+  );
+end;
+
+function TDewPoint.CalculateZv(av, bv: Double;
+  method: TCubicEquationMethod): Double;
+var
+  roots: TArrOfDouble;
+begin
+  roots := method(
+    bv - 1,
+    av - 2 * bv - 3 * Power(bv, 2),
+    (-av + Power(bv, 2) + bv) * bv
+  );
+  Result := self.SelectCubicEquationRoot(
+    roots[0],
+    roots[1],
+    roots[2],
+    FunctionsUnit.Max
+  );
 end;
 
 constructor TDewPoint.Create(
@@ -246,5 +373,41 @@ begin
     end;
 end;
 
+
+function TDewPoint.EstimateKi(t: Double): TArrOfDouble;
+var
+  i: Integer;
+begin
+  SetLength(Result, Length(self.Yi));
+  for i := 0 to High(Result) do
+    Result[i] := exp(
+        ln(self.Pc[i] / self.Pressure)
+        + ln(10) * (7 / 3) * (1 + self.Af[i])
+        * (1 - self.Tc[i] / t)
+    );
+end;
+
+function TDewPoint.EstimateTSati: TArrOfDouble;
+
+begin
+  SetLength(Result, Length(self.Yi));
+  for var i := 0 to High(Result) do
+    Result[i] := (
+      self.Tc[i] / (1 - 3 * ln(self.Pressure / self.Pc[i])
+                    / (ln(10) * (7 + 7 * self.Af[i]))
+                    )
+    );
+end;
+
+function TDewPoint.SelectCubicEquationRoot(z1, z2, z3: Double; f: TFoo): Double;
+var
+  roots: TArrOfDouble;
+begin
+  SetLength(roots, 3);
+  roots[0] := z1;
+  roots[1] := z2;
+  roots[2] := z3;
+  Result := f(roots);
+end;
 
 end.

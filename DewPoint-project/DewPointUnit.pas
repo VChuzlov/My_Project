@@ -75,6 +75,7 @@ type
       );
       function EstimateTSati(): TArrOfDouble;
       function EstimateKi(t: Double): TArrOfDouble;
+      function CalculateXi(ki: TArrOfDouble): TArrOfDouble;
   end;
 
 
@@ -303,6 +304,15 @@ begin
         - 0.1644 * Power(af[i], 2)
         + 0.016667 * Power(af[i], 3)
       );
+end;
+
+function TDewPoint.CalculateXi(ki: TArrOfDouble): TArrOfDouble;
+var
+  i: Integer;
+begin
+  SetLength(Result, Length(ki));
+  for i := 0 to High(ki) do
+    Result[i] := self.Yi[i] / ki[i];
 end;
 
 function TDewPoint.CalculateZl(al, bl: Double;
