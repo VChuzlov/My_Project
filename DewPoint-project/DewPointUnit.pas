@@ -297,7 +297,7 @@ function TDewPoint.CalculateInitialValueForT: Double;
 
 begin
   Result := Bisections(
-    foo, 1e-5, 1000.0
+    ForInitialTValue, 1e-5, 1000.0
   );
 end;
 
