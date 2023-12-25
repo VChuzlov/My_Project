@@ -79,6 +79,7 @@ type
       function CalculateXi(ki: TArrOfDouble): TArrOfDouble;
       function EstimateTFromXiAndTSati(xi, tsati: TArrOfDouble): Double;
       function CalculateInitialValueForT(): Double;
+      function CalculateKij(vc: TArrOfDouble; n: Integer = 1): TMatrixOfDouble;
   end;
 
 
@@ -294,14 +295,9 @@ begin
 end;
 
 function TDewPoint.CalculateInitialValueForT: Double;
-
-function foo(x: Double): Double;
-begin
-  Result := self.ForInitialTValue(x);
-end;
-
 var
   f: TObjectiveFunction;
+
 begin
   f :=
   function(t: Double): Double
@@ -312,6 +308,35 @@ begin
   Result := Bisections(
     f, 1e-5, 1000.0
   );
+end;
+
+function TDewPoint.CalculateKij(vc: TArrOfDouble; n: Integer): TMatrixOfDouble;
+var
+  VcR3: TArrOfDouble;
+  Numerator: TMatrixOfDouble;
+  Denominator: TMatrixOfDouble;
+  i: Integer;
+  j: Integer;
+begin
+  SetLength(Result, Length(vc));
+  SetLength(VcR3, Length(vc));
+  SetLength(Numerator, Length(vc));
+  SetLength(Denominator, Length(vc));
+  for i := 0 to High(vc) do
+    begin
+      SetLength(Numerator[i], Length(vc));
+      SetLength(Denominator[i], Length(vc));
+
+      VcR3[i] := Power(vc[i], 1 / 3);
+    end;
+
+  for i := 0 to High(vc) do
+    for j := 0 to High(vc) do
+    begin
+      Numerator[i, j] := Power(VcR3[i] * VcR3[j], 0.5);
+      Denominator[i, j] := (VcR3[i] + VcR3[j]) / 2;
+      Result[i, j] := 1 - Power(Numerator[i, j] / Denominator[i, j], n);
+    end;
 end;
 
 function TDewPoint.CalculateM(af: TArrOfDouble): TArrOfDouble;

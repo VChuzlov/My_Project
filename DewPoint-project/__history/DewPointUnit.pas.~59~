@@ -79,6 +79,7 @@ type
       function CalculateXi(ki: TArrOfDouble): TArrOfDouble;
       function EstimateTFromXiAndTSati(xi, tsati: TArrOfDouble): Double;
       function CalculateInitialValueForT(): Double;
+      function CalculateKij(vc: TArrOfDouble; n: Integer = 1): TMatrixOfDouble;
   end;
 
 
@@ -294,11 +295,36 @@ begin
 end;
 
 function TDewPoint.CalculateInitialValueForT: Double;
+var
+  f: TObjectiveFunction;
 
 begin
+  f :=
+  function(t: Double): Double
+  begin
+    Result := self.ForInitialTValue(t);
+  end;
+
   Result := Bisections(
-    ForInitialTValue, 1e-5, 1000.0
+    f, 1e-5, 1000.0
   );
+end;
+
+function TDewPoint.CalculateKij(vc: TArrOfDouble; n: Integer): TMatrixOfDouble;
+var
+  VcR3: TMatrixOfDouble;
+  Numerator: TMatrixOfDouble;
+  Denominator: TMatrixOfDouble;
+  i: Integer;
+begin
+  SetLength(Result, Length(vc));
+  SetLength(VcR3, Length(vc));
+  SetLength(Numerator, Length(vc));
+  SetLength(Denominator, Length(vc));
+  for i := 0 to High(vc) do
+    begin
+      //
+    end;
 end;
 
 function TDewPoint.CalculateM(af: TArrOfDouble): TArrOfDouble;
