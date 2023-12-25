@@ -295,8 +295,17 @@ end;
 function TDewPoint.CalculateInitialValueForT: Double;
 
 function foo(t: Double): Double;
+var
+  ki: TArrOfDouble;
+  xi: TArrOfDouble;
+  tsati: TArrOfDouble;
+  t_: Double;
   begin
-    Result := 0.0;
+    ki := self.EstimateKi(t);
+    xi := self.CalculateXi(ki);
+    tsati := self.EstimateTSati();
+    t_ := self.EstimateTFromXiAndTSati(xi, tsati);
+    Result := t - t_;
   end;
 
 
