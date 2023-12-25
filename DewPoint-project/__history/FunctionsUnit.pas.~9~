@@ -8,8 +8,6 @@ uses
 function Max(x: TarrOfDouble): Double;
 function Min(x: TarrOfDouble): Double;
 function VietaMethod(a, b, c: Double): TArrOfDouble;
-function Bisections(foo: TObjectiveFunction; a, b: Double;
-  eps: Double = 1e-8): Double;
 
 implementation
 
@@ -109,30 +107,6 @@ begin
   Result[0] := x1;
   Result[1] := x2;
   Result[2] := x3;
-end;
-
-function Bisections(foo: TObjectiveFunction; a, b: Double;
-  eps: Double = 1e-8): Double;
-var
-  x: Double;
-
-begin
-  if foo(a) * foo(b) > 0 then
-  begin
-    Result := Infinity;
-    exit
-  end;
-
-  x := (a + b) / 2;
-  while abs(a - b) <= eps do
-  begin
-    if foo(a) * foo(x) < 0 then
-      b := x
-    else
-      a := x;
-    x := (a + b) / 2;
-  end;
-  Result := x;
 end;
 
 end.

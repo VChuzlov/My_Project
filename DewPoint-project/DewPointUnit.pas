@@ -77,6 +77,7 @@ type
       function EstimateKi(t: Double): TArrOfDouble;
       function CalculateXi(ki: TArrOfDouble): TArrOfDouble;
       function EstimateTFromXiAndTSati(xi, tsati: TArrOfDouble): Double;
+      function CalculateInitialValueForT(): Double;
   end;
 
 
@@ -289,6 +290,18 @@ begin
             / (zv - (-1 + Power(2, 0.5)) * bv))
     );
   end;
+end;
+
+function TDewPoint.CalculateInitialValueForT: Double;
+
+function foo(t: Double): Double;
+  begin
+    Result := 0.0;
+  end;
+
+
+begin
+
 end;
 
 function TDewPoint.CalculateM(af: TArrOfDouble): TArrOfDouble;
