@@ -55,6 +55,14 @@ type
         av: Double;
         bv: Double
       ): TArrOfDouble;
+      function CalculateFil(
+        ab: TMatrixOfDouble;
+        x: TArrOfDouble;
+        zl: Double;
+        bp: TArrOfDouble;
+        al: Double;
+        bl: Double
+      ): TArrOfDouble;
 
     public
       constructor Create(
@@ -226,6 +234,32 @@ begin
   SetLength(Result, Length(m));
   for i := 0 to High(m) do
     Result[i] := m[i] * ai[i] * alpha[i] * Power(tr[i] / alpha[i], 0.5);
+end;
+
+function TDewPoint.CalculateFil(ab: TMatrixOfDouble; x: TArrOfDouble;
+  zl: Double; bp: TArrOfDouble; al, bl: Double): TArrOfDouble;
+var
+  s: Double;
+  i: Integer;
+  j: Integer;
+begin
+  SetLength(Result, Length(x));
+  for i := 0 to High(x) do
+  begin
+    s := 0.0;
+
+    for j := 0 to High(x) do
+      s := s + ab[i, j] * x[j];
+
+    Result[i] := exp(
+      (zl - 1) * bp[i] / bl - ln(zl - bl)
+      - al / (2 * Power(2, 0.5) * bl)
+      * (2 * s / al - bp[i] / bl)
+      * ln((zl + (1 + Power(2, 0.5)) * bl)
+            / (zl - (-1 + Power(2, 0.5)) * bl))
+    );
+  end;
+
 end;
 
 function TDewPoint.CalculateFiv(ab: TMatrixOfDouble; y: TArrOfDouble;
