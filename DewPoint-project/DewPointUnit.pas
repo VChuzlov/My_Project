@@ -575,7 +575,7 @@ begin
   Zv := self.CalculateZv(Av, Bv, VietaMethod);
   Al := self.CalculateAl(xi, Ab);
   Bl := self.CalculateBv(xi, Bp);
-  Zl := self.CalculateZv(Al, Bl, VietaMethod);
+  Zl := self.CalculateZl(Al, Bl, VietaMethod);
   Fiv := self.CalculateFiv(Ab, self.Yi, Zv, Bp, Av, Bv);
   Fil := self.CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
@@ -629,7 +629,7 @@ begin
   Zv := self.CalculateZv(Av, Bv, VietaMethod);
   Al := self.CalculateAl(xi, Ab);
   Bl := self.CalculateBv(xi, Bp);
-  Zl := self.CalculateZv(Al, Bl, VietaMethod);
+  Zl := self.CalculateZl(Al, Bl, VietaMethod);
   Fiv := self.CalculateFiv(Ab, self.Yi, Zv, Bp, Av, Bv);
   Fil := self.CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
