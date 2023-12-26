@@ -10,6 +10,8 @@ function Min(x: TarrOfDouble): Double;
 function VietaMethod(a, b, c: Double): TArrOfDouble;
 function Bisections(foo: TObjectiveFunction; a, b: Double;
   eps: Double = 1e-8): Double;
+function Golden(foo: TObjectiveFunction; a, b: Double;
+  eps: Double = 1e-8; maxit: Integer = 5000): Double;
 
 implementation
 
@@ -133,6 +135,36 @@ begin
     x := (a + b) / 2;
   end;
   Result := x;
+end;
+
+function Golden(foo: TObjectiveFunction; a, b: Double;
+  eps: Double = 1e-8; maxit: Integer = 5000): Double;
+var
+  x1, x2: Double;
+  Phi: Double;
+  t: Double;
+  i: Integer;
+
+begin
+  Phi := (1 + sqrt(5)) / 2;
+  i := 0;
+
+  while abs(b - a) >= eps do
+  begin
+    i := i + 1;
+    if i > maxit then
+      break;
+
+    t := (b - a) / Phi;
+    x1 := b - t;
+    x2 := a + t;
+    if foo(x1) >= foo(x2) then
+      a := x1
+    else
+      b := x2;
+  end;
+
+  Result := (a + b) / 2;
 end;
 
 end.

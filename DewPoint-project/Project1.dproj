@@ -105,6 +105,7 @@
         <DCCReference Include="DewPointUnit.pas"/>
         <DCCReference Include="FunctionsUnit.pas"/>
         <DCCReference Include="TypesUnit.pas"/>
+        <DCCReference Include="ConvertersUnit.pas"/>
         <BuildConfiguration Include="Base">
             <Key>Base</Key>
         </BuildConfiguration>

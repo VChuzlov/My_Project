@@ -1,12 +1,13 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <BorlandProject>
 	<Transactions>
-    <Transaction>1899.12.30 00:00:00.000.213,C:\Users\chuva\Documents\Embarcadero\Studio\Projects\Project1.dproj=C:\Users\chuva\Documents\GitHub\My_Project\DewPoint-project\Project1.dproj</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.286,C:\Users\chuva\Documents\Embarcadero\Studio\Projects\Unit1.dfm=C:\Users\chuva\Documents\GitHub\My_Project\DewPoint-project\Unit1.dfm</Transaction>
-    <Transaction>1899.12.30 00:00:00.000.286,C:\Users\chuva\Documents\Embarcadero\Studio\Projects\Unit1.pas=C:\Users\chuva\Documents\GitHub\My_Project\DewPoint-project\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.874,=C:\Users\Vyacheslav\Documents\GitHub\My_Project\DewPoint-project\FunctionsUnit.pas</Transaction>
     <Transaction>1899.12.30 00:00:00.000.726,=C:\Users\chuva\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
-    <Transaction>2023.12.25 08:31:13.554,=C:\Users\Vyacheslav\Documents\GitHub\My_Project\DewPoint-project\DewPointUnit.pas</Transaction>
-    <Transaction>2023.12.25 08:31:21.874,=C:\Users\Vyacheslav\Documents\GitHub\My_Project\DewPoint-project\FunctionsUnit.pas</Transaction>
-    <Transaction>2023.12.25 08:31:31.872,=C:\Users\Vyacheslav\Documents\GitHub\My_Project\DewPoint-project\TypesUnit.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.286,C:\Users\chuva\Documents\GitHub\My_Project\DewPoint-project\Unit1.dfm=C:\Users\chuva\Documents\Embarcadero\Studio\Projects\Unit1.dfm</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.554,=C:\Users\Vyacheslav\Documents\GitHub\My_Project\DewPoint-project\DewPointUnit.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.872,=C:\Users\Vyacheslav\Documents\GitHub\My_Project\DewPoint-project\TypesUnit.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.286,C:\Users\chuva\Documents\GitHub\My_Project\DewPoint-project\Unit1.pas=C:\Users\chuva\Documents\Embarcadero\Studio\Projects\Unit1.pas</Transaction>
+    <Transaction>1899.12.30 00:00:00.000.213,C:\Users\chuva\Documents\GitHub\My_Project\DewPoint-project\Project1.dproj=C:\Users\chuva\Documents\Embarcadero\Studio\Projects\Project1.dproj</Transaction>
+    <Transaction>2023.12.26 08:35:35.542,=C:\Users\Vyacheslav\Documents\GitHub\My_Project\DewPoint-project\ConvertersUnit.pas</Transaction>
   </Transactions>
 </BorlandProject>

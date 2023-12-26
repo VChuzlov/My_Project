@@ -85,6 +85,7 @@ type
       function InsideJob(t: Double; kij: TMatrixOfDouble; m: TArrOfDouble;
         xi: TArrOfDouble): Double;
       function Condition(tol: Double = 1e-6): Boolean;
+      function Calculation(): Double;
   end;
 
 
@@ -310,7 +311,7 @@ begin
     Result := self.ForInitialTValue(t);
   end;
 
-  Result := Bisections(
+  Result := Golden(
     f, 1e-5, 1000.0
   );
 end;
@@ -407,6 +408,36 @@ begin
     roots[2],
     FunctionsUnit.Max
   );
+end;
+
+function TDewPoint.Calculation: Double;
+var
+  T: Double;
+  Kij: TMatrixOfDouble;
+  m: TArrOfDouble;
+  i: Integer;
+  foo: TObjectiveFunction;
+begin
+  T := self.CalculateInitialValueForT();
+  Kij := self.CalculateKij(self.Vc);
+  m := self.CalculateM(self.Af);
+  self.PreCalculation(T, Kij, m);
+
+  foo :=
+  function(t: Double): Double
+  begin
+    Result := self.InsideJob(t, Kij, m, self.XiNew);
+  end;
+
+  i := 0;
+  while not self.Condition() do
+  begin
+    i := i + 1;
+    Result := Golden(
+      foo, 0.8 * T, 1.2 * T
+    );
+  end;
+
 end;
 
 function TDewPoint.Condition(tol: Double): Boolean;

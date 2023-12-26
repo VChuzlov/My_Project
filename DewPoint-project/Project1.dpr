@@ -5,7 +5,8 @@ uses
   Unit1 in 'Unit1.pas' {Form1},
   DewPointUnit in 'DewPointUnit.pas',
   FunctionsUnit in 'FunctionsUnit.pas',
-  TypesUnit in 'TypesUnit.pas';
+  TypesUnit in 'TypesUnit.pas',
+  ConvertersUnit in 'ConvertersUnit.pas';
 
 {$R *.res}
 
