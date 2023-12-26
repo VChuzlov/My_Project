@@ -1,11 +1,12 @@
-unit Unit1;
+﻿unit Unit1;
 
 interface
 
 uses
-  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants, System.Classes, Vcl.Graphics,
-  Vcl.Controls, Vcl.Forms, Vcl.Dialogs, ConvertersUnit, TypesUnit, DewPointUnit,
-  Vcl.StdCtrls;
+  Winapi.Windows, Winapi.Messages, System.SysUtils, System.Variants,
+  System.Classes, System.DateUtils,
+  Vcl.Graphics, Vcl.Controls, Vcl.Forms, Vcl.Dialogs, Vcl.StdCtrls,
+  ConvertersUnit, TypesUnit, DewPointUnit;
 
 type
   TForm1 = class(TForm)
@@ -49,13 +50,28 @@ var
   uc: TUnitsConverter;
   dp: TDewPoint;
   TDew: Double;
+  Start, Stop: TDateTime;
+  Elapsed: Double;
+  iCounterPerSec: TLargeInteger;
+  T1, T2: TLargeInteger;  // значение счётчика ДО и ПОСЛЕ операции
 begin
+  Start := Now();
+  QueryPerformanceFrequency(iCounterPerSec);  // определили частоту счётчика
+  QueryPerformanceCounter(T1);  // засекли время начала операции
+
   uc := TUnitsConverter.Create();
   dp := TDewPoint.Create(
     Pressure, Yi, Tc, Pc, Af, Vc
   );
   TDew := dp.Calculation();
-  ShowMessage(FloatToStr(uc.Temperature.RankineToCelsius(TDew)));
+
+  QueryPerformanceCounter(T2);  // засекли время окончания
+  Stop := Now();
+  Elapsed := SecondsBetween(Start, Stop);  // время в секундах
+  ShowMessage(
+    FloatToStr(uc.Temperature.RankineToCelsius(TDew))
+    + ' Elapsed at: ' + FormatFloat('0.0000', (T2 - T1)/iCounterPerSec) + ' sec.'
+  );
 end;
 
 end.

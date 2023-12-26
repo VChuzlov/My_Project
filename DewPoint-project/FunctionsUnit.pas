@@ -126,7 +126,7 @@ begin
   end;
 
   x := (a + b) / 2;
-  while abs(a - b) <= eps do
+  while abs(a - b) >= eps do
   begin
     if foo(a) * foo(x) < 0 then
       b := x
