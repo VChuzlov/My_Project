@@ -311,7 +311,7 @@ begin
     Result := self.ForInitialTValue(t);
   end;
 
-  Result := Golden(
+  Result := Bisections(
     f, 1e-5, 1000.0
   );
 end;
@@ -332,6 +332,7 @@ begin
     begin
       SetLength(Numerator[i], Length(vc));
       SetLength(Denominator[i], Length(vc));
+      SetLength(Result[i], Length(vc));
 
       VcR3[i] := Power(vc[i], 1 / 3);
     end;
@@ -368,7 +369,7 @@ begin
   SetLength(Result, Length(ki));
   for i := 0 to High(ki) do
   begin
-    if ki[i] = 0.0 then
+    if ki[i] <= 1e-12 then
       ki[i] := 1e-12;
     Result[i] := self.Yi[i] / ki[i];
   end;
