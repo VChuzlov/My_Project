@@ -439,7 +439,7 @@ begin
   while not self.Condition() do
   begin
     i := i + 1;
-    Result := Golden(
+    Result := Brent(
       foo, 0.8 * T, 1.2 * T
     );
     _t := uc.Temperature.RankineToCelsius(Result);

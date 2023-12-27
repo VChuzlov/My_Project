@@ -12,6 +12,8 @@ function Bisections(foo: TObjectiveFunction; a, b: Double;
   eps: Double = 1e-8): Double;
 function Golden(foo: TObjectiveFunction; a, b: Double;
   eps: Double = 1e-8; maxit: Integer = 5000): Double;
+function Brent(foo: TObjectiveFunction; lower, upper: Double;
+  tol: Double = 1e-8; MaxIter: Integer = 5000): Double;
 
 implementation
 
@@ -165,6 +167,109 @@ begin
   end;
 
   Result := (a + b) / 2;
+end;
+
+function Brent(foo: TObjectiveFunction; lower, upper: Double;
+  tol: Double = 1e-8; MaxIter: Integer = 5000): Double;
+var
+  a, b: Double;
+  fa, fb, fs: Double;
+  tmp: Double;
+  c: Double; // c now equals the largest magnitude of the lower and upper bounds
+  fc: Double; // precompute function evalutation for point c by assigning
+             //  it the same value as fa
+  mflag: boolean; // boolean flag used to evaluate if statement later on
+  s: Double;  // Our Root that will be returned
+  d: Double; // Only used if mflag is unset (mflag == false)
+begin
+  a := lower;
+  b := upper;
+  fa := foo(a);
+  fb := foo(b);
+  fs := 0.0;
+
+  if fa * fb > 0 then
+  begin
+    Result := Infinity;
+    exit
+  end;
+
+  // if magnitude of f(lower_bound) is less than magnitude of f(upper_bound)
+  if abs(fa) < abs(b) then
+  begin
+    tmp := a;
+    a := b;
+    b := tmp;
+    tmp := fa;
+    fa := fb;
+    fb := tmp;
+  end;
+
+  s := a;
+  fc := fa;
+  mflag := True;
+  s := 0.0;
+  d := 0.0;
+
+  for var i := 0 to MaxIter do
+  begin
+    if abs(b - a) < tol then
+    begin
+      Result := s;
+      break
+    end;
+
+    if (fa <> fc) and (fb <> fc) then
+    // use inverse quadratic interopolation
+      s := (a * fb * fc / ((fa - fb) * (fa - fc)))
+            + (b * fa * fc / ((fb - fa) * (fb - fc)))
+				    + (c * fa * fb / ((fc - fa) * (fc - fb)))
+    else
+    // secant method
+      s := b - fb * (b - a) / (fb - fa);
+
+    // checks to see whether we can use the faster converging 
+   //  quadratic && secant methods or if we need to use bisection
+    if (	( (s < (3 * a + b) * 0.25) or (s > b) ) or
+				 ( mflag and (abs(s - b) >= (abs(b - c) * 0.5)) ) or
+				 ( not mflag and (abs(s - b) >= (abs(c - d) * 0.5)) ) or
+				 ( mflag and (abs(b - c) < tol) ) or
+				 ( not mflag and (abs(c - d) < tol))	) then
+    begin
+      // bisection method
+			s := (a + b) * 0.5;
+			mflag := true;
+    end
+
+    else
+      mflag := false;
+
+    fs := foo(s);	// calculate fs
+    d := c;		// first time d is being used (wasnt used on first iteration because mflag was set)
+    c := b;		// set c equal to upper bound
+    fc := fb;	// set f(c) = f(b)
+
+    if (fa * fs < 0) then	 // fa and fs have opposite signs
+		begin
+			b := s;
+			fb := fs;	 // set f(b) = f(s)
+		end
+    else
+		begin
+			a := s;
+			fa := fs;	 // set f(a) = f(s)
+		end;
+
+    if (abs(fa) < abs(fb)) then // if magnitude of fa is less than magnitude of fb
+		begin
+      tmp := a;  // swap a and b
+      a := b;
+      b := tmp;
+			tmp := fa;	// make sure f(a) and f(b) are correct after swap
+      fa := fb;
+      fb := tmp;
+		end;
+  end;
 end;
 
 end.
