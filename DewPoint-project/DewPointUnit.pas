@@ -440,7 +440,7 @@ begin
   begin
     i := i + 1;
     Result := Brent(
-      foo, 0.8 * T, 1.2 * T
+      foo, 0.8 * T,  T+15
     );
     _t := uc.Temperature.RankineToCelsius(Result);
   end;

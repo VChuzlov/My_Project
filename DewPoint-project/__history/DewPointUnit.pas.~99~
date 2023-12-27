@@ -271,6 +271,7 @@ begin
       * ln((zl + (1 + Power(2, 0.5)) * bl)
             / (zl - (-1 + Power(2, 0.5)) * bl))
     );
+
   end;
 
 end;
@@ -311,7 +312,7 @@ begin
     Result := self.ForInitialTValue(t);
   end;
 
-  Result := Golden(
+  Result := Bisections(
     f, 1e-5, 1000.0
   );
 end;
@@ -418,6 +419,9 @@ var
   m: TArrOfDouble;
   i: Integer;
   foo: TObjectiveFunction;
+
+  uc: TUnitsConverter;
+  _t: Double;
 begin
   T := self.CalculateInitialValueForT();
   Kij := self.CalculateKij(self.Vc);
@@ -430,13 +434,15 @@ begin
     Result := self.InsideJob(t, Kij, m, self.XiNew);
   end;
 
+  uc := TUnitsConverter.Create();
   i := 0;
   while not self.Condition() do
   begin
     i := i + 1;
-    Result := Golden(
-      foo, 0.8 * T, 1.2 * T
+    Result := Brent(
+      foo, 0.8 * T, 1.3 * T
     );
+    _t := uc.Temperature.RankineToCelsius(Result);
   end;
 
 end;
@@ -575,7 +581,7 @@ begin
   Zv := self.CalculateZv(Av, Bv, VietaMethod);
   Al := self.CalculateAl(xi, Ab);
   Bl := self.CalculateBv(xi, Bp);
-  Zl := self.CalculateZv(Al, Bl, VietaMethod);
+  Zl := self.CalculateZl(Al, Bl, VietaMethod);
   Fiv := self.CalculateFiv(Ab, self.Yi, Zv, Bp, Av, Bv);
   Fil := self.CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
@@ -629,7 +635,7 @@ begin
   Zv := self.CalculateZv(Av, Bv, VietaMethod);
   Al := self.CalculateAl(xi, Ab);
   Bl := self.CalculateBv(xi, Bp);
-  Zl := self.CalculateZv(Al, Bl, VietaMethod);
+  Zl := self.CalculateZl(Al, Bl, VietaMethod);
   Fiv := self.CalculateFiv(Ab, self.Yi, Zv, Bp, Av, Bv);
   Fil := self.CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
