@@ -271,6 +271,7 @@ begin
       * ln((zl + (1 + Power(2, 0.5)) * bl)
             / (zl - (-1 + Power(2, 0.5)) * bl))
     );
+
   end;
 
 end;
@@ -418,6 +419,9 @@ var
   m: TArrOfDouble;
   i: Integer;
   foo: TObjectiveFunction;
+
+  uc: TUnitsConverter;
+  _t: Double;
 begin
   T := self.CalculateInitialValueForT();
   Kij := self.CalculateKij(self.Vc);
@@ -430,6 +434,7 @@ begin
     Result := self.InsideJob(t, Kij, m, self.XiNew);
   end;
 
+  uc := TUnitsConverter.Create();
   i := 0;
   while not self.Condition() do
   begin
@@ -437,6 +442,7 @@ begin
     Result := Golden(
       foo, 0.8 * T, 1.2 * T
     );
+    _t := uc.Temperature.RankineToCelsius(Result);
   end;
 
 end;
