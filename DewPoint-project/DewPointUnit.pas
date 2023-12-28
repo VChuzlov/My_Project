@@ -567,9 +567,16 @@ var
   XiNew: TArrOfDouble;
   s: Double;
   i: Integer;
-
+  xSum: Double;
 begin
   SetLength(XiNew, Length(m));
+  xSum := 0.0;
+  for i := 0 to High(xi) do
+    xSum := xSum + xi[i];
+  if xSum <> 1.0 then
+    for i := 0 to High(xi) do
+      xi[i] := xi[i] / xSum;
+
   vc := TValuesConverter.Create();
   Tr := vc.ReducedParam(t, self.Tc);
   Alpha := self.CalculateAlpha(m, Tr);
