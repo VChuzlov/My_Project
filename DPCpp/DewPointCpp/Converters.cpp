@@ -81,6 +81,6 @@ double Pressure::PsiTokPa(double x)
 
 UnitsConverter::UnitsConverter()
 {
-	Temperature = Temperature;
-	Pressure = Pressure;
+	Temperature TemperatureUnits;
+	Pressure PressureUnits;
 };

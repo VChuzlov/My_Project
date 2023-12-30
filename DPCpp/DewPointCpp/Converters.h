@@ -32,6 +32,6 @@ class UnitsConverter
 {
 public:
     UnitsConverter();
-    Temperature Temperature;
-    Pressure Pressure;
+    Temperature TemperatureUnits;
+    Pressure PressureUnits;
 };

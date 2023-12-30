@@ -2,10 +2,13 @@
 //
 
 #include <iostream>
+#include "Converters.h"
 
 int main()
 {
-    std::cout << "Hello World!\n";
+    UnitsConverter uc;
+    std::cout << uc.TemperatureUnits.CelciusToKelvin(0.0) << std::endl;
+    return 0;
 }
 
 // Run program: Ctrl + F5 or Debug > Start Without Debugging menu
