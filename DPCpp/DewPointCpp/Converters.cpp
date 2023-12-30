@@ -1,5 +1,5 @@
 ﻿#include <iostream>
-using namespace std;
+
 
 class Temperature
 {
@@ -91,4 +91,5 @@ private:
 	// детали имплементации
 public:
 	Temperature Temperature;
+	Pressure Pressure;
 };
