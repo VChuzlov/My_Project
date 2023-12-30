@@ -12,11 +12,11 @@ public:
 	{
 		return c * 9. / 5. + 32.;
 	}
-	double CelsiusToRankine(double c)
+	double CelciusToRankine(double c)
 	{
 		return c * 9. / 5. + 491.67;
 	}
-	double FahrenheitToCelsius(double f)
+	double FahrenheitToCelcius(double f)
 	{
 		return (f - 32.) * 5. / 9.;
 	}
@@ -28,7 +28,7 @@ public:
 	{
 		return f + 459.67;
 	}
-	double KelvinToCelsius(double k)
+	double KelvinToCelcius(double k)
 	{
 		return k - 273.15;
 	}
@@ -40,7 +40,7 @@ public:
 	{
 		return k * 9. / 5.;
 	}
-	double RankineToCelsius(double r)
+	double RankineToCelcius(double r)
 	{
 		return (r - 491.67) * 5. / 9.;
 	}
