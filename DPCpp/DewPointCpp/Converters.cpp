@@ -1,4 +1,5 @@
 ﻿#include <iostream>
+#include <vector>
 #include "Converters.h"
 
 
@@ -83,4 +84,17 @@ UnitsConverter::UnitsConverter()
 {
 	Temperature TemperatureUnits;
 	Pressure PressureUnits;
+};
+
+
+std::vector<double> ValuesConverter::ReducedParam(
+	double Param, std::vector<double> cParams)
+{
+	std::vector<double> rParams(cParams.size());
+
+	for (int i = 0; i < cParams.size(); ++i)
+	{
+		rParams[i] = Param / cParams[i];
+	};
+	return rParams;
 };

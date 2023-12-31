@@ -1,3 +1,5 @@
+#include <vector>
+
 class Temperature
 {
 public:
@@ -34,4 +36,10 @@ public:
     UnitsConverter();
     Temperature TemperatureUnits;
     Pressure PressureUnits;
+};
+
+class ValuesConverter
+{
+public:
+    std::vector<double> ReducedParam(double, std::vector<double>);
 };
