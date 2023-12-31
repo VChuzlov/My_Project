@@ -16,7 +16,7 @@ int main()
 
     for (int i = 0; i < Tc.size(); ++i)
     {
-        std::cout << Tr[i] << " " << std::endl;
+        std::cout << i << "\t" << Tr[i] << std::endl;
     }
     return 0;
 };
