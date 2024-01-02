@@ -1,4 +1,5 @@
 #include <vector>
+#include <functional>
 
 class DewPoint
 {
@@ -36,5 +37,27 @@ private:
         std::vector<std::vector<double>>);
     double CalculateBl(std::vector<double>, std::vector<double>);
     double CalculateBbl(std::vector<double>, std::vector<double>);
+    double CalculateBbv(std::vector<double>, std::vector<double>);
+    double CalculateAalpha(std::vector<double>,
+        std::vector<std::vector<double>>, std::vector<double>,
+        std::vector<double>);
+    double CalculateD(std::vector<double>, std::vector<double>,
+        std::vector<std::vector<double>>, std::vector<double>,
+        std::vector<double>, std::vector<double>);
+    double SelectCubicEquationRoot(double, double, double, 
+        std::function<double (std::vector<double>)>);
+    double CalculateZv(double, double, std::function<double (double)>);
+    double CalculateZl(double, double, std::function<double (double)>);
+    std::vector<double> CalculateFiv(std::vector<std::vector<double>>,
+        std::vector<double>, double, std::vector<double>,
+        double, double);
+    std::vector<double> CalculateFil(std::vector<std::vector<double>>,
+        std::vector<double>, double, std::vector<double>,
+        double, double);
+    double ForinitialTValue(double);
+
+public:
+    DewPoint(double, std::vector<double>, std::vector<double>,
+        std::vector<double>, std::vector<double>, std::vector<double>);
     
 };
