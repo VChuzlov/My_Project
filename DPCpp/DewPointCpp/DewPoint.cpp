@@ -35,6 +35,17 @@ std::vector<std::vector<double>> DewPoint::CalculateAb(
     return Result;
 }
 
+std::vector<double> DewPoint::CalculateAi(std::vector<double> tc,
+    std::vector<double> pc)
+{
+    std::vector<double> Result(tc.size());
+    for (unsigned int i = 0; i < tc.size(); ++i)
+    {
+        Result[i] = 0.45724 * pow(8.314 * tc[i], 2) / pc[i];
+    }
+    return Result;
+}
+
 std::vector<double> DewPoint::CalculateM(std::vector<double> Af)
 {
     std::vector<double> m(Af.size());
