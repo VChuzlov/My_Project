@@ -71,6 +71,17 @@ std::vector<double> DewPoint::CalculateAlpha(std::vector<double> m,
     return Result;
 }
 
+std::vector<double> DewPoint::CalculateAp(std::vector<double> alpha,
+    std::vector<double> tr, std::vector<double> pr)
+{
+    std::vector<double> Result(tr.size());
+    for (unsigned int i = 0; i < tr.size(); ++i)
+    {
+        Result[i] = 0.457235529 * alpha[i] * pr[i] / pow(tr[i], 2);
+    }
+    return Result;
+}
+
 std::vector<double> DewPoint::CalculateM(std::vector<double> Af)
 {
     std::vector<double> m(Af.size());
