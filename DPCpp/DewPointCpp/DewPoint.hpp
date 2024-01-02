@@ -59,5 +59,11 @@ private:
 public:
     DewPoint(double, std::vector<double>, std::vector<double>,
         std::vector<double>, std::vector<double>, std::vector<double>);
-    
+    std::vector<double> EstimateTSati();
+    std::vector<double> EstimateKi(double);
+    std::vector<double> EstimateXi(std::vector<double>);
+    double EstimateTFromXiAndTSati(std::vector<double>, std::vector<double>);
+    double CalculateInitialValueForT();
+    std::vector<std::vector<double>> CalculateKij(
+        std::vector<std::vector<double>>, int = 1);
 };
