@@ -66,4 +66,10 @@ public:
     double CalculateInitialValueForT();
     std::vector<std::vector<double>> CalculateKij(
         std::vector<std::vector<double>>, int = 1);
+    void PreCalculation(double, std::vector<std::vector<double>>,
+        std::vector<double>);
+    double InsideJob(double, std::vector<std::vector<double>>,
+        std::vector<double>, std::vector<double>);
+    bool Condition(double = 1.0E-6);
+    double Calculation();
 };
