@@ -82,6 +82,20 @@ std::vector<double> DewPoint::CalculateAp(std::vector<double> alpha,
     return Result;
 }
 
+double DewPoint::CalculateAv(std::vector<double> y,
+    std::vector<std::vector<double>> ab)
+{
+    double Result;
+    for (unsigned int i = 0; i < y.size(); ++i)
+    {
+        for (unsigned int j = 0; j < y.size(); ++j)
+        {
+            Result += y[i] * y[j] * ab[i][j];
+        }
+    }
+    return Result;
+}
+
 std::vector<double> DewPoint::CalculateM(std::vector<double> Af)
 {
     std::vector<double> m(Af.size());
