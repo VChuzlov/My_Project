@@ -1,6 +1,8 @@
 #include <vector>
 #include <math.h>
+#include <functional>
 #include "DewPoint.hpp"
+#include "Functions.hpp"
 
 double DewPoint::CalculateAalpha(std::vector<double> mf,
     std::vector<std::vector<double>> kij, std::vector<double> ai,
@@ -232,6 +234,40 @@ std::vector<double> DewPoint::CalculateFiv(
             * log((zv + (1 + pow(2, 0.5)) * bv)
                     / (zv - (-1 + pow(2, 0.5)) * bv))
         );
+    }
+    return Result;
+}
+
+double DewPoint::CalculateInitialValueForT()
+{
+    double Result = 0.0; 
+    Result = BrentsMethod(ForinitialTValue, 1e-5, 1000.0);
+    return Result;
+}
+
+std::vector<std::vector<double>> DewPoint::CalculateKij(
+    std::vector<double> vc, unsigned int n)
+{
+    unsigned int size = vc.size();
+    std::vector<double> VcR3(size);
+    std::vector<std::vector<double>> Numerator(size);
+    std::vector<std::vector<double>> Denominator(size);
+    std::vector<std::vector<double>> Result(size);
+    for (unsigned int i = 0; i < size; ++i)
+    {
+        Result[i].resize(size);
+        Numerator[i].resize(size);
+        Denominator[i].resize(size);
+        VcR3[i] = pow(vc[i], 1. / 3.);
+    }
+    for (unsigned int i = 0; i < size; ++i)
+    {
+        for (unsigned int j = 0; j < size; ++j)
+        {
+            Numerator[i][j] = pow(VcR3[i] * VcR3[j], 0.5);
+            Denominator[i][j] = (VcR3[i] + VcR3[j]) / 2.;
+            Result[i][j] = 1 - pow(Numerator[i][j] / Denominator[i][j], n);
+        }
     }
     return Result;
 }

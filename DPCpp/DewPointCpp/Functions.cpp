@@ -3,7 +3,7 @@
 #include <cmath>
 #include <algorithm>
 #include <functional>
-#include "Functions.h"
+#include "Functions.hpp"
 
 #define Pi 3.14159265
 
