@@ -272,8 +272,20 @@ std::vector<std::vector<double>> DewPoint::CalculateKij(
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateM(std::vector<double> Af)
+std::vector<double> DewPoint::CalculateM(std::vector<double> af)
 {
-    std::vector<double> m(Af.size());
-    return m;
+    std::vector<double> Result(af.size());
+    for (unsigned int i = 0; i < af.size(); ++i)
+    {
+        if (af[i] <= 0.49)
+        {
+            Result[i] = 0.3796 + 1.54226 * af[i] - 0.26992 * pow(af[i], 2.);
+        }
+        else
+        {
+            Result[i] = (0.379642 + 1.48503 * af[i] - 0.1644 * pow(af[i], 2.)
+                         + 0.016667 * pow(af[i], 3.));
+        }
+    }
+    return Result;
 }
