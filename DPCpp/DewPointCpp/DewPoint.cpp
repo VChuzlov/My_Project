@@ -187,6 +187,30 @@ std::vector<double> DewPoint::CalculateDi(std::vector<double> m,
     return Result;
 }
 
+std::vector<double> DewPoint::CalculateFil(
+    std::vector<std::vector<double>> ab, std::vector<double> x, double zl,
+    std::vector<double> bp, double al, double bl)
+{
+    std::vector<double> Result(x.size());
+    double s;
+    for (unsigned int i = 0; i < x.size(); ++i)
+    {
+        s = 0.0;
+        for (unsigned int j = 0; j < x.size(); ++j)
+        {
+            s += ab[i][j] * x[j];
+        }
+        Result[i] = exp(
+            (zl - 1) * bp[i] / bl - log(zl - bl)
+            - al / (2 * pow(2, 0.5) * bl)
+            * (2 * s / al - bp[i] / bl)
+            * ln((zl + (1 + pow(2, 0.5)) * bl)
+                    / (zl - (-1 + pow(2, 0.5)) * bl))
+        );
+    }
+    return Result;
+}
+
 std::vector<double> DewPoint::CalculateM(std::vector<double> Af)
 {
     std::vector<double> m(Af.size());
