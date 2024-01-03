@@ -148,8 +148,18 @@ std::vector<double> DewPoint::CalculateBp(std::vector<double> pr,
     return Result;
 }
 
+double DewPoint::CalculateBv(std::vector<double> y, std::vector<double> bp)
+{
+    double Result = 0;
+    for (unsigned int i = 0; i < y.size(); ++i)
+    {
+        Result += y[i] * bp[i];
+    }
+    return Result;
+}
+
 std::vector<double> DewPoint::CalculateM(std::vector<double> Af)
 {
     std::vector<double> m(Af.size());
-    return ;
+    return m;
 }
