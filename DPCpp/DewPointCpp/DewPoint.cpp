@@ -204,8 +204,33 @@ std::vector<double> DewPoint::CalculateFil(
             (zl - 1) * bp[i] / bl - log(zl - bl)
             - al / (2 * pow(2, 0.5) * bl)
             * (2 * s / al - bp[i] / bl)
-            * ln((zl + (1 + pow(2, 0.5)) * bl)
+            * log((zl + (1 + pow(2, 0.5)) * bl)
                     / (zl - (-1 + pow(2, 0.5)) * bl))
+        );
+    }
+    return Result;
+}
+
+std::vector<double> DewPoint::CalculateFiv(
+    std::vector<std::vector<double>> ab, std::vector<double> y, double zv,
+    std::vector<double> bp, double av, double bv
+)
+{
+    std::vector<double> Result(y.size());
+    double s;
+    for (unsigned int i = 0; i < y.size(); ++i)
+    {
+        s = 0.0;
+        for (unsigned int j = 0; j < y.size(); ++j)
+        {
+            s += ab[i][j] * y[j];
+        }
+        Result[i] = exp(
+            (zv - 1) * bp[i] / bv - log(zv - bv)
+            - av / (2 * pow(2, 0.5) * bv)
+            * (2 * s / av - bp[i] / bv)
+            * log((zv + (1 + pow(2, 0.5)) * bv)
+                    / (zv - (-1 + pow(2, 0.5)) * bv))
         );
     }
     return Result;
