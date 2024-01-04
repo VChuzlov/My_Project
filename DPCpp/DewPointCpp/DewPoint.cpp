@@ -333,3 +333,12 @@ double DewPoint::CalculateZv(
     Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Max);
     return Result;
 }
+
+double DewPoint::Calculation()
+{
+    double Result = 0.0;
+    double T;
+    std::vector<std::vector<double>> Kij;
+    std::vector<double> m;
+    return Result;
+}
