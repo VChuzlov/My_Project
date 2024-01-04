@@ -289,3 +289,17 @@ std::vector<double> DewPoint::CalculateM(std::vector<double> af)
     }
     return Result;
 }
+
+std::vector<double> DewPoint::CalculateXi(std::vector<double> ki)
+{
+    std::vector<double> Result(ki.size());
+    for (unsigned int i = 0; i < ki.size(); ++i)
+    {
+        if (ki[i] < 1.0E-12)
+        {
+            ki[i] = 1.0E-12;
+        }
+        Result[i] = this->Yi[i] / ki[i];
+    }
+    return Result;
+}
