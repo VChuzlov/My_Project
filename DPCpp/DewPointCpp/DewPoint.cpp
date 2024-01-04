@@ -315,6 +315,6 @@ double DewPoint::CalculateZl(
         al - 2 * bl - 3 * pow(bl, 2),
         (-al + pow(bl, 2) + bl) * bl
     );
-    Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], );
+    Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Min);
     return Result;
 }
