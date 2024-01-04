@@ -318,3 +318,16 @@ double DewPoint::CalculateZl(
     Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Min);
     return Result;
 }
+
+double DewPoint::CalculateZv(
+    double av, double bv,
+    std::function<std::vector<double> (double, double, double)> method)
+{
+    double Result = 0.0;
+    std::vector<double> roots(3);
+    roots = method(
+        bv - 1,
+        av - 2 * bv - 3 * pow(bv, 2),
+        (-av + pow(bv, 2) + bv) * bv
+    );
+}
