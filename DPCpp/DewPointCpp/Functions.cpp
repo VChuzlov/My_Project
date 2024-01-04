@@ -190,3 +190,29 @@ double BrentsMethod(std::function<double (double)> f,
 	// std::cout<< "The solution does not converge or iterations are not sufficient" << std::endl;
     return s;
 }
+
+double Min(std::vector<double> x)
+{
+    double Result = x[0];
+    for (unsigned int i = 1; i < x.size(); ++i)
+    {
+        if (Result > x[i])
+        {
+            Result = x[i];
+        }
+    }
+    return Result;
+}
+
+double Max(std::vector<double> x)
+{
+    double Result = x[1];
+    for (unsigned int i = 1; i < x.size(); ++i)
+    {
+        if (Result < x[i])
+        {
+            Result = x[i];
+        }
+    }
+    return Result;
+}

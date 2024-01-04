@@ -1,5 +1,6 @@
 #include <vector>
 #include <functional>
+#include "Functions.hpp"
 
 class DewPoint
 {
@@ -47,7 +48,9 @@ private:
     double SelectCubicEquationRoot(double, double, double, 
         std::function<double (std::vector<double>)>);
     double CalculateZv(double, double, std::function<double (double)>);
-    double CalculateZl(double, double, std::function<double (double)>);
+    double CalculateZl(double, double,
+        std::function<std::vector<double>
+        (double, double, double)> = VietaMethod);
     std::vector<double> CalculateFiv(std::vector<std::vector<double>>,
         std::vector<double>, double, std::vector<double>,
         double, double);

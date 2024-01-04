@@ -303,3 +303,18 @@ std::vector<double> DewPoint::CalculateXi(std::vector<double> ki)
     }
     return Result;
 }
+
+double DewPoint::CalculateZl(
+    double al, double bl, 
+    std::function<std::vector<double> (double, double, double)> method)
+{
+    double Result = 0.0;
+    std::vector<double> roots(3);
+    roots = method(
+        bl - 1,
+        al - 2 * bl - 3 * pow(bl, 2),
+        (-al + pow(bl, 2) + bl) * bl
+    );
+    Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], );
+    return Result;
+}
