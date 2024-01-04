@@ -3,6 +3,7 @@
 #include <functional>
 #include "DewPoint.hpp"
 #include "Functions.hpp"
+#include "Converters.hpp"
 
 double DewPoint::CalculateAalpha(std::vector<double> mf,
     std::vector<std::vector<double>> kij, std::vector<double> ai,
@@ -340,5 +341,24 @@ double DewPoint::Calculation()
     double T;
     std::vector<std::vector<double>> Kij;
     std::vector<double> m;
+    UnitsConverter uc;
+    unsigned int i = 0;
+    double _t;
+
+    T = this->CalculateInitialValueForT();
+    Kij = this->CalculateKij(this->Vc);
+    m = this->CalculateM(this->Af);
+    this->PreCalculation(T, Kij, m);
+
+    while (!this->Condition())
+    {
+        i += 1;
+        Result = BrentsMethod(
+            InsideJob,
+            .8 * T,
+            1.2 * T
+        );
+    }
+
     return Result;
 }
