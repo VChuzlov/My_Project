@@ -330,4 +330,6 @@ double DewPoint::CalculateZv(
         av - 2 * bv - 3 * pow(bv, 2),
         (-av + pow(bv, 2) + bv) * bv
     );
+    Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Max);
+    return Result;
 }
