@@ -412,3 +412,17 @@ DewPoint::DewPoint(
     }
     this->Pr = vc.ReducedParam(this->Pressure, this->Pc);
 }
+
+std::vector<double> DewPoint::EstimateKi(double t)
+{
+    std::vector<double> Result(this->Yi.size());
+    for (unsigned int i = 0; i < this->Yi.size(); ++i)
+    {
+        Result[i] = exp(
+            log(this->Pc[i] / this->Pressure)
+            + log(10) * (7. / 3.) * (1. + this->Af[i])
+            * (1. - this->Tc[i] / t)
+        );
+    }
+    return Result;
+}
