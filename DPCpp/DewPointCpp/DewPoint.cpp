@@ -2,7 +2,7 @@
 #include <math.h>
 #include <functional>
 #include "DewPoint.hpp"
-#include "Functions.hpp"
+//#include "Functions.hpp" циклический импорт уже есть в DewPoint.hpp
 #include "Converters.hpp"
 
 double DewPoint::CalculateAalpha(std::vector<double> mf,

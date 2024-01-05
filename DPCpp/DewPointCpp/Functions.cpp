@@ -96,8 +96,8 @@ std::vector<double> VietaMethod(double a, double b, double c)
 };
 
 
-double BrentsMethod(std::function<double (double)> f,
-    double lower, double upper, double tol,
+double BrentsMethod(std::function<double (double)> f, 
+    double lower, double upper, double tol, 
     unsigned int MaxIter)
 {
     double a = lower;
