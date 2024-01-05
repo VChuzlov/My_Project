@@ -437,3 +437,17 @@ double DewPoint::EstimateTFromXiAndTSati(
     }
     return Result;
 }
+
+std::vector<double> DewPoint::EstimateTSati()
+{
+    std::vector<double> Result(this->Yi.size());
+    for (unsigned int i = 0; i < Result.size(); ++i)
+    {
+        Result[i] = (
+            this->Tc[i] / (1. - 3. * log(this->Pressure / this->Pc[i])
+                           / (log(10) * (7. + 7. * this->Af[i]))
+                          )
+        );
+    }
+    return Result;
+}
