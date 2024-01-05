@@ -245,7 +245,7 @@ double DewPoint::CalculateInitialValueForT()
     
     auto foo = [this](double t)
     {
-        return this->ForinitialTValue(t);
+        return this->ForInitialTValue(t);
     };
 
     Result = BrentsMethod(foo, 1e-5, 1000.0);
@@ -458,7 +458,7 @@ std::vector<double> DewPoint::EstimateTSati()
     return Result;
 }
 
-double DewPoint::ForinitialTValue(double t)
+double DewPoint::ForInitialTValue(double t)
 {
     std::vector<double> ki = this->EstimateKi(t);
     std::vector<double> xi = this->CalculateXi(ki);
