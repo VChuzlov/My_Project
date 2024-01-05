@@ -350,14 +350,20 @@ double DewPoint::Calculation()
     m = this->CalculateM(this->Af);
     this->PreCalculation(T, Kij, m);
 
+    auto foo = [&Kij, &m, *this](double t)
+    {
+        return this->InsideJob(t, Kij, m, this->XiNew);
+    };
+
     while (!this->Condition())
     {
         i += 1;
         Result = BrentsMethod(
-            InsideJob,
+            foo,
             .8 * T,
             1.2 * T
         );
+        _t = uc.TemperatureUnits.RankineToCelcius(Result);
     }
 
     return Result;
