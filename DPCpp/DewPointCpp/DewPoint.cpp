@@ -242,7 +242,13 @@ std::vector<double> DewPoint::CalculateFiv(
 double DewPoint::CalculateInitialValueForT()
 {
     double Result = 0.0; 
-    Result = BrentsMethod(ForinitialTValue, 1e-5, 1000.0);
+    
+    auto foo = [this](double t)
+    {
+        return this->ForinitialTValue(t);
+    };
+
+    Result = BrentsMethod(foo, 1e-5, 1000.0);
     return Result;
 }
 
@@ -350,7 +356,7 @@ double DewPoint::Calculation()
     m = this->CalculateM(this->Af);
     this->PreCalculation(T, Kij, m);
 
-    auto foo = [&Kij, &m, *this](double t)
+    auto foo = [&Kij, &m, this](double t)
     {
         return this->InsideJob(t, Kij, m, this->XiNew);
     };
