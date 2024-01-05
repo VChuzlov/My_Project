@@ -59,7 +59,7 @@ private:
     std::vector<double> CalculateFil(std::vector<std::vector<double>>,
         std::vector<double>, double, std::vector<double>,
         double, double);
-    double ForinitialTValue(double);
+    double ForInitialTValue(double);
 
 public:
     DewPoint(double, std::vector<double>, std::vector<double>,
