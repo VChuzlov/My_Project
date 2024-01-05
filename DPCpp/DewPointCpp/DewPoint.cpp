@@ -365,6 +365,17 @@ double DewPoint::Calculation()
         );
         _t = uc.TemperatureUnits.RankineToCelcius(Result);
     }
-
     return Result;
+}
+
+bool DewPoint::Condition(double tol)
+{
+    unsigned int n = this->XiNew.size();
+    double s = 0.0;
+
+    for (unsigned int i = 0; i < n; ++i)
+    {
+        s += (pow(this->Xi[i] - this->XiNew[i], 2) / this->XiNew[i]) / n;
+    }
+    return s <= tol;
 }
