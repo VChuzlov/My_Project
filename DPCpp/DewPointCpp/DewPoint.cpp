@@ -451,3 +451,11 @@ std::vector<double> DewPoint::EstimateTSati()
     }
     return Result;
 }
+
+double DewPoint::ForinitialTValue(double t)
+{
+    double Result;
+    std::vector<double> ki = this->EstimateKi(t);
+    std::vector<double> xi;
+    std::vector<double> tasti;
+}

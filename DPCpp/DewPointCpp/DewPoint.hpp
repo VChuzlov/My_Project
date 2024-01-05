@@ -59,7 +59,7 @@ private:
     std::vector<double> CalculateFil(std::vector<std::vector<double>>,
         std::vector<double>, double, std::vector<double>,
         double, double);
-    static double ForinitialTValue(double);
+    double ForinitialTValue(double);
 
 public:
     DewPoint(double, std::vector<double>, std::vector<double>,
@@ -73,7 +73,7 @@ public:
         std::vector<double>, unsigned int = 1);
     void PreCalculation(double, std::vector<std::vector<double>>,
         std::vector<double>);
-    static double InsideJob(double, std::vector<std::vector<double>>,
+    double InsideJob(double, std::vector<std::vector<double>>,
         std::vector<double>, std::vector<double>);
     bool Condition(double = 1.0E-6);
     double Calculation();
