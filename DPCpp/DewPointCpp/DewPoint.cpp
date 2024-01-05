@@ -454,8 +454,9 @@ std::vector<double> DewPoint::EstimateTSati()
 
 double DewPoint::ForinitialTValue(double t)
 {
-    double Result;
     std::vector<double> ki = this->EstimateKi(t);
-    std::vector<double> xi;
-    std::vector<double> tasti;
+    std::vector<double> xi = this->CalculateXi(ki);
+    std::vector<double> tasti = this->EstimateTSati();
+    double t_ = this->EstimateTFromXiAndTSati(xi, tasti);
+    return t - t_;
 }
