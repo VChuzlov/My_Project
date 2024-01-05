@@ -460,3 +460,27 @@ double DewPoint::ForinitialTValue(double t)
     double t_ = this->EstimateTFromXiAndTSati(xi, tasti);
     return t - t_;
 }
+
+double DewPoint::InsideJob(
+    double t, std::vector<std::vector<double>> kij,
+    std::vector<double> m, std::vector<double> xi)
+{
+    ValuesConverter vc;
+    std::vector<double> Tr = vc.ReducedParam(t, this->Tc);
+    std::vector<double> Alpha = this->CalculateAlpha(m, Tr);
+    std::vector<double> Ap = this->CalculateAp(Alpha, Tr, this->Pr);
+    std::vector<double> Bp = this->CalculateBp(this->Pr, Tr);
+    std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
+    
+    double Av = this->CalculateAv(this->Yi, Ab);
+    double Bv = this->CalculateBv(this->Yi, Bp);
+    double Zv = this->CalculateZv(Av, Bv);
+    double Al = this->CalculateAl(xi, Ab);
+    double Bl = this->CalculateBl(xi, Bp);
+    double Zl = this->CalculateZl(Al, Bl);
+
+    std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
+    std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
+
+    return 1.0 - 0.0;
+}
