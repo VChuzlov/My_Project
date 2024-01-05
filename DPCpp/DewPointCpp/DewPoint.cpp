@@ -540,3 +540,11 @@ void DewPoint::PreCalculation(double t, std::vector<std::vector<double>> kij,
     this->Xi = xi;
     this->XiNew = XiNew;
 }
+
+double DewPoint::SelectCubicEquationRoot(
+    double z1, double z2, double z3, 
+    std::function<double (std::vector<double>)> foo)
+{
+    std::vector<double> roots{z1, z2, z3};
+    return foo(roots);
+}
