@@ -482,5 +482,16 @@ double DewPoint::InsideJob(
     std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
     std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
-    return 1.0 - 0.0;
+    double s = 0.0;
+    std::vector<double> XiNew(m.size());
+    for (unsigned int i = 0; i < m.size(); ++i)
+    {
+        XiNew[i] = this->Yi[i] * Fiv[i] / Fil[i];
+        s += XiNew[i];
+    }
+
+    this->Xi = xi;
+    this->XiNew = XiNew;
+
+    return 1.0 - s;
 }
