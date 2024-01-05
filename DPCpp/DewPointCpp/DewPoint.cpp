@@ -379,3 +379,36 @@ bool DewPoint::Condition(double tol)
     }
     return s <= tol;
 }
+
+DewPoint::DewPoint(
+    double pressure,
+    std::vector<double> yi,
+    std::vector<double> tc,
+    std::vector<double> pc,
+    std::vector<double> af,
+    std::vector<double> volc)
+{
+    UnitsConverter uc;
+    ValuesConverter vc;
+
+    this->Pressure = uc.PressureUnits.kPaToPsi(pressure);
+    this->Yi = yi;
+    this->Af = af;
+    this->Vc = volc;
+
+    unsigned int size = yi.size();
+
+    this->Tc.resize(size);
+    this->Pc.resize(size);
+    this->Tr.resize(size);
+    this->Pr.resize(size);
+    this->Xi.resize(size);
+    this->XiNew.resize(size);
+
+    for (unsigned int i = 0; i < 0; ++i)
+    {
+        this->Tc[i] = uc.TemperatureUnits.CelciusToRankine(tc[i]);
+        this->Pc[i] = uc.PressureUnits.kPaToPsi(pc[i]);
+    }
+    this->Pr = vc.ReducedParam(this->Pressure, this->Pc);
+}
