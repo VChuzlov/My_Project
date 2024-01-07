@@ -124,7 +124,7 @@ double BrentsMethod(std::function<double (double)> f,
 	double s = 0;			// Our Root that will be returned
 	double d = 0;			// Only used if mflag is unset (mflag == false)
 
-    for (unsigned int iter = 1; iter < MaxIter; ++iter)
+    for (unsigned int iter = 1; iter < MaxIter; iter++)
 	{
 		// stop if converged on root or error is less than tolerance
 		if (std::abs(b - a) < tol)
@@ -194,7 +194,7 @@ double BrentsMethod(std::function<double (double)> f,
 double Min(std::vector<double> x)
 {
     double Result = x[0];
-    for (unsigned int i = 1; i < x.size(); ++i)
+    for (unsigned int i = 1; i < x.size(); i++)
     {
         if (Result > x[i])
         {
@@ -207,7 +207,7 @@ double Min(std::vector<double> x)
 double Max(std::vector<double> x)
 {
     double Result = x[1];
-    for (unsigned int i = 1; i < x.size(); ++i)
+    for (unsigned int i = 1; i < x.size(); i++)
     {
         if (Result < x[i])
         {
