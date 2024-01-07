@@ -319,9 +319,9 @@ double DewPoint::CalculateZl(
     double Result = 0.0;
     std::vector<double> roots(3);
     roots = method(
-        bl - 1,
-        al - 2 * bl - 3 * pow(bl, 2),
-        (-al + pow(bl, 2) + bl) * bl
+        bl - 1.,
+        al - 2. * bl - 3. * pow(bl, 2.),
+        (-al + pow(bl, 2.) + bl) * bl
     );
     Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Min);
     return Result;
@@ -359,6 +359,7 @@ double DewPoint::Calculation()
 
     auto foo = [Kij, m, this](double t)
     {
+        std::cout << t << std::endl;
         return this->InsideJob(t, Kij, m, this->XiNew);
     };
 
@@ -368,9 +369,14 @@ double DewPoint::Calculation()
         Result = BrentsMethod(
             foo,
             .8 * T,
-            1.2 * T
+            1.1 * T
         );
         _t = uc.TemperatureUnits.RankineToCelcius(Result);
+        if (i > 100)
+        {
+            break;
+        }
+        std::cout << i << "\t" << _t << "\t" << this->XiNew[3] << std::endl;
     }
     return Result;
 }
@@ -498,8 +504,7 @@ double DewPoint::InsideJob(
     double Al = this->CalculateAl(xi, Ab);
     double Bl = this->CalculateBl(xi, Bp);
     double Zl = this->CalculateZl(Al, Bl);
-    std::cout << Al << std::endl;
-
+    // std::cout << Al << "\t" << Bl << "\t" << Zl << "\t" << t << std::endl;
     std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
     std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
@@ -528,14 +533,13 @@ void DewPoint::PreCalculation(double t, std::vector<std::vector<double>> kij,
     std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
     std::vector<double> ki = this->EstimateKi(t);
     std::vector<double> xi = this->CalculateXi(ki);
-
+ 
     double Av = this->CalculateAv(this->Yi, Ab);
     double Bv = this->CalculateBv(this->Yi, Bp);
     double Zv = this->CalculateZv(Av, Bv);
     double Al = this->CalculateAl(xi, Ab);
     double Bl = this->CalculateBl(xi, Bp);
     double Zl = this->CalculateZl(Al, Bl);
-
     std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
     std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 

@@ -193,26 +193,42 @@ double BrentsMethod(std::function<double (double)> f,
 
 double Min(std::vector<double> x)
 {
-    double Result = x[0];
+    double minX;
     for (unsigned int i = 1; i < x.size(); i++)
     {
-        if (Result > x[i])
+        if (x[i] != 0.0)
         {
-            Result = x[i];
+            minX = x[i];
+            break;
         }
     }
-    return Result;
+    for (unsigned int i = 1; i < x.size(); i++)
+    {
+        if (minX > x[i])
+        {
+            minX = x[i];
+        }
+    }
+    return minX;
 }
 
 double Max(std::vector<double> x)
 {
-    double Result = x[1];
+    double maxX;
     for (unsigned int i = 1; i < x.size(); i++)
     {
-        if (Result < x[i])
+        if (x[i] != 0.0)
         {
-            Result = x[i];
+            maxX = x[i];
+            break;
         }
     }
-    return Result;
+    for (unsigned int i = 1; i < x.size(); i++)
+    {
+        if (maxX < x[i])
+        {
+            maxX = x[i];
+        }
+    }
+    return maxX;
 }
