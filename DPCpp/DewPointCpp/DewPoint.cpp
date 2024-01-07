@@ -4,6 +4,7 @@
 #include "DewPoint.hpp"
 //#include "Functions.hpp" циклический импорт уже есть в DewPoint.hpp
 #include "Converters.hpp"
+#include <iostream>
 
 double DewPoint::CalculateAalpha(std::vector<double> mf,
     std::vector<std::vector<double>> kij, std::vector<double> ai,
@@ -361,7 +362,7 @@ double DewPoint::Calculation()
         return this->InsideJob(t, Kij, m, this->XiNew);
     };
 
-    while (!this->Condition())
+    while (!(this->Condition()))
     {
         i += 1;
         Result = BrentsMethod(
@@ -370,6 +371,7 @@ double DewPoint::Calculation()
             1.2 * T
         );
         _t = uc.TemperatureUnits.RankineToCelcius(Result);
+        std::cout << this->XiNew[3] << "\t";
     }
     return Result;
 }
