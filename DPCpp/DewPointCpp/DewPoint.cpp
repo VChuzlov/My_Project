@@ -368,15 +368,14 @@ double DewPoint::Calculation()
         i += 1;
         Result = BrentsMethod(
             foo,
-            .8 * T,
+            .95 * T,
             1.1 * T
         );
         _t = uc.TemperatureUnits.RankineToCelcius(Result);
-        if (i > 100)
+        if (i > 10)
         {
             break;
         }
-        std::cout << i << "\t" << _t << "\t" << this->XiNew[3] << std::endl;
     }
     return Result;
 }
@@ -504,7 +503,7 @@ double DewPoint::InsideJob(
     double Al = this->CalculateAl(xi, Ab);
     double Bl = this->CalculateBl(xi, Bp);
     double Zl = this->CalculateZl(Al, Bl);
-    // std::cout << Al << "\t" << Bl << "\t" << Zl << "\t" << t << std::endl;
+
     std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
     std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
@@ -518,7 +517,7 @@ double DewPoint::InsideJob(
     
     this->Xi = xi;
     this->XiNew = XiNew;
-
+    
     return 1.0 - s;
 }
 
@@ -533,7 +532,7 @@ void DewPoint::PreCalculation(double t, std::vector<std::vector<double>> kij,
     std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
     std::vector<double> ki = this->EstimateKi(t);
     std::vector<double> xi = this->CalculateXi(ki);
- 
+    
     double Av = this->CalculateAv(this->Yi, Ab);
     double Bv = this->CalculateBv(this->Yi, Bp);
     double Zv = this->CalculateZv(Av, Bv);
@@ -551,6 +550,12 @@ void DewPoint::PreCalculation(double t, std::vector<std::vector<double>> kij,
 
     this->Xi = xi;
     this->XiNew = XiNew;
+    for (int i = 0; i < ki.size(); i++)
+    {
+        std::cout << xi[i] << "\t";
+        std:: cout << XiNew[i] << "\t" << "\n";
+    }
+    std::cout << std::endl;
 }
 
 double DewPoint::SelectCubicEquationRoot(
