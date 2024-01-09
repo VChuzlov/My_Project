@@ -89,7 +89,7 @@ std::vector<double> DewPoint::CalculateAp(std::vector<double> alpha,
 double DewPoint::CalculateAv(std::vector<double> y,
     std::vector<std::vector<double>> ab)
 {
-    double Result;
+    double Result = 0.0;
     for (unsigned int i = 0; i < y.size(); i++)
     {
         for (unsigned int j = 0; j < y.size(); j++)
@@ -359,7 +359,6 @@ double DewPoint::Calculation()
 
     auto foo = [Kij, m, this](double t)
     {
-        std::cout << t << std::endl;
         return this->InsideJob(t, Kij, m, this->XiNew);
     };
 
@@ -550,12 +549,6 @@ void DewPoint::PreCalculation(double t, std::vector<std::vector<double>> kij,
 
     this->Xi = xi;
     this->XiNew = XiNew;
-    for (int i = 0; i < ki.size(); i++)
-    {
-        std::cout << xi[i] << "\t";
-        std:: cout << XiNew[i] << "\t" << "\n";
-    }
-    std::cout << std::endl;
 }
 
 double DewPoint::SelectCubicEquationRoot(

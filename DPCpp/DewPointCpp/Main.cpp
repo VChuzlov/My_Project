@@ -3,6 +3,7 @@
 
 #include <iostream>
 #include <vector>
+#include <chrono>
 #include "Converters.hpp"
 #include "DewPoint.hpp"
 
@@ -31,7 +32,13 @@ int main()
     
     UnitsConverter uc;
     DewPoint dp(Pressure, Yi, Tc, Pc, Af, Vc);
+
+    auto start = std::chrono::high_resolution_clock::now();
     double TDew = dp.Calculation();
-    std::cout << uc.TemperatureUnits.RankineToCelcius(TDew);
+    auto stop = std::chrono::high_resolution_clock::now();
+    auto duration = std::chrono::duration_cast<std::chrono::microseconds>(stop - start);
+
+    std::cout << uc.TemperatureUnits.RankineToCelcius(TDew) << std::endl;
+    std::cout << "Elapsed time: " << duration.count() / 1e6 << " seconds" << std::endl;
     return 0;
 };
