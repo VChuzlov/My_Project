@@ -197,7 +197,7 @@ double BrentsMethod(std::function<double (double)> f,
 double Min(std::vector<double> x)
 {
     double minX;
-    for (unsigned int i = 0; i < x.size(); i++)
+    for (unsigned int i = 0; i < x.size(); ++i)
     {
         if (x[i] != 0.0)
         {
@@ -205,7 +205,7 @@ double Min(std::vector<double> x)
             break;
         }
     }
-    for (unsigned int i = 0; i < x.size(); i++)
+    for (unsigned int i = 0; i < x.size(); ++i)
     {
         if (minX > x[i])
         {
@@ -218,7 +218,7 @@ double Min(std::vector<double> x)
 double Max(std::vector<double> x)
 {
     double maxX;
-    for (unsigned int i = 0; i < x.size(); i++)
+    for (unsigned int i = 0; i < x.size(); ++i)
     {
         if (x[i] != 0.0)
         {
@@ -226,7 +226,7 @@ double Max(std::vector<double> x)
             break;
         }
     }
-    for (unsigned int i = 0; i < x.size(); i++)
+    for (unsigned int i = 0; i < x.size(); ++i)
     {
         if (maxX < x[i])
         {
