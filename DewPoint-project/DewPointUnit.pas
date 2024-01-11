@@ -313,7 +313,7 @@ begin
   end;
 
   Result := Bisections(
-    f, 1e-5, 1200.0
+    f, 1e2, 1200.0
   );
 end;
 

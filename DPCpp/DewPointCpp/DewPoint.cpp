@@ -249,7 +249,7 @@ double DewPoint::CalculateInitialValueForT()
         return this->ForInitialTValue(t);
     };
 
-    Result = BrentsMethod(foo, 1e-5, 1000.0);
+    Result = BrentsMethod(foo, 1e-5, 1200.0);
     return Result;
 }
 
@@ -368,7 +368,7 @@ double DewPoint::Calculation()
         Result = BrentsMethod(
             foo,
             .95 * T,
-            1.1 * T
+            1.2 * T
         );
         _t = uc.TemperatureUnits.RankineToCelcius(Result);
         if (i > 10)

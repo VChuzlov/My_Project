@@ -313,7 +313,7 @@ begin
   end;
 
   Result := Bisections(
-    f, 1e-5, 1000.0
+    f, 1e2, 1500.0
   );
 end;
 
@@ -440,7 +440,7 @@ begin
   begin
     i := i + 1;
     Result := Brent(
-      foo, 0.8 * T, 1.2 * T
+      foo, 0.8 * T,  1.2 * T
     );
     _t := uc.Temperature.RankineToCelsius(Result);
   end;
@@ -567,9 +567,16 @@ var
   XiNew: TArrOfDouble;
   s: Double;
   i: Integer;
-
+  xSum: Double;
 begin
   SetLength(XiNew, Length(m));
+  xSum := 0.0;
+  for i := 0 to High(xi) do
+    xSum := xSum + xi[i];
+  if xSum <> 1.0 then
+    for i := 0 to High(xi) do
+      xi[i] := xi[i] / xSum;
+
   vc := TValuesConverter.Create();
   Tr := vc.ReducedParam(t, self.Tc);
   Alpha := self.CalculateAlpha(m, Tr);
@@ -580,7 +587,7 @@ begin
   Bv := self.CalculateBv(self.Yi, Bp);
   Zv := self.CalculateZv(Av, Bv, VietaMethod);
   Al := self.CalculateAl(xi, Ab);
-  Bl := self.CalculateBv(xi, Bp);
+  Bl := self.CalculateBl(xi, Bp);
   Zl := self.CalculateZl(Al, Bl, VietaMethod);
   Fiv := self.CalculateFiv(Ab, self.Yi, Zv, Bp, Av, Bv);
   Fil := self.CalculateFil(Ab, xi, Zl, Bp, Al, Bl);

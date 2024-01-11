@@ -207,7 +207,7 @@ double Min(std::vector<double> x)
     }
     for (unsigned int i = 0; i < x.size(); ++i)
     {
-        if (minX > x[i])
+        if ((minX > x[i]) && (x[i] != 0))
         {
             minX = x[i];
         }

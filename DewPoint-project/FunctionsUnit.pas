@@ -21,8 +21,14 @@ function Max(x: TArrOfDouble): Double;
 var
   i: Integer;
 begin
-  Result := x[0];
-  for i := 1 to High(x) do
+  for i := 0 to High(x) do
+    if x[i] <> 0 then
+    begin
+      Result := x[i];
+      break;
+    end;
+
+  for i := 0 to High(x) do
     if Result < x[i] then
       Result := x[i];
 end;
@@ -31,9 +37,15 @@ function Min(x: TarrOfDouble): Double;
 var
   i: Integer;
 begin
-  Result := x[0];
-  for i := 1 to High(x) do
-    if Result > x[i] then
+  for i := 0 to High(x) do
+    if x[i] <> 0 then
+    begin
+      Result := x[i];
+      break;
+    end;
+
+  for i := 0 to High(x) do
+    if (Result > x[i]) and (x[i] <> 0) then
       Result := x[i];
 end;
 
@@ -44,6 +56,9 @@ var
   fi, s_: Double;
 begin
   SetLength(Result, 3);
+  x1 := 0.0;
+  x2 := 0.0;
+  x3 := 0.0;
 
   q := (a * a - 3 * b) / 9;
   r := (2 * a * a * a - 9 * a * b + 27 * c) / 54;
