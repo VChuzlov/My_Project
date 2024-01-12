@@ -531,8 +531,9 @@ double DewPoint::InsideJob(
     return 1.0 - s;
 }
 
-void DewPoint::PreCalculation(double t, std::vector<std::vector<double>> kij,
-    std::vector<double> m)
+void DewPoint::PreCalculation(
+    double t, const std::vector<std::vector<double>> &kij,
+    const std::vector<double> &m)
 {
     ValuesConverter vc;
     std::vector<double> Tr = vc.ReducedParam(t, this->Tc);
