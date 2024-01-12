@@ -201,8 +201,10 @@ std::vector<double> DewPoint::CalculateDi(const std::vector<double> &m,
 }
 
 std::vector<double> DewPoint::CalculateFil(
-    std::vector<std::vector<double>> ab, std::vector<double> x, double zl,
-    std::vector<double> bp, double al, double bl)
+    const std::vector<std::vector<double>> &ab, 
+    const std::vector<double> &x, double zl,
+    const std::vector<double> &bp, 
+    double al, double bl)
 {
     std::vector<double> Result(x.size());
     double s;
