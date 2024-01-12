@@ -30,7 +30,8 @@ private:
         const std::vector<double>&, const std::vector<double>&, 
         const std::vector<double>&);
     std::vector<std::vector<double>> CalculateAb(
-        std::vector<std::vector<double>>, std::vector<double>
+        const std::vector<std::vector<double>>&, 
+        const std::vector<double>&
     );
     double CalculateAv(std::vector<double>,
         std::vector<std::vector<double>>);

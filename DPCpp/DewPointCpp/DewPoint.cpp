@@ -24,7 +24,8 @@ double DewPoint::CalculateAalpha(std::vector<double> mf,
 }
 
 std::vector<std::vector<double>> DewPoint::CalculateAb(
-    std::vector<std::vector<double>> kij, std::vector<double> ap)
+    const std::vector<std::vector<double>> &kij, 
+    const std::vector<double> &ap)
 {
     unsigned int size = ap.size();
     std::vector<std::vector<double>> Result(size);
