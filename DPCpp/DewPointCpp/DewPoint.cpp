@@ -323,7 +323,7 @@ std::vector<double> DewPoint::CalculateXi(const std::vector<double> &ki)
 }
 
 double DewPoint::CalculateZl(
-    double al, double bl, 
+    const double &al, const double &bl, 
     std::function<std::vector<double> (double, double, double)> method)
 {
     double Result = 0.0;
@@ -338,7 +338,7 @@ double DewPoint::CalculateZl(
 }
 
 double DewPoint::CalculateZv(
-    double av, double bv,
+    const double &av, const double &bv,
     std::function<std::vector<double> (double, double, double)> method)
 {
     double Result = 0.0;
@@ -564,7 +564,7 @@ void DewPoint::PreCalculation(
 }
 
 double DewPoint::SelectCubicEquationRoot(
-    double z1, double z2, double z3, 
+    const double &z1, const double &z2, const double &z3, 
     std::function<double (std::vector<double>)> foo)
 {
     std::vector<double> roots{z1, z2, z3};

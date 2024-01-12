@@ -16,28 +16,30 @@ private:
     std::vector<double> Xi;
     std::vector<double> XiNew;
     std::vector<double> CalculateM(const std::vector<double>&);
-    std::vector<double> CalculateAlpha(const std::vector<double>&,
-        const std::vector<double>&);
-    std::vector<double> CalculateAp(const std::vector<double>&,
+    std::vector<double> CalculateAlpha(
         const std::vector<double>&, const std::vector<double>&);
-    std::vector<double> CalculateBp(const std::vector<double>&,
+    std::vector<double> CalculateAp(
+        const std::vector<double>&, const std::vector<double>&,
         const std::vector<double>&);
-    std::vector<double> CalculateAi(const std::vector<double>&,
-        const std::vector<double>&);
-    std::vector<double> CalculateBi(const std::vector<double>&,
-        const std::vector<double>&);
-    std::vector<double> CalculateDi(const std::vector<double>&,
-        const std::vector<double>&, const std::vector<double>&, 
-        const std::vector<double>&);
+    std::vector<double> CalculateBp(
+        const std::vector<double>&, const std::vector<double>&);
+    std::vector<double> CalculateAi(
+        const std::vector<double>&, const std::vector<double>&);
+    std::vector<double> CalculateBi(
+        const std::vector<double>&, const std::vector<double>&);
+    std::vector<double> CalculateDi(
+        const std::vector<double>&, const std::vector<double>&,
+        const std::vector<double>&, const std::vector<double>&);
     std::vector<std::vector<double>> CalculateAb(
         const std::vector<std::vector<double>>&, 
-        const std::vector<double>&
-    );
-    double CalculateAv(const std::vector<double>&,
+        const std::vector<double>&);
+    double CalculateAv(
+        const std::vector<double>&,
         const std::vector<std::vector<double>>&);
     double CalculateBv(
         const std::vector<double>&, const std::vector<double>&);
-    double CalculateAl(const std::vector<double>&,
+    double CalculateAl(
+        const std::vector<double>&,
         const std::vector<std::vector<double>>&);
     double CalculateBl(
         const std::vector<double>&, const std::vector<double>&);
@@ -52,12 +54,15 @@ private:
         const std::vector<double>&, const std::vector<double>&,
         const std::vector<std::vector<double>>&, const std::vector<double>&,
         const std::vector<double>&, const std::vector<double>&);
-    double SelectCubicEquationRoot(double, double, double, 
+    double SelectCubicEquationRoot(
+        const double&, const double&, const double&, 
         std::function<double (std::vector<double>)>);
-    double CalculateZv(double, double,
+    double CalculateZv(
+        const double&, const double&,
         std::function<std::vector<double>
         (double, double, double)> = VietaMethod);
-    double CalculateZl(double, double,
+    double CalculateZl(
+        const double&, const double&,
         std::function<std::vector<double>
         (double, double, double)> = VietaMethod);
     std::vector<double> CalculateFiv(
