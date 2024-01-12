@@ -73,8 +73,12 @@ private:
     double ForInitialTValue(double);
 
 public:
-    DewPoint(double, std::vector<double>, std::vector<double>,
-        std::vector<double>, std::vector<double>, std::vector<double>);
+    DewPoint(
+        double, const std::vector<double>&, 
+        const std::vector<double>&,
+        const std::vector<double>&, 
+        const std::vector<double>&, 
+        const std::vector<double>&);
     std::vector<double> EstimateTSati();
     std::vector<double> EstimateKi(double);
     std::vector<double> CalculateXi(std::vector<double>);

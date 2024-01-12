@@ -405,11 +405,11 @@ bool DewPoint::Condition(double tol)
 
 DewPoint::DewPoint(
     double pressure,
-    std::vector<double> yi,
-    std::vector<double> tc,
-    std::vector<double> pc,
-    std::vector<double> af,
-    std::vector<double> volc)
+    const std::vector<double> &yi,
+    const std::vector<double> &tc,
+    const std::vector<double> &pc,
+    const std::vector<double> &af,
+    const std::vector<double> &volc)
 {
     UnitsConverter uc;
     ValuesConverter vc;
