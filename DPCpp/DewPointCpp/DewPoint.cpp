@@ -101,7 +101,8 @@ double DewPoint::CalculateAv(const std::vector<double> &y,
     return Result;
 }
 
-double DewPoint::CalculateBbl(std::vector<double> x, std::vector<double> bi)
+double DewPoint::CalculateBbl(
+    const std::vector<double> &x, const std::vector<double> &bi)
 {
     double Result = 0.0;
     for (unsigned int i = 0; i < x.size(); ++i)
