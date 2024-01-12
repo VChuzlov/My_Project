@@ -202,9 +202,9 @@ std::vector<double> DewPoint::CalculateDi(const std::vector<double> &m,
 
 std::vector<double> DewPoint::CalculateFil(
     const std::vector<std::vector<double>> &ab, 
-    const std::vector<double> &x, double zl,
+    const std::vector<double> &x, const double &zl,
     const std::vector<double> &bp, 
-    double al, double bl)
+    const double &al, const double &bl)
 {
     std::vector<double> Result(x.size());
     double s;
@@ -228,8 +228,9 @@ std::vector<double> DewPoint::CalculateFil(
 
 std::vector<double> DewPoint::CalculateFiv(
     const std::vector<std::vector<double>> &ab, 
-    const std::vector<double> &y, double zv,
-    const std::vector<double> &bp, double av, double bv
+    const std::vector<double> &y, const double &zv,
+    const std::vector<double> &bp, 
+    const double &av, const double &bv
 )
 {
     std::vector<double> Result(y.size());
@@ -402,7 +403,7 @@ bool DewPoint::Condition(double tol)
 }
 
 DewPoint::DewPoint(
-    double pressure,
+    const double &pressure,
     const std::vector<double> &yi,
     const std::vector<double> &tc,
     const std::vector<double> &pc,

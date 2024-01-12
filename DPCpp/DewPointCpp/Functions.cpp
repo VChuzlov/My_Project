@@ -7,7 +7,8 @@
 
 const double Pi = 3.14159265;
 
-std::vector<double> VietaMethod(double a, double b, double c)
+std::vector<double> VietaMethod(
+    const double &a, const double &b, const double &c)
 {
     double 
         x1 = 0.0, 
@@ -194,7 +195,7 @@ double BrentsMethod(std::function<double (double)> f,
     return s;
 }
 
-double Min(std::vector<double> x)
+double Min(const std::vector<double> &x)
 {
     double minX;
     for (unsigned int i = 0; i < x.size(); ++i)
@@ -215,7 +216,7 @@ double Min(std::vector<double> x)
     return minX;
 }
 
-double Max(std::vector<double> x)
+double Max(const std::vector<double> &x)
 {
     double maxX;
     for (unsigned int i = 0; i < x.size(); ++i)
