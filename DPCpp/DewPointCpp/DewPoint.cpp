@@ -484,8 +484,8 @@ double DewPoint::ForInitialTValue(double t)
 }
 
 double DewPoint::InsideJob(
-    double t, std::vector<std::vector<double>> kij,
-    std::vector<double> m, std::vector<double> xi)
+    double t, const std::vector<std::vector<double>> &kij,
+    const std::vector<double> &m, std::vector<double> &xi)
 {
     double xSum = 0.0;
     for (unsigned int i = 0; i < xi.size(); ++i)
