@@ -292,7 +292,7 @@ std::vector<std::vector<double>> DewPoint::CalculateKij(
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateM(std::vector<double> af)
+std::vector<double> DewPoint::CalculateM(const std::vector<double> &af)
 {
     std::vector<double> Result(af.size());
     for (unsigned int i = 0; i < af.size(); ++i)
