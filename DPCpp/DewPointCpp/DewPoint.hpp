@@ -22,10 +22,10 @@ private:
         const std::vector<double>&, const std::vector<double>&);
     std::vector<double> CalculateBp(const std::vector<double>&,
         const std::vector<double>&);
-    std::vector<double> CalculateAi(std::vector<double>,
-        std::vector<double>);
-    std::vector<double> CalculateBi(std::vector<double>,
-        std::vector<double>);
+    std::vector<double> CalculateAi(const std::vector<double>&,
+        const std::vector<double>&);
+    std::vector<double> CalculateBi(const std::vector<double>&,
+        const std::vector<double>&);
     std::vector<double> CalculateDi(std::vector<double>,
         std::vector<double>, std::vector<double>, std::vector<double>);
     std::vector<std::vector<double>> CalculateAb(

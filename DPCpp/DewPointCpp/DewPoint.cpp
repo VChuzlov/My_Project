@@ -39,8 +39,8 @@ std::vector<std::vector<double>> DewPoint::CalculateAb(
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateAi(std::vector<double> tc,
-    std::vector<double> pc)
+std::vector<double> DewPoint::CalculateAi(const std::vector<double> &tc,
+    const std::vector<double> &pc)
 {
     std::vector<double> Result(tc.size());
     for (unsigned int i = 0; i < tc.size(); ++i)
@@ -120,8 +120,8 @@ double DewPoint::CalculateBbv(std::vector<double> y, std::vector<double> bi)
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateBi(std::vector<double> tc,
-    std::vector<double> pc)
+std::vector<double> DewPoint::CalculateBi(const std::vector<double> &tc,
+    const std::vector<double> &pc)
 {
     std::vector<double> Result(tc.size());
     for (unsigned int i = 0; i < tc.size(); ++i)
