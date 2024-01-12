@@ -132,7 +132,8 @@ std::vector<double> DewPoint::CalculateBi(const std::vector<double> &tc,
     return Result;
 }
 
-double DewPoint::CalculateBl(std::vector<double> x, std::vector<double> bp)
+double DewPoint::CalculateBl(
+    const std::vector<double> &x, const std::vector<double> &bp)
 {
     double Result = 0.0;
     for (unsigned int i = 0; i < x.size(); ++i)
