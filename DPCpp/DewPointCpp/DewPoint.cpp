@@ -51,8 +51,8 @@ std::vector<double> DewPoint::CalculateAi(const std::vector<double> &tc,
     return Result;
 }
 
-double DewPoint::CalculateAl(std::vector<double> x,
-    std::vector<std::vector<double>> ab)
+double DewPoint::CalculateAl(const std::vector<double> &x,
+    const std::vector<std::vector<double>> &ab)
 {
     double Result = 0.0;
     for (unsigned int i = 0; i < x.size(); ++i)
