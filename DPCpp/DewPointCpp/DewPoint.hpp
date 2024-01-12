@@ -35,7 +35,7 @@ private:
     );
     double CalculateAv(const std::vector<double>&,
         const std::vector<std::vector<double>>&);
-    double CalculateBv(std::vector<double>, std::vector<double>);
+    double CalculateBv(const std::vector<double>&, const std::vector<double>&);
     double CalculateAl(std::vector<double>,
         std::vector<std::vector<double>>);
     double CalculateBl(std::vector<double>, std::vector<double>);
