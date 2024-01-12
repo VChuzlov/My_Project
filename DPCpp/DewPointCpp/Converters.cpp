@@ -48,6 +48,11 @@ double Temperature::RankineToKelvin(double r)
 	return r * 5. / 9.;
 }
 
+constexpr Temperature::Temperature()
+{
+
+}
+
 
 double Pressure::BarTokPa(double x)
 {
@@ -78,6 +83,10 @@ double Pressure::PsiTokPa(double x)
 	return x * 6.8947572932;
 }
 
+constexpr Pressure::Pressure()
+{
+
+}
 
 UnitsConverter::UnitsConverter()
 {
