@@ -64,8 +64,8 @@ double DewPoint::CalculateAl(std::vector<double> x,
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateAlpha(std::vector<double> m,
-    std::vector<double> tr)
+std::vector<double> DewPoint::CalculateAlpha(const std::vector<double> &m,
+    const std::vector<double> &tr)
 {
     std::vector<double> Result(m.size());
     for (unsigned int i = 0; i < m.size(); ++i)
@@ -75,8 +75,8 @@ std::vector<double> DewPoint::CalculateAlpha(std::vector<double> m,
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateAp(std::vector<double> alpha,
-    std::vector<double> tr, std::vector<double> pr)
+std::vector<double> DewPoint::CalculateAp(const std::vector<double> &alpha,
+    const std::vector<double> &tr, const std::vector<double> &pr)
 {
     std::vector<double> Result(tr.size());
     for (unsigned int i = 0; i < tr.size(); ++i)

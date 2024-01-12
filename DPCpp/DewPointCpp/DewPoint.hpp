@@ -16,10 +16,10 @@ private:
     std::vector<double> Xi;
     std::vector<double> XiNew;
     std::vector<double> CalculateM(std::vector<double>);
-    std::vector<double> CalculateAlpha(std::vector<double>,
-        std::vector<double>);
-    std::vector<double> CalculateAp(std::vector<double>,
-        std::vector<double>, std::vector<double>);
+    std::vector<double> CalculateAlpha(const std::vector<double>&,
+        const std::vector<double>&);
+    std::vector<double> CalculateAp(const std::vector<double>&,
+        const std::vector<double>&, const std::vector<double>&);
     std::vector<double> CalculateBp(std::vector<double>,
         std::vector<double>);
     std::vector<double> CalculateAi(std::vector<double>,
