@@ -48,9 +48,10 @@ private:
     double CalculateAalpha(
         const std::vector<double>&, const std::vector<std::vector<double>>&, 
         const std::vector<double>&, const std::vector<double>&);
-    double CalculateD(std::vector<double>, std::vector<double>,
-        std::vector<std::vector<double>>, std::vector<double>,
-        std::vector<double>, std::vector<double>);
+    double CalculateD(
+        const std::vector<double>&, const std::vector<double>&,
+        const std::vector<std::vector<double>>&, const std::vector<double>&,
+        const std::vector<double>&, const std::vector<double>&);
     double SelectCubicEquationRoot(double, double, double, 
         std::function<double (std::vector<double>)>);
     double CalculateZv(double, double,
