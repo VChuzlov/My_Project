@@ -266,7 +266,7 @@ double DewPoint::CalculateInitialValueForT()
 }
 
 std::vector<std::vector<double>> DewPoint::CalculateKij(
-    std::vector<double> vc, unsigned int n)
+    const std::vector<double> &vc, unsigned int n)
 {
     unsigned int size = vc.size();
     std::vector<double> VcR3(size);
