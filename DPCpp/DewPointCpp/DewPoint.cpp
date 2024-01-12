@@ -180,8 +180,9 @@ double DewPoint::CalculateD(std::vector<double> mf, std::vector<double> m,
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateDi(std::vector<double> m,
-    std::vector<double> ai, std::vector<double> alpha, std::vector<double> tr)
+std::vector<double> DewPoint::CalculateDi(const std::vector<double> &m,
+    const std::vector<double> &ai, const std::vector<double> &alpha, 
+    const std::vector<double> &tr)
 {
     std::vector<double> Result(m.size());
     for (unsigned int i = 0; i < m.size(); ++i)

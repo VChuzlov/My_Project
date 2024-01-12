@@ -26,8 +26,9 @@ private:
         const std::vector<double>&);
     std::vector<double> CalculateBi(const std::vector<double>&,
         const std::vector<double>&);
-    std::vector<double> CalculateDi(std::vector<double>,
-        std::vector<double>, std::vector<double>, std::vector<double>);
+    std::vector<double> CalculateDi(const std::vector<double>&,
+        const std::vector<double>&, const std::vector<double>&, 
+        const std::vector<double>&);
     std::vector<std::vector<double>> CalculateAb(
         std::vector<std::vector<double>>, std::vector<double>
     );
