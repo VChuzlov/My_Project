@@ -35,15 +35,19 @@ private:
     );
     double CalculateAv(const std::vector<double>&,
         const std::vector<std::vector<double>>&);
-    double CalculateBv(const std::vector<double>&, const std::vector<double>&);
+    double CalculateBv(
+        const std::vector<double>&, const std::vector<double>&);
     double CalculateAl(const std::vector<double>&,
         const std::vector<std::vector<double>>&);
-    double CalculateBl(const std::vector<double>&, const std::vector<double>&);
-    double CalculateBbl(const std::vector<double>&, const std::vector<double>&);
-    double CalculateBbv(std::vector<double>, std::vector<double>);
-    double CalculateAalpha(std::vector<double>,
-        std::vector<std::vector<double>>, std::vector<double>,
-        std::vector<double>);
+    double CalculateBl(
+        const std::vector<double>&, const std::vector<double>&);
+    double CalculateBbl(
+        const std::vector<double>&, const std::vector<double>&);
+    double CalculateBbv(
+        const std::vector<double>&, const std::vector<double>&);
+    double CalculateAalpha(
+        const std::vector<double>&, const std::vector<std::vector<double>>&, 
+        const std::vector<double>&, const std::vector<double>&);
     double CalculateD(std::vector<double>, std::vector<double>,
         std::vector<std::vector<double>>, std::vector<double>,
         std::vector<double>, std::vector<double>);

@@ -6,9 +6,10 @@
 #include "Converters.hpp"
 #include <iostream>
 
-double DewPoint::CalculateAalpha(std::vector<double> mf,
-    std::vector<std::vector<double>> kij, std::vector<double> ai,
-    std::vector<double> alpha)
+double DewPoint::CalculateAalpha(
+    const std::vector<double> &mf, 
+    const std::vector<std::vector<double>> &kij, 
+    const std::vector<double> &ai, const std::vector<double> &alpha)
 {
     double Result = 0.0;
     for (unsigned int i = 0; i < mf.size(); ++i)
@@ -112,7 +113,8 @@ double DewPoint::CalculateBbl(
     return Result;
 }
 
-double DewPoint::CalculateBbv(std::vector<double> y, std::vector<double> bi)
+double DewPoint::CalculateBbv(
+    const std::vector<double> &y, const std::vector<double> &bi)
 {
     double Result = 0.0;
     for (unsigned int i = 0; i < y.size(); ++i)
