@@ -225,8 +225,9 @@ std::vector<double> DewPoint::CalculateFil(
 }
 
 std::vector<double> DewPoint::CalculateFiv(
-    std::vector<std::vector<double>> ab, std::vector<double> y, double zv,
-    std::vector<double> bp, double av, double bv
+    const std::vector<std::vector<double>> &ab, 
+    const std::vector<double> &y, double zv,
+    const std::vector<double> &bp, double av, double bv
 )
 {
     std::vector<double> Result(y.size());
