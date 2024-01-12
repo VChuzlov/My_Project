@@ -449,7 +449,8 @@ std::vector<double> DewPoint::EstimateKi(double t)
 }
 
 double DewPoint::EstimateTFromXiAndTSati(
-    std::vector<double> xi, std::vector<double> tsati)
+    const std::vector<double> &xi, 
+    const std::vector<double> &tsati)
 {
     double Result = 0.0;
     for (unsigned int i = 0; i < xi.size(); ++i)
