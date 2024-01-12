@@ -87,8 +87,8 @@ std::vector<double> DewPoint::CalculateAp(const std::vector<double> &alpha,
     return Result;
 }
 
-double DewPoint::CalculateAv(std::vector<double> y,
-    std::vector<std::vector<double>> ab)
+double DewPoint::CalculateAv(const std::vector<double> &y,
+    const std::vector<std::vector<double>> &ab)
 {
     double Result = 0.0;
     for (unsigned int i = 0; i < y.size(); ++i)
