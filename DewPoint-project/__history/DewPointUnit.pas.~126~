@@ -19,32 +19,38 @@ type
       Pr: TArrOfDouble;
       Xi: TArrOfDouble;
       XiNew: TArrOfDouble;
-      function CalculateM(af: TArrOfDouble): TArrOfDouble;
-      function CalculateAlpha(m, tr: TArrOfDouble): TArrOfDouble;
-      function CalculateAp(alpha, tr, pr: TArrOfDouble): TArrOfDouble;
-      function CalculateBp(pr, tr: TArrOfDouble): TArrOfDouble;
-      function CalculateAi(tc, pc: TArrOfDouble): TArrOfDouble;
-      function CalculateBi(tc, pc: TArrOfDouble): TArrOfDouble;
-      function CalculateDi(m, ai, alpha, tr: TArrOfDouble): TArrOfDouble;
+      function CalculateM(const af: TArrOfDouble): TArrOfDouble;
+      function CalculateAlpha(const m, tr: TArrOfDouble): TArrOfDouble;
+      function CalculateAp(const alpha, tr, pr: TArrOfDouble): TArrOfDouble;
+      function CalculateBp(const pr, tr: TArrOfDouble): TArrOfDouble;
+      function CalculateAi(const tc, pc: TArrOfDouble): TArrOfDouble;
+      function CalculateBi(const tc, pc: TArrOfDouble): TArrOfDouble;
+      function CalculateDi(const m, ai, alpha, tr: TArrOfDouble): TArrOfDouble;
       function CalculateAb(
-        kij: TMatrixOfDouble; ap: TArrOfDouble): TMatrixOfDouble;
-      function CalculateAv(y: TArrOfDouble; ab: TMatrixOfDouble): Double;
-      function CalculateBv(y, bp: TArrOfDouble): Double;
-      function CalculateAl(x: TArrOfDouble; ab: TMatrixOfDouble): Double;
-      function CalculateBl(x, bp: TArrOfDouble): Double;
-      function CalculateBbl(x, bi: TArrOfDouble): Double;
-      function CalculateBbv(y, bi: TArrOfDouble): Double;
+        const kij: TMatrixOfDouble; const ap: TArrOfDouble): TMatrixOfDouble;
+      function CalculateAv(
+        const y: TArrOfDouble; const ab: TMatrixOfDouble): Double;
+      function CalculateBv(const y, bp: TArrOfDouble): Double;
+      function CalculateAl(
+        const x: TArrOfDouble; const ab: TMatrixOfDouble): Double;
+      function CalculateBl(
+        const x, bp: TArrOfDouble): Double;
+      function CalculateBbl(const x, bi: TArrOfDouble): Double;
+      function CalculateBbv(const y, bi: TArrOfDouble): Double;
       function CalculateAalpha(
-        mf: TArrOfDouble;
-        kij: TMatrixOfDouble;
-        ai: TArrOfDouble;
-        alpha: TArrOfDouble
+        const mf: TArrOfDouble;
+        const kij: TMatrixOfDouble;
+        const ai: TArrOfDouble;
+        const alpha: TArrOfDouble
       ): Double;
-      function CalculateD(mf, m: TArrOfDouble; kij: TMatrixOfDouble;
-        ai, alpha, tr: TArrOfDouble): Double;
-      function SelectCubicEquationRoot(z1, z2, z3: Double; f: TFoo): Double;
+      function CalculateD(
+        const mf, m: TArrOfDouble;
+        const kij: TMatrixOfDouble;
+        const ai, alpha, tr: TArrOfDouble): Double;
+      function SelectCubicEquationRoot(
+        const z1, z2, z3: Double; f: TFoo): Double;
       function CalculateZv(
-        av, bv: Double; method: TCubicEquationMethod): Double;
+        const av, bv: Double; method: TCubicEquationMethod): Double;
       function CalculateZl(
         al, bl: Double; method: TCubicEquationMethod): Double;
       function CalculateFiv(
@@ -93,8 +99,10 @@ implementation
 
 {TDewPoint}
 
-function TDewPoint.CalculateAalpha(mf: TArrOfDouble; kij: TMatrixOfDouble; ai,
-  alpha: TArrOfDouble): Double;
+function TDewPoint.CalculateAalpha(
+  const mf: TArrOfDouble;
+  const kij: TMatrixOfDouble;
+  const ai, alpha: TArrOfDouble): Double;
 var
   i: Integer;
   j: Integer;
@@ -107,8 +115,8 @@ begin
         * Power(ai[i] * alpha[i] * ai[j] * alpha[j], 0.5));
 end;
 
-function TDewPoint.CalculateAb(kij: TMatrixOfDouble;
-  ap: TArrOfDouble): TMatrixOfDouble;
+function TDewPoint.CalculateAb(
+  const kij: TMatrixOfDouble; const ap: TArrOfDouble): TMatrixOfDouble;
 var
   i: Integer;
   j: Integer;
@@ -122,7 +130,7 @@ begin
       Result[i, j] := (1 - kij[i, j]) * Power(ap[i] * ap[j], 0.5);
 end;
 
-function TDewPoint.CalculateAi(tc, pc: TArrOfDouble): TArrOfDouble;
+function TDewPoint.CalculateAi(const tc, pc: TArrOfDouble): TArrOfDouble;
 var
   i: Integer;
 begin
@@ -131,7 +139,8 @@ begin
     Result[i] := 0.45724 * power(8.314 * tc[i], 2) / pc[i];
 end;
 
-function TDewPoint.CalculateAl(x: TArrOfDouble; ab: TMatrixOfDouble): Double;
+function TDewPoint.CalculateAl(
+  const x: TArrOfDouble; const ab: TMatrixOfDouble): Double;
 var
   i: Integer;
   j: Integer;
@@ -142,7 +151,7 @@ begin
       Result := Result + x[i] * x[j] * ab[i, j]
 end;
 
-function TDewPoint.CalculateAlpha(m, tr: TArrOfDouble): TArrOfDouble;
+function TDewPoint.CalculateAlpha(const m, tr: TArrOfDouble): TArrOfDouble;
 var
   i: Integer;
 begin
@@ -151,7 +160,7 @@ begin
     Result[i] := Power((1 + m[i] * (1 - Power(tr[i], 0.5))), 2);
 end;
 
-function TDewPoint.CalculateAp(alpha, tr, pr: TArrOfDouble): TArrOfDouble;
+function TDewPoint.CalculateAp(const alpha, tr, pr: TArrOfDouble): TArrOfDouble;
 var
   i: Integer;
 begin
@@ -160,7 +169,8 @@ begin
     Result[i] := 0.457235529 * alpha[i] * pr[i] / Power(tr[i], 2);
 end;
 
-function TDewPoint.CalculateAv(y: TArrOfDouble; ab: TMatrixOfDouble): Double;
+function TDewPoint.CalculateAv(
+  const y: TArrOfDouble; const ab: TMatrixOfDouble): Double;
 var
   i: Integer;
   j: Integer;
@@ -171,7 +181,7 @@ begin
       Result := Result + y[i] * y[j] * ab[i, j];
 end;
 
-function TDewPoint.CalculateBbl(x, bi: TArrOfDouble): Double;
+function TDewPoint.CalculateBbl(const x, bi: TArrOfDouble): Double;
 var
   i: Integer;
 begin
@@ -180,7 +190,7 @@ begin
     Result := Result + x[i] * bi[i];
 end;
 
-function TDewPoint.CalculateBbv(y, bi: TArrOfDouble): Double;
+function TDewPoint.CalculateBbv(const y, bi: TArrOfDouble): Double;
 var
   i: Integer;
 begin
@@ -189,7 +199,7 @@ begin
     Result := Result + y[i] * bi[i];
 end;
 
-function TDewPoint.CalculateBi(tc, pc: TArrOfDouble): TArrOfDouble;
+function TDewPoint.CalculateBi(const tc, pc: TArrOfDouble): TArrOfDouble;
 var
   i: Integer;
 begin
@@ -198,7 +208,8 @@ begin
     REsult[i] := 0.07780 * 8.314 * tc[i] / pc[i];
 end;
 
-function TDewPoint.CalculateBl(x, bp: TArrOfDouble): Double;
+function TDewPoint.CalculateBl(
+  const x, bp: TArrOfDouble): Double;
 var
   i: Integer;
 begin
@@ -207,7 +218,7 @@ begin
     Result := Result + x[i] * bp[i];
 end;
 
-function TDewPoint.CalculateBp(pr, tr: TArrOfDouble): TArrOfDouble;
+function TDewPoint.CalculateBp(const pr, tr: TArrOfDouble): TArrOfDouble;
 var
   i: Integer;
 begin
@@ -216,7 +227,7 @@ begin
     Result[i] := 0.07796074 * pr[i] / tr[i];
 end;
 
-function TDewPoint.CalculateBv(y, bp: TArrOfDouble): Double;
+function TDewPoint.CalculateBv(const y, bp: TArrOfDouble): Double;
 var
   i: Integer;
 begin
@@ -225,8 +236,10 @@ begin
     Result := Result + y[i] * bp[i];
 end;
 
-function TDewPoint.CalculateD(mf, m: TArrOfDouble; kij: TMatrixOfDouble; ai,
-  alpha, tr: TArrOfDouble): Double;
+function TDewPoint.CalculateD(
+  const mf, m: TArrOfDouble;
+  const kij: TMatrixOfDouble;
+  const ai, alpha, tr: TArrOfDouble): Double;
 var
   i: Integer;
   j: Integer;
@@ -240,7 +253,7 @@ begin
       );
 end;
 
-function TDewPoint.CalculateDi(m, ai, alpha, tr: TArrOfDouble): TArrOfDouble;
+function TDewPoint.CalculateDi(const m, ai, alpha, tr: TArrOfDouble): TArrOfDouble;
 var
   i: Integer;
 begin
@@ -313,7 +326,7 @@ begin
   end;
 
   Result := Bisections(
-    f, 1e2, 1500.0
+    f, 1e2, 1200.0
   );
 end;
 
@@ -347,7 +360,7 @@ begin
     end;
 end;
 
-function TDewPoint.CalculateM(af: TArrOfDouble): TArrOfDouble;
+function TDewPoint.CalculateM(const af: TArrOfDouble): TArrOfDouble;
 var
   i: Integer;
 begin
@@ -394,7 +407,8 @@ begin
   );
 end;
 
-function TDewPoint.CalculateZv(av, bv: Double;
+function TDewPoint.CalculateZv(
+  const av, bv: Double;
   method: TCubicEquationMethod): Double;
 var
   roots: TArrOfDouble;
@@ -654,7 +668,8 @@ begin
 
 end;
 
-function TDewPoint.SelectCubicEquationRoot(z1, z2, z3: Double; f: TFoo): Double;
+function TDewPoint.SelectCubicEquationRoot(
+  const z1, z2, z3: Double; f: TFoo): Double;
 var
   roots: TArrOfDouble;
 begin

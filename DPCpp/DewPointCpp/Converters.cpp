@@ -96,7 +96,7 @@ UnitsConverter::UnitsConverter()
 
 
 std::vector<double> ValuesConverter::ReducedParam(
-	double Param, std::vector<double> cParams)
+	const double &Param, const std::vector<double> &cParams)
 {
 	std::vector<double> rParams(cParams.size());
 

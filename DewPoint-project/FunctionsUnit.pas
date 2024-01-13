@@ -5,10 +5,12 @@ interface
 uses
   TypesUnit, Math;
 
-function Max(x: TarrOfDouble): Double;
-function Min(x: TarrOfDouble): Double;
-function VietaMethod(a, b, c: Double): TArrOfDouble;
-function Bisections(foo: TObjectiveFunction; a, b: Double;
+function Max(const x: TarrOfDouble): Double;
+function Min(const x: TarrOfDouble): Double;
+function VietaMethod(const a, b, c: Double): TArrOfDouble;
+function Bisections(
+  foo: TObjectiveFunction;
+  a, b: Double;
   eps: Double = 1e-8): Double;
 function Golden(foo: TObjectiveFunction; a, b: Double;
   eps: Double = 1e-8; maxit: Integer = 5000): Double;
@@ -17,7 +19,7 @@ function Brent(foo: TObjectiveFunction; lower, upper: Double;
 
 implementation
 
-function Max(x: TArrOfDouble): Double;
+function Max(const x: TArrOfDouble): Double;
 var
   i: Integer;
 begin
@@ -33,7 +35,7 @@ begin
       Result := x[i];
 end;
 
-function Min(x: TarrOfDouble): Double;
+function Min(const x: TarrOfDouble): Double;
 var
   i: Integer;
 begin
@@ -49,7 +51,7 @@ begin
       Result := x[i];
 end;
 
-function VietaMethod(a, b, c: Double): TArrOfDouble;
+function VietaMethod(const a, b, c: Double): TArrOfDouble;
 var
   x1, x2, x3: Double;
   q, r, s: Double;

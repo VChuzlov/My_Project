@@ -43,5 +43,5 @@ public:
 class ValuesConverter
 {
 public:
-    std::vector<double> ReducedParam(double, std::vector<double>);
+    std::vector<double> ReducedParam(const double&, const std::vector<double>&);
 };
