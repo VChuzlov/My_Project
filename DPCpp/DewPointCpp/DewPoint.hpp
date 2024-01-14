@@ -5,7 +5,7 @@
 class DewPoint
 {
 private:
-    double Pressure;
+    double Pressure; 
     std::vector<double> Yi;
     std::vector<double> Tc;
     std::vector<double> Pc;
@@ -90,8 +90,10 @@ public:
     double EstimateTFromXiAndTSati(
         const std::vector<double>&, const std::vector<double>&);
     double CalculateInitialValueForT();
-    std::vector<std::vector<double>> CalculateKij(
-        const std::vector<double>&, unsigned int = 1);
+    void CalculateKij(
+        const std::vector<double>&,
+        std::vector<std::vector<double>>&, 
+        unsigned int = 1);
     void PreCalculation(
         double, const std::vector<std::vector<double>>&,
         const std::vector<double>&);

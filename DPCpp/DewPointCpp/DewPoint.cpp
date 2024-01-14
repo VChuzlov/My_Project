@@ -266,31 +266,37 @@ double DewPoint::CalculateInitialValueForT()
     return Result;
 }
 
-std::vector<std::vector<double>> DewPoint::CalculateKij(
-    const std::vector<double> &vc, unsigned int n)
+void DewPoint::CalculateKij(
+    const std::vector<double> &vc,
+    std::vector<std::vector<double>> &Kij,
+    unsigned int n)
 {
     unsigned int size = vc.size();
     std::vector<double> VcR3(size);
-    std::vector<std::vector<double>> Numerator(size);
-    std::vector<std::vector<double>> Denominator(size);
-    std::vector<std::vector<double>> Result(size);
+    
     for (unsigned int i = 0; i < size; ++i)
     {
-        Result[i].resize(size);
-        Numerator[i].resize(size);
-        Denominator[i].resize(size);
         VcR3[i] = pow(vc[i], 1. / 3.);
     }
     for (unsigned int i = 0; i < size; ++i)
     {
         for (unsigned int j = 0; j < size; ++j)
         {
-            Numerator[i][j] = pow(VcR3[i] * VcR3[j], 0.5);
-            Denominator[i][j] = (VcR3[i] + VcR3[j]) / 2.;
-            Result[i][j] = 1 - pow(Numerator[i][j] / Denominator[i][j], n);
+            if (n == 1)
+            {
+                Kij[i][j] = (
+                    1 - pow(VcR3[i] * VcR3[j], 0.5) 
+                    / ((VcR3[i] + VcR3[j]) / 2.));
+            }
+            else
+            {
+                Kij[i][j] = 1 - pow(
+                    pow(VcR3[i] * VcR3[j], 0.5) 
+                    / ((VcR3[i] + VcR3[j]) / 2.), n);
+            }
+            
         }
-    }
-    return Result;
+    };
 }
 
 std::vector<double> DewPoint::CalculateM(const std::vector<double> &af)
@@ -357,14 +363,21 @@ double DewPoint::Calculation()
 {
     double Result = 0.0;
     double T;
-    std::vector<std::vector<double>> Kij;
+    unsigned int size = this->Vc.size();
+    
+    std::vector<std::vector<double>> Kij(size);
+    for (unsigned int i = 0; i < size; ++i)
+    {
+        Kij[i].resize(size);
+    }
+    
     std::vector<double> m;
     UnitsConverter uc;
     unsigned int i = 0;
     double _t;
 
     T = this->CalculateInitialValueForT();
-    Kij = this->CalculateKij(this->Vc);
+    this->CalculateKij(this->Vc, Kij);
     m = this->CalculateM(this->Af);
     this->PreCalculation(T, Kij, m);
 
