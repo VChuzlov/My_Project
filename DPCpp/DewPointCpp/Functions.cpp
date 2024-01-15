@@ -102,7 +102,7 @@ std::vector<double> VietaMethod(
 
 double BrentsMethod(std::function<double (double)> f, 
     double lower, double upper, double tol, 
-    unsigned int MaxIter)
+    size_t MaxIter)
 {
     double a = lower;
 	double b = upper;
@@ -128,7 +128,7 @@ double BrentsMethod(std::function<double (double)> f,
 	double s = 0;			// Our Root that will be returned
 	double d = 0;			// Only used if mflag is unset (mflag == false)
 
-    for (unsigned int iter = 1; iter < MaxIter; iter++)
+    for (size_t iter = 1; iter < MaxIter; iter++)
 	{
 		// stop if converged on root or error is less than tolerance
 		if (std::abs(b - a) < tol)
@@ -198,7 +198,7 @@ double BrentsMethod(std::function<double (double)> f,
 double Min(const std::vector<double> &x)
 {
     double minX;
-    for (unsigned int i = 0; i < x.size(); ++i)
+    for (size_t i = 0; i < x.size(); ++i)
     {
         if (x[i] != 0.0)
         {
@@ -206,7 +206,7 @@ double Min(const std::vector<double> &x)
             break;
         }
     }
-    for (unsigned int i = 0; i < x.size(); ++i)
+    for (size_t i = 0; i < x.size(); ++i)
     {
         if ((minX > x[i]) && (x[i] != 0))
         {
@@ -219,7 +219,7 @@ double Min(const std::vector<double> &x)
 double Max(const std::vector<double> &x)
 {
     double maxX;
-    for (unsigned int i = 0; i < x.size(); ++i)
+    for (size_t i = 0; i < x.size(); ++i)
     {
         if (x[i] != 0.0)
         {
@@ -227,7 +227,7 @@ double Max(const std::vector<double> &x)
             break;
         }
     }
-    for (unsigned int i = 0; i < x.size(); ++i)
+    for (size_t i = 0; i < x.size(); ++i)
     {
         if (maxX < x[i])
         {

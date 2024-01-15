@@ -100,7 +100,7 @@ std::vector<double> ValuesConverter::ReducedParam(
 {
 	std::vector<double> rParams(cParams.size());
 
-	for (int i = 0; i < cParams.size(); ++i)
+	for (size_t i = 0; i < cParams.size(); ++i)
 	{
 		rParams[i] = Param / cParams[i];
 	};

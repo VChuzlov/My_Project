@@ -92,8 +92,7 @@ public:
     double CalculateInitialValueForT();
     void CalculateKij(
         const std::vector<double>&,
-        std::vector<std::vector<double>>&, 
-        unsigned int = 1);
+        std::vector<std::vector<double>>&, int = 1);
     void PreCalculation(
         double, const std::vector<std::vector<double>>&,
         const std::vector<double>&);
