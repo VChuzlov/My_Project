@@ -37,7 +37,7 @@ private:
     void CalculateAp(
         const std::vector<double>&, const std::vector<double>&,
         const std::vector<double>&);
-    std::vector<double> CalculateBp(
+    void CalculateBp(
         const std::vector<double>&, const std::vector<double>&);
     std::vector<double> CalculateAi(
         const std::vector<double>&, const std::vector<double>&);
