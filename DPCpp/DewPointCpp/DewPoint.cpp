@@ -40,15 +40,13 @@ std::vector<std::vector<double>> DewPoint::CalculateAb(
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateAi(const std::vector<double> &tc,
+void DewPoint::CalculateAi(const std::vector<double> &tc,
     const std::vector<double> &pc)
 {
-    std::vector<double> Result(tc.size());
     for (size_t i = 0; i < tc.size(); ++i)
     {
-        Result[i] = 0.45724 * pow(8.314 * tc[i], 2) / pc[i];
+        this->Ai[i] = 0.45724 * pow(8.314 * tc[i], 2) / pc[i];
     }
-    return Result;
 }
 
 double DewPoint::CalculateAl(const std::vector<double> &x,
@@ -434,6 +432,8 @@ DewPoint::DewPoint(
 
     this->Ki.resize(size);
     this->M.resize(size);
+    this->Ai.resize(size);
+    this->Bi.resize(size);
     this->Fiv.resize(size);
     this->Fil.resize(size);
 

@@ -22,6 +22,8 @@ private:
     std::vector<std::vector<double>> Kij;
     std::vector<double> Ki;
     std::vector<double> M;
+    std::vector<double> Ai;
+    std::vector<double> Bi;
     double Av;
     double Bv;
     double Zv;
@@ -39,7 +41,7 @@ private:
         const std::vector<double>&);
     void CalculateBp(
         const std::vector<double>&, const std::vector<double>&);
-    std::vector<double> CalculateAi(
+    void CalculateAi(
         const std::vector<double>&, const std::vector<double>&);
     std::vector<double> CalculateBi(
         const std::vector<double>&, const std::vector<double>&);
