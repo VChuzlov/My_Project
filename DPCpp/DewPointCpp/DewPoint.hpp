@@ -15,8 +15,24 @@ private:
     std::vector<double> Pr;
     std::vector<double> Xi;
     std::vector<double> XiNew;
-    std::vector<double> CalculateM(const std::vector<double>&);
-    std::vector<double> CalculateAlpha(
+    std::vector<double> Alpha;
+    std::vector<double> Ap;
+    std::vector<double> Bp;
+    std::vector<std::vector<double>> Ab;
+    std::vector<std::vector<double>> Kij;
+    std::vector<double> Ki;
+    std::vector<double> M;
+    double Av;
+    double Bv;
+    double Zv;
+    double Al;
+    double Bl;
+    double Zl;
+    std::vector<double> Fiv;
+    std::vector<double> Fil;
+
+    void CalculateM(const std::vector<double>&);
+    void CalculateAlpha(
         const std::vector<double>&, const std::vector<double>&);
     std::vector<double> CalculateAp(
         const std::vector<double>&, const std::vector<double>&,
@@ -90,9 +106,7 @@ public:
     double EstimateTFromXiAndTSati(
         const std::vector<double>&, const std::vector<double>&);
     double CalculateInitialValueForT();
-    void CalculateKij(
-        const std::vector<double>&,
-        std::vector<std::vector<double>>&, int = 1);
+    void CalculateKij(const std::vector<double>&, int = 1);
     void PreCalculation(
         double, const std::vector<std::vector<double>>&,
         const std::vector<double>&);

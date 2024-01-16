@@ -1,4 +1,3 @@
-#include <vector>
 #include <math.h>
 #include <functional>
 #include "DewPoint.hpp"
@@ -66,15 +65,13 @@ double DewPoint::CalculateAl(const std::vector<double> &x,
     return Result;
 }
 
-std::vector<double> DewPoint::CalculateAlpha(const std::vector<double> &m,
+void DewPoint::CalculateAlpha(const std::vector<double> &m,
     const std::vector<double> &tr)
 {
-    std::vector<double> Result(m.size());
     for (size_t i = 0; i < m.size(); ++i)
     {
-        Result[i] = pow((1 + m[i] * (1 - pow(tr[i], 0.5))), 2);
+        this->Alpha[i] = pow((1 + m[i] * (1 - pow(tr[i], 0.5))), 2);
     }
-    return Result;
 }
 
 std::vector<double> DewPoint::CalculateAp(const std::vector<double> &alpha,
@@ -266,9 +263,7 @@ double DewPoint::CalculateInitialValueForT()
     return Result;
 }
 
-void DewPoint::CalculateKij(
-    const std::vector<double> &vc,
-    std::vector<std::vector<double>> &Kij, int n)
+void DewPoint::CalculateKij(const std::vector<double> &vc, int n)
 {
     size_t size = vc.size();
     std::vector<double> VcR3(size);
@@ -283,13 +278,13 @@ void DewPoint::CalculateKij(
         {
             if (n == 1)
             {
-                Kij[i][j] = (
+                this->Kij[i][j] = (
                     1 - pow(VcR3[i] * VcR3[j], 0.5) 
                     / ((VcR3[i] + VcR3[j]) / 2.));
             }
             else
             {
-                Kij[i][j] = 1 - pow(
+                this->Kij[i][j] = 1 - pow(
                     pow(VcR3[i] * VcR3[j], 0.5) 
                     / ((VcR3[i] + VcR3[j]) / 2.), n);
             }
@@ -298,22 +293,21 @@ void DewPoint::CalculateKij(
     };
 }
 
-std::vector<double> DewPoint::CalculateM(const std::vector<double> &af)
+void DewPoint::CalculateM(
+    const std::vector<double> &af)
 {
-    std::vector<double> Result(af.size());
     for (size_t i = 0; i < af.size(); ++i)
     {
         if (af[i] <= 0.49)
         {
-            Result[i] = 0.3796 + 1.54226 * af[i] - 0.26992 * pow(af[i], 2.);
+            this->M[i] = 0.3796 + 1.54226 * af[i] - 0.26992 * pow(af[i], 2.);
         }
         else
         {
-            Result[i] = (0.379642 + 1.48503 * af[i] - 0.1644 * pow(af[i], 2.)
+            this->M[i] = (0.379642 + 1.48503 * af[i] - 0.1644 * pow(af[i], 2.)
                          + 0.016667 * pow(af[i], 3.));
         }
     }
-    return Result;
 }
 
 std::vector<double> DewPoint::CalculateXi(const std::vector<double> &ki)
@@ -362,27 +356,20 @@ double DewPoint::Calculation()
 {
     double Result = 0.0;
     double T;
-    size_t size = this->Vc.size();
+    const size_t size = this->Vc.size();
     
-    std::vector<std::vector<double>> Kij(size);
-    for (size_t i = 0; i < size; ++i)
-    {
-        Kij[i].resize(size);
-    }
-    
-    std::vector<double> m;
     UnitsConverter uc;
     size_t i = 0;
     double _t;
 
     T = this->CalculateInitialValueForT();
-    this->CalculateKij(this->Vc, Kij);
-    m = this->CalculateM(this->Af);
-    this->PreCalculation(T, Kij, m);
+    this->CalculateKij(this->Vc);
+    this->CalculateM(this->Af);
+    this->PreCalculation(T, this->Kij, this->M);
 
-    auto foo = [Kij, m, this](double t)
+    auto foo = [this](double t)
     {
-        return this->InsideJob(t, Kij, m, this->XiNew);
+        return this->InsideJob(t, this->Kij, this->M, this->XiNew);
     };
 
     while (!(this->Condition()))
@@ -393,8 +380,7 @@ double DewPoint::Calculation()
             .95 * T,
             1.2 * T
         );
-        _t = uc.TemperatureUnits.RankineToCelcius(Result);
-        if (i > 10)
+        if (i > 1000)
         {
             break;
         }
@@ -438,6 +424,22 @@ DewPoint::DewPoint(
     this->Pr.resize(size);
     this->Xi.resize(size);
     this->XiNew.resize(size);
+    this->Alpha.resize(size);
+    this->Ap.resize(size);
+    this->Bp.resize(size);
+    
+    this->Ab.resize(size);
+    this->Kij.resize(size);
+    for (size_t i = 0; i < size; ++i)
+    {
+        this->Ab[i].resize(size);
+        this->Kij[i].resize(size);
+    }
+
+    this->Ki.resize(size);
+    this->M.resize(size);
+    this->Fiv.resize(size);
+    this->Fil.resize(size);
 
     for (size_t i = 0; i < size; ++i)
     {
@@ -515,7 +517,7 @@ double DewPoint::InsideJob(
 
     ValuesConverter vc;
     std::vector<double> Tr = vc.ReducedParam(t, this->Tc);
-    std::vector<double> Alpha = this->CalculateAlpha(m, Tr);
+    this->CalculateAlpha(this->M, Tr);
     std::vector<double> Ap = this->CalculateAp(Alpha, Tr, this->Pr);
     std::vector<double> Bp = this->CalculateBp(this->Pr, Tr);
     std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
@@ -550,7 +552,7 @@ void DewPoint::PreCalculation(
 {
     ValuesConverter vc;
     std::vector<double> Tr = vc.ReducedParam(t, this->Tc);
-    std::vector<double> Alpha = this->CalculateAlpha(m, Tr);
+    this->CalculateAlpha(this->M, Tr);
     std::vector<double> Ap = this->CalculateAp(Alpha, Tr, this->Pr);
     std::vector<double> Bp = this->CalculateBp(this->Pr, Tr);
     std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
