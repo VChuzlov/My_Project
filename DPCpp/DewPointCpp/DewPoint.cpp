@@ -510,16 +510,16 @@ double DewPoint::InsideJob(
     this->CalculateAb(this->Kij, this->Ap);
     
     this->CalculateAv(this->Yi);
-    double Bv = this->CalculateBv(this->Yi, Bp);
+    double Bv = this->CalculateBv(this->Yi, this->Bp);
     double Zv = this->CalculateZv(this->Av, Bv);
     double Al = this->CalculateAl(xi, this->Ab);
-    double Bl = this->CalculateBl(xi, Bp);
+    double Bl = this->CalculateBl(xi, this->Bp);
     double Zl = this->CalculateZl(Al, Bl);
 
     std::vector<double> Fiv = this->CalculateFiv(
-        this->Ab, this->Yi, Zv, Bp, this->Av, Bv);
+        this->Ab, this->Yi, Zv, this->Bp, this->Av, Bv);
     std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, Zl, Bp, Al, Bl);
+        this->Ab, xi, Zl, this->Bp, Al, Bl);
 
     double s = 0.0;
     std::vector<double> XiNew(m.size());
@@ -544,20 +544,20 @@ void DewPoint::PreCalculation(
     this->CalculateAlpha(this->M, Tr);
     this->CalculateAp(this->Alpha, Tr, this->Pr);
     this->CalculateBp(this->Pr, Tr);
-    this->CalculateAb(this->Kij, Ap);
+    this->CalculateAb(this->Kij, this->Ap);
     std::vector<double> ki = this->EstimateKi(t);
     std::vector<double> xi = this->CalculateXi(ki);
     
     this->CalculateAv(this->Yi);
-    double Bv = this->CalculateBv(this->Yi, Bp);
+    double Bv = this->CalculateBv(this->Yi, this->Bp);
     double Zv = this->CalculateZv(this->Av, Bv);
     double Al = this->CalculateAl(xi, this->Ab);
-    double Bl = this->CalculateBl(xi, Bp);
+    double Bl = this->CalculateBl(xi, this->Bp);
     double Zl = this->CalculateZl(Al, Bl);
     std::vector<double> Fiv = this->CalculateFiv(
-        this->Ab, this->Yi, Zv, Bp, this->Av, Bv);
+        this->Ab, this->Yi, Zv, this->Bp, this->Av, Bv);
     std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, Zl, Bp, Al, Bl);
+        this->Ab, xi, Zl, this->Bp, Al, Bl);
 
     std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
