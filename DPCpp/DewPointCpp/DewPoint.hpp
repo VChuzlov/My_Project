@@ -49,9 +49,7 @@ private:
     void CalculateDi(
         const std::vector<double>&, const std::vector<double>&,
         const std::vector<double>&, const std::vector<double>&);
-    void CalculateAb(
-        const std::vector<std::vector<double>>&, 
-        const std::vector<double>&);
+    void CalculateAb();
     void CalculateAv(const std::vector<double>&);
     double CalculateBv(
         const std::vector<double>&, const std::vector<double>&);
