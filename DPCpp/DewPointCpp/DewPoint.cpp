@@ -88,15 +88,14 @@ void DewPoint::CalculateAv()
     }
 }
 
-double DewPoint::CalculateBbl(
+void DewPoint::CalculateBbl(
     const std::vector<double> &x)
 {
-    double Result = 0.0;
+    this->Bbl = 0.0;
     for (size_t i = 0; i < x.size(); ++i)
     {
-        Result += x[i] * this->Bi[i];
+        this->Bbl += x[i] * this->Bi[i];
     }
-    return Result;
 }
 
 double DewPoint::CalculateBbv()
