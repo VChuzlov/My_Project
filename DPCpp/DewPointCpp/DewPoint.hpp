@@ -41,8 +41,7 @@ private:
     std::vector<double> Fil;
 
     void CalculateM(const std::vector<double>&);
-    void CalculateAlpha(
-        const std::vector<double>&, const std::vector<double>&);
+    void CalculateAlpha();
     void CalculateAp(
         const std::vector<double>&, const std::vector<double>&,
         const std::vector<double>&);
