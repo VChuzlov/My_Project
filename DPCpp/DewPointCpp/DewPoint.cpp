@@ -96,12 +96,12 @@ double DewPoint::CalculateAv(const std::vector<double> &y,
 }
 
 double DewPoint::CalculateBbl(
-    const std::vector<double> &x, const std::vector<double> &bi)
+    const std::vector<double> &x)
 {
     double Result = 0.0;
     for (size_t i = 0; i < x.size(); ++i)
     {
-        Result += x[i] * bi[i];
+        Result += x[i] * this->Bi[i];
     }
     return Result;
 }
