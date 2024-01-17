@@ -63,8 +63,7 @@ private:
         const std::vector<double>&, const std::vector<double>&);
     double CalculateBbl(
         const std::vector<double>&);
-    double CalculateBbv(
-        const std::vector<double>&, const std::vector<double>&);
+    double CalculateBbv();
     double CalculateAalpha(
         const std::vector<double>&, const std::vector<std::vector<double>>&, 
         const std::vector<double>&, const std::vector<double>&);
