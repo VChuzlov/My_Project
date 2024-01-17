@@ -74,16 +74,8 @@ private:
     void CalculateZl(
         std::function<std::vector<double>
         (double, double, double)> = VietaMethod);
-    std::vector<double> CalculateFiv(
-        const std::vector<std::vector<double>>&,
-        const std::vector<double>&, const double&, 
-        const std::vector<double>&,
-        const double&, const double&);
-    std::vector<double> CalculateFil(
-        const std::vector<std::vector<double>>&,
-        const std::vector<double>&, const double&, 
-        const std::vector<double>&,
-        const double&, const double&);
+    void CalculateFiv();
+    void CalculateFil(const std::vector<double>&);
     double ForInitialTValue(double);
 
 public:

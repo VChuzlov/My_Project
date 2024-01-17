@@ -168,57 +168,44 @@ void DewPoint::CalculateDi(const std::vector<double> &tr)
     }
 }
 
-std::vector<double> DewPoint::CalculateFil(
-    const std::vector<std::vector<double>> &ab, 
-    const std::vector<double> &x, const double &zl,
-    const std::vector<double> &bp, 
-    const double &al, const double &bl)
+void DewPoint::CalculateFil(const std::vector<double> &x)
 {
-    std::vector<double> Result(x.size());
     double s;
     for (size_t i = 0; i < x.size(); ++i)
     {
         s = 0.0;
         for (size_t j = 0; j < x.size(); ++j)
         {
-            s += ab[i][j] * x[j];
+            s += this->Ab[i][j] * x[j];
         }
-        Result[i] = exp(
-            (zl - 1) * bp[i] / bl - log(zl - bl)
-            - al / (2 * pow(2, 0.5) * bl)
-            * (2 * s / al - bp[i] / bl)
-            * log((zl + (1 + pow(2, 0.5)) * bl)
-                    / (zl - (-1 + pow(2, 0.5)) * bl))
+        this->Fil[i] = exp(
+            (this->Zl - 1) * this->Bp[i] / this->Bl - log(this->Zl - this->Bl)
+            - this->Al / (2 * pow(2, 0.5) * this->Bl)
+            * (2 * s / this->Al - this->Bp[i] / this->Bl)
+            * log((this->Zl + (1 + pow(2, 0.5)) * this->Bl)
+                    / (this->Zl - (-1 + pow(2, 0.5)) * this->Bl))
         );
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateFiv(
-    const std::vector<std::vector<double>> &ab, 
-    const std::vector<double> &y, const double &zv,
-    const std::vector<double> &bp, 
-    const double &av, const double &bv
-)
+void DewPoint::CalculateFiv()
 {
-    std::vector<double> Result(y.size());
     double s;
-    for (size_t i = 0; i < y.size(); ++i)
+    for (size_t i = 0; i < this->Yi.size(); ++i)
     {
         s = 0.0;
-        for (size_t j = 0; j < y.size(); ++j)
+        for (size_t j = 0; j < this->Yi.size(); ++j)
         {
-            s += ab[i][j] * y[j];
+            s += this->Ab[i][j] * this->Yi[j];
         }
-        Result[i] = exp(
-            (zv - 1) * bp[i] / bv - log(zv - bv)
-            - av / (2 * pow(2, 0.5) * bv)
-            * (2 * s / av - bp[i] / bv)
-            * log((zv + (1 + pow(2, 0.5)) * bv)
-                    / (zv - (-1 + pow(2, 0.5)) * bv))
+        this->Fiv[i] = exp(
+            (this->Zv - 1) * this->Bp[i] / this->Bv - log(this->Zv - this->Bv)
+            - this->Av / (2 * pow(2, 0.5) * this->Bv)
+            * (2 * s / this->Av - this->Bp[i] / this->Bv)
+            * log((this->Zv + (1 + pow(2, 0.5)) * this->Bv)
+                    / (this->Zv - (-1 + pow(2, 0.5)) * this->Bv))
         );
     }
-    return Result;
 }
 
 double DewPoint::CalculateInitialValueForT()
@@ -499,16 +486,14 @@ double DewPoint::InsideJob(
     this->CalculateBl(xi);
     this->CalculateZl();
 
-    std::vector<double> Fiv = this->CalculateFiv(
-        this->Ab, this->Yi, this->Zv, this->Bp, this->Av, this->Bv);
-    std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, this->Zl, this->Bp, this->Al, this->Bl);
+    this->CalculateFiv();
+    this->CalculateFil(xi);
 
     double s = 0.0;
     std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
     {
-        XiNew[i] = this->Yi[i] * Fiv[i] / Fil[i];
+        XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
         s += XiNew[i];
     }
     
@@ -537,15 +522,13 @@ void DewPoint::PreCalculation(
     this->CalculateAl(xi);
     this->CalculateBl(xi);
     this->CalculateZl();
-    std::vector<double> Fiv = this->CalculateFiv(
-        this->Ab, this->Yi, this->Zv, this->Bp, this->Av, this->Bv);
-    std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, this->Zl, this->Bp, this->Al, this->Bl);
+    this->CalculateFiv();
+    this->CalculateFil(xi);
 
     std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
     {
-        XiNew[i] = this->Yi[i] * Fiv[i] / Fil[i];
+        XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
     }
 
     this->Xi = xi;
