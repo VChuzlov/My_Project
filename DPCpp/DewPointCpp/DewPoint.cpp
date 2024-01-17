@@ -267,12 +267,12 @@ void DewPoint::CalculateM(
     }
 }
 
-void DewPoint::CalculateXi(const std::vector<double> &ki)
+void DewPoint::CalculateXi()
 {
     double k = 1e-12;
-    for (size_t i = 0; i < ki.size(); ++i)
+    for (size_t i = 0; i < this->Ki.size(); ++i)
     {
-        ki[i] < 1e-12 ? k = k : k = ki[i];
+        this->Ki[i] < 1e-12 ? k = k : k = this->Ki[i];
         this->Xi[i] = this->Yi[i] / k;
     }
 }
@@ -444,7 +444,7 @@ std::vector<double> DewPoint::EstimateTSati()
 double DewPoint::ForInitialTValue(double t)
 {
     this->EstimateKi(t);
-    this->CalculateXi(this->Ki);
+    this->CalculateXi();
     std::vector<double> tasti = this->EstimateTSati();
     double t_ = this->EstimateTFromXiAndTSati(this->Xi, tasti);
     return t - t_;
@@ -504,7 +504,7 @@ void DewPoint::PreCalculation(
     this->CalculateBp();
     this->CalculateAb();
     this->EstimateKi(t);
-    this->CalculateXi(this->Ki);
+    this->CalculateXi();
     
     this->CalculateAv();
     this->CalculateBv();
