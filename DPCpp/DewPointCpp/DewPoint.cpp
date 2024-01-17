@@ -493,12 +493,11 @@ double DewPoint::InsideJob(
     std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
     {
-        XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
-        s += XiNew[i];
+        this->XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
+        s += this->XiNew[i];
     }
     
     this->Xi = xi;
-    this->XiNew = XiNew;
     
     return 1.0 - s;
 }
@@ -528,11 +527,10 @@ void DewPoint::PreCalculation(
     std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
     {
-        XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
+        this->XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
     }
 
     this->Xi = xi;
-    this->XiNew = XiNew;
 }
 
 double DewPoint::SelectCubicEquationRoot(
