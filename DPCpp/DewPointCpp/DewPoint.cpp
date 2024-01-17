@@ -141,10 +141,7 @@ void DewPoint::CalculateBv()
 }
 
 void DewPoint::CalculateD(
-    const std::vector<double> &mf, const std::vector<double> &m,
-    const std::vector<std::vector<double>> &kij, 
-    const std::vector<double> &ai,
-    const std::vector<double> &alpha, const std::vector<double> &tr)
+    const std::vector<double> &mf, const std::vector<double> &tr)
 {
     this->D = 0.0;
     for (size_t i = 0; i < mf.size(); ++i)
