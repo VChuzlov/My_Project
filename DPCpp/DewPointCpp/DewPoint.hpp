@@ -87,7 +87,7 @@ public:
         const std::vector<double>&);
     std::vector<double> EstimateTSati();
     std::vector<double> EstimateKi(double);
-    std::vector<double> CalculateXi(const std::vector<double>&);
+    void CalculateXi(const std::vector<double>&);
     double EstimateTFromXiAndTSati(
         const std::vector<double>&, const std::vector<double>&);
     double CalculateInitialValueForT();

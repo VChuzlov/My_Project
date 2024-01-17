@@ -268,16 +268,14 @@ void DewPoint::CalculateM(
     }
 }
 
-std::vector<double> DewPoint::CalculateXi(const std::vector<double> &ki)
+void DewPoint::CalculateXi(const std::vector<double> &ki)
 {
-    std::vector<double> Result(ki.size());
     double k = 1e-12;
     for (size_t i = 0; i < ki.size(); ++i)
     {
         ki[i] < 1e-12 ? k = k : k = ki[i];
-        Result[i] = this->Yi[i] / k;
+        this->Xi[i] = this->Yi[i] / k;
     }
-    return Result;
 }
 
 void DewPoint::CalculateZl( 
@@ -449,9 +447,9 @@ std::vector<double> DewPoint::EstimateTSati()
 double DewPoint::ForInitialTValue(double t)
 {
     std::vector<double> ki = this->EstimateKi(t);
-    std::vector<double> xi = this->CalculateXi(ki);
+    this->CalculateXi(ki);
     std::vector<double> tasti = this->EstimateTSati();
-    double t_ = this->EstimateTFromXiAndTSati(xi, tasti);
+    double t_ = this->EstimateTFromXiAndTSati(this->Xi, tasti);
     return t - t_;
 }
 
@@ -482,22 +480,19 @@ double DewPoint::InsideJob(
     this->CalculateAv();
     this->CalculateBv();
     this->CalculateZv();
-    this->CalculateAl(xi);
-    this->CalculateBl(xi);
+    this->CalculateAl(this->Xi);
+    this->CalculateBl(this->Xi);
     this->CalculateZl();
 
     this->CalculateFiv();
-    this->CalculateFil(xi);
+    this->CalculateFil(this->Xi);
 
     double s = 0.0;
-    std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
     {
         this->XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
         s += this->XiNew[i];
     }
-    
-    this->Xi = xi;
     
     return 1.0 - s;
 }
@@ -513,24 +508,21 @@ void DewPoint::PreCalculation(
     this->CalculateBp(this->Pr, Tr);
     this->CalculateAb(kij, this->Ap);
     std::vector<double> ki = this->EstimateKi(t);
-    std::vector<double> xi = this->CalculateXi(ki);
+    this->CalculateXi(ki);
     
     this->CalculateAv();
     this->CalculateBv();
     this->CalculateZv();
-    this->CalculateAl(xi);
-    this->CalculateBl(xi);
+    this->CalculateAl(this->Xi);
+    this->CalculateBl(this->Xi);
     this->CalculateZl();
     this->CalculateFiv();
-    this->CalculateFil(xi);
+    this->CalculateFil(this->Xi);
 
-    std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
     {
         this->XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
     }
-
-    this->Xi = xi;
 }
 
 double DewPoint::SelectCubicEquationRoot(
