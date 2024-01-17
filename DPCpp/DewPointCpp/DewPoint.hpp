@@ -42,9 +42,7 @@ private:
 
     void CalculateM(const std::vector<double>&);
     void CalculateAlpha();
-    void CalculateAp(
-        const std::vector<double>&, const std::vector<double>&,
-        const std::vector<double>&);
+    void CalculateAp();
     void CalculateBp(
         const std::vector<double>&, const std::vector<double>&);
     void CalculateAi(
