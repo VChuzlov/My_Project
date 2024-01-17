@@ -53,7 +53,7 @@ private:
     void CalculateAv(
         const std::vector<double>&,
         const std::vector<std::vector<double>>&);
-    double CalculateBv(
+    void CalculateBv(
         const std::vector<double>&, const std::vector<double>&);
     double CalculateAl(
         const std::vector<double>&,
