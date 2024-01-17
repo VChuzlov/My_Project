@@ -64,8 +64,6 @@ private:
     void CalculateBbv();
     void CalculateAalpha(const std::vector<double>&);
     void CalculateD(
-        const std::vector<double>&, const std::vector<double>&,
-        const std::vector<std::vector<double>>&, const std::vector<double>&,
         const std::vector<double>&, const std::vector<double>&);
     double SelectCubicEquationRoot(
         const double&, const double&, const double&, 
