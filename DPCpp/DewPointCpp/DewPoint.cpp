@@ -477,7 +477,7 @@ double DewPoint::InsideJob(
     this->CalculateAlpha(this->M, Tr);
     this->CalculateAp(this->Alpha, Tr, this->Pr);
     this->CalculateBp(this->Pr, Tr);
-    this->CalculateAb(kij, this->Ap);
+    this->CalculateAb(this->Kij, this->Ap);
     
     this->CalculateAv();
     this->CalculateBv();
