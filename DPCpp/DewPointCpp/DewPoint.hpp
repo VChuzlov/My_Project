@@ -68,8 +68,7 @@ private:
     double SelectCubicEquationRoot(
         const double&, const double&, const double&, 
         std::function<double (std::vector<double>)>);
-    double CalculateZv(
-        const double&, const double&,
+    void CalculateZv(
         std::function<std::vector<double>
         (double, double, double)> = VietaMethod);
     double CalculateZl(
