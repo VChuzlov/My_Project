@@ -459,6 +459,7 @@ double DewPoint::InsideJob(const double &t)
     for (size_t i = 0; i < this->XiNew.size(); ++i)
     {
         xSum += this->XiNew[i];
+        this->Xi[i] = this->XiNew[i];
     }
     if (xSum != 1.0)
     {
