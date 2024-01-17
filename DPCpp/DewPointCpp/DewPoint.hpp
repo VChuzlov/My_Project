@@ -24,7 +24,6 @@ private:
     std::vector<double> M;
     std::vector<double> Ai;
     std::vector<double> Bi;
-    std::vector<double> Di;
     double Av;
     double Bv;
     double Zv;
@@ -46,11 +45,15 @@ private:
         const std::vector<double>&, const std::vector<double>&);
     void CalculateBi(
         const std::vector<double>&, const std::vector<double>&);
-    void CalculateDi(
+    std::vector<double> CalculateDi(
         const std::vector<double>&, const std::vector<double>&,
         const std::vector<double>&, const std::vector<double>&);
-    void CalculateAb();
-    void CalculateAv(const std::vector<double>&);
+    std::vector<std::vector<double>> CalculateAb(
+        const std::vector<std::vector<double>>&, 
+        const std::vector<double>&);
+    double CalculateAv(
+        const std::vector<double>&,
+        const std::vector<std::vector<double>>&);
     double CalculateBv(
         const std::vector<double>&, const std::vector<double>&);
     double CalculateAl(

@@ -23,16 +23,21 @@ double DewPoint::CalculateAalpha(
     return Result;
 }
 
-void DewPoint::CalculateAb()
+std::vector<std::vector<double>> DewPoint::CalculateAb(
+    const std::vector<std::vector<double>> &kij, 
+    const std::vector<double> &ap)
 {
-    size_t size = this->Ap.size();
+    size_t size = ap.size();
+    std::vector<std::vector<double>> Result(size);
     for (size_t i = 0; i < size; ++i)
     {
+        Result[i].resize(size);
         for (size_t j = 0; j < size; ++j)
         {
-            this->Ab[i][j] = (1 - this->Kij[i][j]) * pow(this->Ap[i] * this->Ap[j], 0.5);
+            Result[i][j] = (1 - kij[i][j]) * pow(ap[i] * ap[j], 0.5);
         }
     }
+    return Result;
 }
 
 void DewPoint::CalculateAi(const std::vector<double> &tc,
@@ -76,15 +81,18 @@ void DewPoint::CalculateAp(const std::vector<double> &alpha,
     }
 }
 
-void DewPoint::CalculateAv(const std::vector<double> &y)
+double DewPoint::CalculateAv(const std::vector<double> &y,
+    const std::vector<std::vector<double>> &ab)
 {
+    double Result = 0.0;
     for (size_t i = 0; i < y.size(); ++i)
     {
         for (size_t j = 0; j < y.size(); ++j)
         {
-            this->Av += y[i] * y[j] * this->Ab[i][j];
+            Result += y[i] * y[j] * ab[i][j];
         }
     }
+    return Result;
 }
 
 double DewPoint::CalculateBbl(
@@ -169,14 +177,16 @@ double DewPoint::CalculateD(
     return Result;
 }
 
-void DewPoint::CalculateDi(const std::vector<double> &m,
+std::vector<double> DewPoint::CalculateDi(const std::vector<double> &m,
     const std::vector<double> &ai, const std::vector<double> &alpha, 
     const std::vector<double> &tr)
 {
+    std::vector<double> Result(m.size());
     for (size_t i = 0; i < m.size(); ++i)
     {
-        this->Di[i] = m[i] * ai[i] * alpha[i] * pow(tr[i] / alpha[i], 0.5);
+        Result[i] = m[i] * ai[i] * alpha[i] * pow(tr[i] / alpha[i], 0.5);
     }
+    return Result;
 }
 
 std::vector<double> DewPoint::CalculateFil(
@@ -422,7 +432,6 @@ DewPoint::DewPoint(
     this->M.resize(size);
     this->Ai.resize(size);
     this->Bi.resize(size);
-    this->Di.resize(size);
     this->Fiv.resize(size);
     this->Fil.resize(size);
 
@@ -503,21 +512,19 @@ double DewPoint::InsideJob(
     ValuesConverter vc;
     std::vector<double> Tr = vc.ReducedParam(t, this->Tc);
     this->CalculateAlpha(this->M, Tr);
-    this->CalculateAp(this->Alpha, Tr, this->Pr);
+    this->CalculateAp(Alpha, Tr, this->Pr);
     this->CalculateBp(this->Pr, Tr);
-    this->CalculateAb();
+    std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
     
-    this->CalculateAv(this->Yi);
-    double Bv = this->CalculateBv(this->Yi, this->Bp);
-    double Zv = this->CalculateZv(this->Av, Bv);
-    double Al = this->CalculateAl(xi, this->Ab);
-    double Bl = this->CalculateBl(xi, this->Bp);
+    double Av = this->CalculateAv(this->Yi, Ab);
+    double Bv = this->CalculateBv(this->Yi, Bp);
+    double Zv = this->CalculateZv(Av, Bv);
+    double Al = this->CalculateAl(xi, Ab);
+    double Bl = this->CalculateBl(xi, Bp);
     double Zl = this->CalculateZl(Al, Bl);
 
-    std::vector<double> Fiv = this->CalculateFiv(
-        this->Ab, this->Yi, Zv, this->Bp, this->Av, Bv);
-    std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, Zl, this->Bp, Al, Bl);
+    std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
+    std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
     double s = 0.0;
     std::vector<double> XiNew(m.size());
@@ -540,22 +547,20 @@ void DewPoint::PreCalculation(
     ValuesConverter vc;
     std::vector<double> Tr = vc.ReducedParam(t, this->Tc);
     this->CalculateAlpha(this->M, Tr);
-    this->CalculateAp(this->Alpha, Tr, this->Pr);
+    this->CalculateAp(Alpha, Tr, this->Pr);
     this->CalculateBp(this->Pr, Tr);
-    this->CalculateAb();
+    std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
     std::vector<double> ki = this->EstimateKi(t);
     std::vector<double> xi = this->CalculateXi(ki);
     
-    this->CalculateAv(this->Yi);
-    double Bv = this->CalculateBv(this->Yi, this->Bp);
-    double Zv = this->CalculateZv(this->Av, Bv);
-    double Al = this->CalculateAl(xi, this->Ab);
-    double Bl = this->CalculateBl(xi, this->Bp);
+    double Av = this->CalculateAv(this->Yi, Ab);
+    double Bv = this->CalculateBv(this->Yi, Bp);
+    double Zv = this->CalculateZv(Av, Bv);
+    double Al = this->CalculateAl(xi, Ab);
+    double Bl = this->CalculateBl(xi, Bp);
     double Zl = this->CalculateZl(Al, Bl);
-    std::vector<double> Fiv = this->CalculateFiv(
-        this->Ab, this->Yi, Zv, this->Bp, this->Av, Bv);
-    std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, Zl, this->Bp, Al, Bl);
+    std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
+    std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
 
     std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
