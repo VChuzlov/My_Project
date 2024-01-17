@@ -321,7 +321,7 @@ double DewPoint::Calculation()
 
     auto foo = [this](double t)
     {
-        return this->InsideJob(t, this->Kij, this->M, this->XiNew);
+        return this->InsideJob(t);
     };
 
     while (!(this->Condition()))
@@ -453,20 +453,18 @@ double DewPoint::ForInitialTValue(double t)
     return t - t_;
 }
 
-double DewPoint::InsideJob(
-    double t, const std::vector<std::vector<double>> &kij,
-    const std::vector<double> &m, std::vector<double> &xi)
+double DewPoint::InsideJob(const double &t)
 {
     double xSum = 0.0;
-    for (size_t i = 0; i < xi.size(); ++i)
+    for (size_t i = 0; i < this->XiNew.size(); ++i)
     {
-        xSum += xi[i];
+        xSum += this->XiNew[i];
     }
     if (xSum != 1.0)
     {
-        for (size_t i = 0; i < xi.size(); ++i)
+        for (size_t i = 0; i < this->XiNew.size(); ++i)
         {
-            xi[i] /= xSum;
+            this->XiNew[i] /= xSum;
         }
     }
 
@@ -480,15 +478,15 @@ double DewPoint::InsideJob(
     this->CalculateAv();
     this->CalculateBv();
     this->CalculateZv();
-    this->CalculateAl(this->Xi);
-    this->CalculateBl(this->Xi);
+    this->CalculateAl(this->XiNew);
+    this->CalculateBl(this->XiNew);
     this->CalculateZl();
 
     this->CalculateFiv();
-    this->CalculateFil(this->Xi);
+    this->CalculateFil(this->XiNew);
 
     double s = 0.0;
-    for (size_t i = 0; i < m.size(); ++i)
+    for (size_t i = 0; i < this->M.size(); ++i)
     {
         this->XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
         s += this->XiNew[i];

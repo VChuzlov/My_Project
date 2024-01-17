@@ -95,9 +95,7 @@ public:
     void PreCalculation(
         double, const std::vector<std::vector<double>>&,
         const std::vector<double>&);
-    double InsideJob(
-        double, const std::vector<std::vector<double>>&,
-        const std::vector<double>&, std::vector<double>&);
+    double InsideJob(const double&);
     bool Condition(double = 1.0E-6);
     double Calculation();
 };
