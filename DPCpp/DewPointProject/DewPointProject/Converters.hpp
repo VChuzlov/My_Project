@@ -14,6 +14,7 @@ public:
     double KelvinToRankine(double);
     double RankineToCelcius(double);
     double RankineToKelvin(double);
+    constexpr Temperature();
 };
 
 
@@ -27,6 +28,7 @@ public:
     double kPaToPsi(double);
     double MPaTokPa(double);
     double PsiTokPa(double);
+    constexpr Pressure();
 };
 
 
@@ -41,5 +43,5 @@ public:
 class ValuesConverter
 {
 public:
-    std::vector<double> ReducedParam(double, std::vector<double>);
+    std::vector<double> ReducedParam(const double&, const std::vector<double>&);
 };

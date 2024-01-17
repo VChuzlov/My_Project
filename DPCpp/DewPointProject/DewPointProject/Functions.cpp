@@ -7,7 +7,8 @@
 
 const double Pi = 3.14159265;
 
-std::vector<double> VietaMethod(double a, double b, double c)
+std::vector<double> VietaMethod(
+    const double &a, const double &b, const double &c)
 {
     double 
         x1 = 0.0, 
@@ -101,7 +102,7 @@ std::vector<double> VietaMethod(double a, double b, double c)
 
 double BrentsMethod(std::function<double (double)> f, 
     double lower, double upper, double tol, 
-    unsigned int MaxIter)
+    size_t MaxIter)
 {
     double a = lower;
 	double b = upper;
@@ -127,7 +128,7 @@ double BrentsMethod(std::function<double (double)> f,
 	double s = 0;			// Our Root that will be returned
 	double d = 0;			// Only used if mflag is unset (mflag == false)
 
-    for (unsigned int iter = 1; iter < MaxIter; iter++)
+    for (size_t iter = 1; iter < MaxIter; iter++)
 	{
 		// stop if converged on root or error is less than tolerance
 		if (std::abs(b - a) < tol)
@@ -194,10 +195,10 @@ double BrentsMethod(std::function<double (double)> f,
     return s;
 }
 
-double Min(std::vector<double> x)
+double Min(const std::vector<double> &x)
 {
-    double minX;
-    for (unsigned int i = 0; i < x.size(); i++)
+    double minX = x[0];
+    for (size_t i = 0; i < x.size(); ++i)
     {
         if (x[i] != 0.0)
         {
@@ -205,9 +206,9 @@ double Min(std::vector<double> x)
             break;
         }
     }
-    for (unsigned int i = 0; i < x.size(); i++)
+    for (size_t i = 0; i < x.size(); ++i)
     {
-        if (minX > x[i])
+        if ((minX > x[i]) && (x[i] != 0))
         {
             minX = x[i];
         }
@@ -215,10 +216,10 @@ double Min(std::vector<double> x)
     return minX;
 }
 
-double Max(std::vector<double> x)
+double Max(const std::vector<double> &x)
 {
-    double maxX;
-    for (unsigned int i = 0; i < x.size(); i++)
+    double maxX = x[0];
+    for (size_t i = 0; i < x.size(); ++i)
     {
         if (x[i] != 0.0)
         {
@@ -226,7 +227,7 @@ double Max(std::vector<double> x)
             break;
         }
     }
-    for (unsigned int i = 0; i < x.size(); i++)
+    for (size_t i = 0; i < x.size(); ++i)
     {
         if (maxX < x[i])
         {

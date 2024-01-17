@@ -5,7 +5,7 @@
 class DewPoint
 {
 private:
-    double Pressure;
+    double Pressure; 
     std::vector<double> Yi;
     std::vector<double> Tc;
     std::vector<double> Pc;
@@ -15,66 +15,81 @@ private:
     std::vector<double> Pr;
     std::vector<double> Xi;
     std::vector<double> XiNew;
-    std::vector<double> CalculateM(std::vector<double>);
-    std::vector<double> CalculateAlpha(std::vector<double>,
-        std::vector<double>);
-    std::vector<double> CalculateAp(std::vector<double>,
-        std::vector<double>, std::vector<double>);
-    std::vector<double> CalculateBp(std::vector<double>,
-        std::vector<double>);
-    std::vector<double> CalculateAi(std::vector<double>,
-        std::vector<double>);
-    std::vector<double> CalculateBi(std::vector<double>,
-        std::vector<double>);
-    std::vector<double> CalculateDi(std::vector<double>,
-        std::vector<double>, std::vector<double>, std::vector<double>);
-    std::vector<std::vector<double>> CalculateAb(
-        std::vector<std::vector<double>>, std::vector<double>
-    );
-    double CalculateAv(std::vector<double>,
-        std::vector<std::vector<double>>);
-    double CalculateBv(std::vector<double>, std::vector<double>);
-    double CalculateAl(std::vector<double>,
-        std::vector<std::vector<double>>);
-    double CalculateBl(std::vector<double>, std::vector<double>);
-    double CalculateBbl(std::vector<double>, std::vector<double>);
-    double CalculateBbv(std::vector<double>, std::vector<double>);
-    double CalculateAalpha(std::vector<double>,
-        std::vector<std::vector<double>>, std::vector<double>,
-        std::vector<double>);
-    double CalculateD(std::vector<double>, std::vector<double>,
-        std::vector<std::vector<double>>, std::vector<double>,
-        std::vector<double>, std::vector<double>);
-    double SelectCubicEquationRoot(double, double, double, 
+    std::vector<double> Alpha;
+    std::vector<double> Ap;
+    std::vector<double> Bp;
+    std::vector<std::vector<double>> Ab;
+    std::vector<std::vector<double>> Kij;
+    std::vector<double> Ki;
+    std::vector<double> M;
+    std::vector<double> Ai;
+    std::vector<double> Bi;
+    std::vector<double> Di;
+    
+    double Av;
+    double Bv;
+    double Zv;
+    double Al;
+    double Bl;
+    double Zl;
+    double Bbl;
+    double Bbv;
+    double Aalpha;
+    double D;
+
+    std::vector<double> Fiv;
+    std::vector<double> Fil;
+
+    void CalculateM(const std::vector<double>&);
+    void CalculateAlpha();
+    void CalculateAp();
+    void CalculateBp();
+    void CalculateAi(
+        const std::vector<double>&, const std::vector<double>&);
+    void CalculateBi(
+        const std::vector<double>&, const std::vector<double>&);
+    void CalculateDi(const std::vector<double>&);
+    void CalculateAb();
+    void CalculateAv();
+    void CalculateBv();
+    void CalculateAl(const std::vector<double>&);
+    void CalculateBl(const std::vector<double>&);
+    void CalculateBbl(const std::vector<double>&);
+    void CalculateBbv();
+    void CalculateAalpha(const std::vector<double>&);
+    void CalculateD(
+        const std::vector<double>&, const std::vector<double>&);
+    double SelectCubicEquationRoot(
+        const double&, const double&, const double&, 
         std::function<double (std::vector<double>)>);
-    double CalculateZv(double, double,
+    void CalculateZv(
         std::function<std::vector<double>
         (double, double, double)> = VietaMethod);
-    double CalculateZl(double, double,
+    void CalculateZl(
         std::function<std::vector<double>
         (double, double, double)> = VietaMethod);
-    std::vector<double> CalculateFiv(std::vector<std::vector<double>>,
-        std::vector<double>, double, std::vector<double>,
-        double, double);
-    std::vector<double> CalculateFil(std::vector<std::vector<double>>,
-        std::vector<double>, double, std::vector<double>,
-        double, double);
+    void CalculateFiv();
+    void CalculateFil(const std::vector<double>&);
     double ForInitialTValue(double);
 
 public:
-    DewPoint(double, std::vector<double>, std::vector<double>,
-        std::vector<double>, std::vector<double>, std::vector<double>);
+    DewPoint(
+        const double&, const std::vector<double>&, 
+        const std::vector<double>&,
+        const std::vector<double>&, 
+        const std::vector<double>&, 
+        const std::vector<double>&);
     std::vector<double> EstimateTSati();
-    std::vector<double> EstimateKi(double);
-    std::vector<double> CalculateXi(std::vector<double>);
-    double EstimateTFromXiAndTSati(std::vector<double>, std::vector<double>);
+    void EstimateKi(double);
+    void CalculateXi();
+    double EstimateTFromXiAndTSati(
+        const std::vector<double>&, const std::vector<double>&);
     double CalculateInitialValueForT();
-    std::vector<std::vector<double>> CalculateKij(
-        std::vector<double>, unsigned int = 1);
-    void PreCalculation(double, std::vector<std::vector<double>>,
-        std::vector<double>);
-    double InsideJob(double, std::vector<std::vector<double>>,
-        std::vector<double>, std::vector<double>);
+    void CalculateKij(const std::vector<double>&, int = 1);
+    void PreCalculation(
+        double, const std::vector<std::vector<double>>&,
+        const std::vector<double>&);
+    double InsideJob(const double&);
     bool Condition(double = 1.0E-6);
     double Calculation();
 };

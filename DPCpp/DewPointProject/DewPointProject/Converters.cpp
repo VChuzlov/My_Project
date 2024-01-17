@@ -48,6 +48,11 @@ double Temperature::RankineToKelvin(double r)
 	return r * 5. / 9.;
 }
 
+constexpr Temperature::Temperature()
+{
+
+}
+
 
 double Pressure::BarTokPa(double x)
 {
@@ -78,6 +83,10 @@ double Pressure::PsiTokPa(double x)
 	return x * 6.8947572932;
 }
 
+constexpr Pressure::Pressure()
+{
+
+}
 
 UnitsConverter::UnitsConverter()
 {
@@ -87,11 +96,11 @@ UnitsConverter::UnitsConverter()
 
 
 std::vector<double> ValuesConverter::ReducedParam(
-	double Param, std::vector<double> cParams)
+	const double &Param, const std::vector<double> &cParams)
 {
 	std::vector<double> rParams(cParams.size());
 
-	for (int i = 0; i < cParams.size(); i++)
+	for (size_t i = 0; i < cParams.size(); ++i)
 	{
 		rParams[i] = Param / cParams[i];
 	};

@@ -1,243 +1,227 @@
-#include <vector>
 #include <math.h>
 #include <functional>
 #include "DewPoint.hpp"
 //#include "Functions.hpp" циклический импорт уже есть в DewPoint.hpp
 #include "Converters.hpp"
 #include <iostream>
+#include <omp.h>
 
-double DewPoint::CalculateAalpha(std::vector<double> mf,
-    std::vector<std::vector<double>> kij, std::vector<double> ai,
-    std::vector<double> alpha)
+void DewPoint::CalculateAalpha(const std::vector<double> &mf)
 {
-    double Result = 0.0;
-    for (unsigned int i = 0; i < mf.size(); i++)
+    this->Aalpha = 0.0;
+    for (int i = 0; i < mf.size(); ++i)
     {
-        for (unsigned int j = 0; j < mf.size(); j++)
+        for (int j = 0; j < mf.size(); ++j)
         {
-            Result += (
-                mf[i] * mf[j] * (1 - kij[i][j])
-                * pow(ai[i] * alpha[i] * ai[j] * alpha[j], 0.5));
+            this->Aalpha += (
+                mf[i] * mf[j] * (1 - this->Kij[i][j])
+                * pow(this->Ai[i] * this->Alpha[i] 
+                        * this->Ai[j] * this->Alpha[j], 0.5));
         }
     }
-    return Result;
 }
 
-std::vector<std::vector<double>> DewPoint::CalculateAb(
-    std::vector<std::vector<double>> kij, std::vector<double> ap)
+void DewPoint::CalculateAb()
 {
-    unsigned int size = ap.size();
-    std::vector<std::vector<double>> Result(size);
-    for (unsigned int i = 0; i < size; i++)
+    int size = this->Ap.size();
+    #pragma omp parallel for
+    for (int i = 0; i < size; ++i)
     {
-        Result[i].resize(size);
-        for (unsigned int j = 0; j < size; j++)
+        for (int j = 0; j < size; ++j)
         {
-            Result[i][j] = (1 - kij[i][j]) * pow(ap[i] * ap[j], 0.5);
+            this->Ab[i][j] = (
+                1 - this->Kij[i][j]) * pow(this->Ap[i] * this->Ap[j], 0.5);
         }
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateAi(std::vector<double> tc,
-    std::vector<double> pc)
+void DewPoint::CalculateAi(const std::vector<double> &tc,
+    const std::vector<double> &pc)
 {
-    std::vector<double> Result(tc.size());
-    for (unsigned int i = 0; i < tc.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < tc.size(); ++i)
     {
-        Result[i] = 0.45724 * pow(8.314 * tc[i], 2) / pc[i];
+        this->Ai[i] = 0.45724 * pow(8.314 * tc[i], 2) / pc[i];
     }
-    return Result;
 }
 
-double DewPoint::CalculateAl(std::vector<double> x,
-    std::vector<std::vector<double>> ab)
+void DewPoint::CalculateAl(const std::vector<double> &x)
 {
-    double Result = 0.0;
-    for (unsigned int i = 0; i < x.size(); i++)
+    this->Al = 0.0;
+    #pragma omp parallel for
+    for (int i = 0; i < x.size(); ++i)
     {
-        for (unsigned int j = 0; j < x.size(); j++)
+        for (int j = 0; j < x.size(); ++j)
         {
-            Result += x[i] * x[j] * ab[i][j];
+            this->Al += x[i] * x[j] * this->Ab[i][j];
         }
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateAlpha(std::vector<double> m,
-    std::vector<double> tr)
+void DewPoint::CalculateAlpha()
 {
-    std::vector<double> Result(m.size());
-    for (unsigned int i = 0; i < m.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < this->M.size(); ++i)
     {
-        Result[i] = pow((1 + m[i] * (1 - pow(tr[i], 0.5))), 2);
+        this->Alpha[i] = pow(
+            (1 + this->M[i] * (1 - pow(this->Tr[i], 0.5))), 2);
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateAp(std::vector<double> alpha,
-    std::vector<double> tr, std::vector<double> pr)
+void DewPoint::CalculateAp()
 {
-    std::vector<double> Result(tr.size());
-    for (unsigned int i = 0; i < tr.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < this->Tr.size(); ++i)
     {
-        Result[i] = 0.457235529 * alpha[i] * pr[i] / pow(tr[i], 2);
+        this->Ap[i] = (
+            0.457235529 * this->Alpha[i] * this->Pr[i] 
+                / pow(this->Tr[i], 2));
     }
-    return Result;
 }
 
-double DewPoint::CalculateAv(std::vector<double> y,
-    std::vector<std::vector<double>> ab)
+void DewPoint::CalculateAv()
 {
-    double Result = 0.0;
-    for (unsigned int i = 0; i < y.size(); i++)
+    this->Av = 0.0;
+    #pragma omp parallel for
+    for (int i = 0; i < this->Yi.size(); ++i)
     {
-        for (unsigned int j = 0; j < y.size(); j++)
+        for (int j = 0; j < this->Yi.size(); ++j)
         {
-            Result += y[i] * y[j] * ab[i][j];
+            this->Av += this->Yi[i] * this->Yi[j] * this->Ab[i][j];
         }
     }
-    return Result;
 }
 
-double DewPoint::CalculateBbl(std::vector<double> x, std::vector<double> bi)
+void DewPoint::CalculateBbl(
+    const std::vector<double> &x)
 {
-    double Result = 0.0;
-    for (unsigned int i = 0; i < x.size(); i++)
+    this->Bbl = 0.0;
+    #pragma omp parallel for
+    for (int i = 0; i < x.size(); ++i)
     {
-        Result += x[i] * bi[i];
+        this->Bbl += x[i] * this->Bi[i];
     }
-    return Result;
 }
 
-double DewPoint::CalculateBbv(std::vector<double> y, std::vector<double> bi)
+void DewPoint::CalculateBbv()
 {
-    double Result = 0.0;
-    for (unsigned int i = 0; i < y.size(); i++)
+    this->Bbv = 0.0;
+    #pragma omp parallel for
+    for (int i = 0; i < this->Yi.size(); ++i)
     {
-        Result += y[i] * bi[i];
+        this->Bbv += this->Yi[i] * this->Bi[i];
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateBi(std::vector<double> tc,
-    std::vector<double> pc)
+void DewPoint::CalculateBi(const std::vector<double> &tc,
+    const std::vector<double> &pc)
 {
-    std::vector<double> Result(tc.size());
-    for (unsigned int i = 0; i < tc.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < tc.size(); ++i)
     {
-        Result[i] = 0.07780 * 8.314 * tc[i] / pc[i];
+        this->Bi[i] = 0.07780 * 8.314 * tc[i] / pc[i];
     }
-    return Result;
 }
 
-double DewPoint::CalculateBl(std::vector<double> x, std::vector<double> bp)
+void DewPoint::CalculateBl(const std::vector<double> &x)
 {
-    double Result = 0.0;
-    for (unsigned int i = 0; i < x.size(); i++)
+    this->Bl = 0.0;
+    #pragma omp parallel for
+    for (int i = 0; i < x.size(); ++i)
     {
-        Result += x[i] * bp[i];
+        this->Bl += x[i] * this->Bp[i];
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateBp(std::vector<double> pr,
-    std::vector<double> tr)
+void DewPoint::CalculateBp()
 {
-    std::vector<double> Result(pr.size());
-    for (unsigned int i = 0; i < pr.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < this->Pr.size(); ++i)
     {
-        Result[i] = 0.07796074 * pr[i] / tr[i];
+        this->Bp[i] = 0.07796074 * this->Pr[i] / this->Tr[i];
     }
-    return Result;
 }
 
-double DewPoint::CalculateBv(std::vector<double> y, std::vector<double> bp)
+void DewPoint::CalculateBv()
 {
-    double Result = 0;
-    for (unsigned int i = 0; i < y.size(); i++)
+    this->Bv = 0;
+    #pragma omp parallel for
+    for (int i = 0; i < this->Yi.size(); ++i)
     {
-        Result += y[i] * bp[i];
+        this->Bv += this->Yi[i] * this->Bp[i];
     }
-    return Result;
 }
 
-double DewPoint::CalculateD(std::vector<double> mf, std::vector<double> m,
-    std::vector<std::vector<double>> kij, std::vector<double> ai,
-    std::vector<double> alpha, std::vector<double> tr)
+void DewPoint::CalculateD(
+    const std::vector<double> &mf, const std::vector<double> &tr)
 {
-    double Result = 0.0;
-    for (unsigned int i = 0; i < m.size(); i++)
+    this->D = 0.0;
+    #pragma omp parallel for
+    for (int i = 0; i < mf.size(); ++i)
     {
-        for (unsigned int j = 0; j < m.size(); j++)
+        for (int j = 0; j < mf.size(); ++j)
         {
-            Result += (
-                mf[i] * mf[j] * m[j] * (1 - kij[i][j])
-                * pow(ai[i] * alpha[i] * alpha[j] * tr[j], 0.5) 
+            this->D += (
+                mf[i] * mf[j] * this->M[j] * (1 - this->Kij[i][j])
+                * pow(this->Ai[i] * this->Alpha[i] 
+                        * this->Alpha[j] * tr[j], 0.5) 
             );
         }
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateDi(std::vector<double> m,
-    std::vector<double> ai, std::vector<double> alpha, std::vector<double> tr)
+void DewPoint::CalculateDi(const std::vector<double> &tr)
 {
-    std::vector<double> Result(m.size());
-    for (unsigned int i = 0; i < m.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < tr.size(); ++i)
     {
-        Result[i] = m[i] * ai[i] * alpha[i] * pow(tr[i] / alpha[i], 0.5);
-    }
-    return Result;
-}
-
-std::vector<double> DewPoint::CalculateFil(
-    std::vector<std::vector<double>> ab, std::vector<double> x, double zl,
-    std::vector<double> bp, double al, double bl)
-{
-    std::vector<double> Result(x.size());
-    double s;
-    for (unsigned int i = 0; i < x.size(); i++)
-    {
-        s = 0.0;
-        for (unsigned int j = 0; j < x.size(); j++)
-        {
-            s += ab[i][j] * x[j];
-        }
-        Result[i] = exp(
-            (zl - 1) * bp[i] / bl - log(zl - bl)
-            - al / (2 * pow(2, 0.5) * bl)
-            * (2 * s / al - bp[i] / bl)
-            * log((zl + (1 + pow(2, 0.5)) * bl)
-                    / (zl - (-1 + pow(2, 0.5)) * bl))
+        this->Di[i] = (
+            this->M[i] * this->Ai[i] * this->Alpha[i] 
+            * pow(tr[i] / this->Alpha[i], 0.5)
         );
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateFiv(
-    std::vector<std::vector<double>> ab, std::vector<double> y, double zv,
-    std::vector<double> bp, double av, double bv
-)
+void DewPoint::CalculateFil(const std::vector<double> &x)
 {
-    std::vector<double> Result(y.size());
     double s;
-    for (unsigned int i = 0; i < y.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < x.size(); ++i)
     {
         s = 0.0;
-        for (unsigned int j = 0; j < y.size(); j++)
+        for (int j = 0; j < x.size(); ++j)
         {
-            s += ab[i][j] * y[j];
+            s += this->Ab[i][j] * x[j];
         }
-        Result[i] = exp(
-            (zv - 1) * bp[i] / bv - log(zv - bv)
-            - av / (2 * pow(2, 0.5) * bv)
-            * (2 * s / av - bp[i] / bv)
-            * log((zv + (1 + pow(2, 0.5)) * bv)
-                    / (zv - (-1 + pow(2, 0.5)) * bv))
+        this->Fil[i] = exp(
+            (this->Zl - 1) * this->Bp[i] / this->Bl - log(this->Zl - this->Bl)
+            - this->Al / (2 * pow(2, 0.5) * this->Bl)
+            * (2 * s / this->Al - this->Bp[i] / this->Bl)
+            * log((this->Zl + (1 + pow(2, 0.5)) * this->Bl)
+                    / (this->Zl - (-1 + pow(2, 0.5)) * this->Bl))
         );
     }
-    return Result;
+}
+
+void DewPoint::CalculateFiv()
+{
+    double s;
+    #pragma omp parallel for
+    for (int i = 0; i < this->Yi.size(); ++i)
+    {
+        s = 0.0;
+        for (int j = 0; j < this->Yi.size(); ++j)
+        {
+            s += this->Ab[i][j] * this->Yi[j];
+        }
+        this->Fiv[i] = exp(
+            (this->Zv - 1) * this->Bp[i] / this->Bv - log(this->Zv - this->Bv)
+            - this->Av / (2 * pow(2, 0.5) * this->Bv)
+            * (2 * s / this->Av - this->Bp[i] / this->Bv)
+            * log((this->Zv + (1 + pow(2, 0.5)) * this->Bv)
+                    / (this->Zv - (-1 + pow(2, 0.5)) * this->Bv))
+        );
+    }
 }
 
 double DewPoint::CalculateInitialValueForT()
@@ -249,117 +233,114 @@ double DewPoint::CalculateInitialValueForT()
         return this->ForInitialTValue(t);
     };
 
-    Result = BrentsMethod(foo, 1e-5, 1000.0);
+    Result = BrentsMethod(foo, 1e-5, 1200.0);
     return Result;
 }
 
-std::vector<std::vector<double>> DewPoint::CalculateKij(
-    std::vector<double> vc, unsigned int n)
+void DewPoint::CalculateKij(const std::vector<double> &vc, int n)
 {
-    unsigned int size = vc.size();
+    int size = vc.size();
     std::vector<double> VcR3(size);
-    std::vector<std::vector<double>> Numerator(size);
-    std::vector<std::vector<double>> Denominator(size);
-    std::vector<std::vector<double>> Result(size);
-    for (unsigned int i = 0; i < size; i++)
+    
+    #pragma omp parallel for
+    for (int i = 0; i < size; ++i)
     {
-        Result[i].resize(size);
-        Numerator[i].resize(size);
-        Denominator[i].resize(size);
         VcR3[i] = pow(vc[i], 1. / 3.);
     }
-    for (unsigned int i = 0; i < size; i++)
+    for (int i = 0; i < size; ++i)
     {
-        for (unsigned int j = 0; j < size; j++)
+        for (int j = 0; j < size; ++j)
         {
-            Numerator[i][j] = pow(VcR3[i] * VcR3[j], 0.5);
-            Denominator[i][j] = (VcR3[i] + VcR3[j]) / 2.;
-            Result[i][j] = 1 - pow(Numerator[i][j] / Denominator[i][j], n);
+            if (n == 1)
+            {
+                this->Kij[i][j] = (
+                    1 - pow(VcR3[i] * VcR3[j], 0.5) 
+                    / ((VcR3[i] + VcR3[j]) / 2.));
+            }
+            else
+            {
+                this->Kij[i][j] = 1 - pow(
+                    pow(VcR3[i] * VcR3[j], 0.5) 
+                    / ((VcR3[i] + VcR3[j]) / 2.), n);
+            }
+            
         }
-    }
-    return Result;
+    };
 }
 
-std::vector<double> DewPoint::CalculateM(std::vector<double> af)
+void DewPoint::CalculateM(
+    const std::vector<double> &af)
 {
-    std::vector<double> Result(af.size());
-    for (unsigned int i = 0; i < af.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < af.size(); ++i)
     {
         if (af[i] <= 0.49)
         {
-            Result[i] = 0.3796 + 1.54226 * af[i] - 0.26992 * pow(af[i], 2.);
+            this->M[i] = 0.3796 + 1.54226 * af[i] - 0.26992 * pow(af[i], 2.);
         }
         else
         {
-            Result[i] = (0.379642 + 1.48503 * af[i] - 0.1644 * pow(af[i], 2.)
+            this->M[i] = (0.379642 + 1.48503 * af[i] - 0.1644 * pow(af[i], 2.)
                          + 0.016667 * pow(af[i], 3.));
         }
     }
-    return Result;
 }
 
-std::vector<double> DewPoint::CalculateXi(std::vector<double> ki)
+void DewPoint::CalculateXi()
 {
-    std::vector<double> Result(ki.size());
-    for (unsigned int i = 0; i < ki.size(); i++)
+    double k = 1e-12;
+    #pragma omp parallel for
+    for (int i = 0; i < this->Ki.size(); ++i)
     {
-        if (ki[i] < 1.0E-12)
-        {
-            ki[i] = 1.0E-12;
-        }
-        Result[i] = this->Yi[i] / ki[i];
+        this->Ki[i] < 1e-12 ? k = k : k = this->Ki[i];
+        this->Xi[i] = this->Yi[i] / k;
     }
-    return Result;
 }
 
-double DewPoint::CalculateZl(
-    double al, double bl, 
+void DewPoint::CalculateZl( 
     std::function<std::vector<double> (double, double, double)> method)
 {
-    double Result = 0.0;
+    this->Zl = 0.0;
     std::vector<double> roots(3);
     roots = method(
-        bl - 1.,
-        al - 2. * bl - 3. * pow(bl, 2.),
-        (-al + pow(bl, 2.) + bl) * bl
+        this->Bl - 1.,
+        this->Al - 2. * this->Bl - 3. * pow(this->Bl, 2.),
+        (-this->Al + pow(this->Bl, 2.) + this->Bl) * this->Bl
     );
-    Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Min);
-    return Result;
+    this->Zl = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Min);
 }
 
-double DewPoint::CalculateZv(
-    double av, double bv,
+void DewPoint::CalculateZv(
     std::function<std::vector<double> (double, double, double)> method)
 {
-    double Result = 0.0;
+    this->Zv = 0.0;
     std::vector<double> roots(3);
     roots = method(
-        bv - 1,
-        av - 2 * bv - 3 * pow(bv, 2),
-        (-av + pow(bv, 2) + bv) * bv
+        this->Bv - 1,
+        this->Av - 2 * this->Bv - 3 * pow(this->Bv, 2),
+        (-this->Av + pow(this->Bv, 2) + this->Bv) * this->Bv
     );
-    Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Max);
-    return Result;
+    this->Zv = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Max);
 }
 
 double DewPoint::Calculation()
 {
     double Result = 0.0;
     double T;
-    std::vector<std::vector<double>> Kij;
-    std::vector<double> m;
+    const int size = this->Vc.size();
+    
     UnitsConverter uc;
-    unsigned int i = 0;
+    int i = 0;
     double _t;
 
     T = this->CalculateInitialValueForT();
-    Kij = this->CalculateKij(this->Vc);
-    m = this->CalculateM(this->Af);
-    this->PreCalculation(T, Kij, m);
+    this->CalculateKij(this->Vc);
+    this->CalculateM(this->Af);
+    this->PreCalculation(T, this->Kij, this->M);
 
-    auto foo = [Kij, m, this](double t)
+    auto foo = [this](double t)
     {
-        return this->InsideJob(t, Kij, m, this->XiNew);
+        return this->InsideJob(t);
     };
 
     while (!(this->Condition()))
@@ -368,10 +349,9 @@ double DewPoint::Calculation()
         Result = BrentsMethod(
             foo,
             .95 * T,
-            1.1 * T
+            1.2 * T
         );
-        _t = uc.TemperatureUnits.RankineToCelcius(Result);
-        if (i > 10)
+        if (i > 1000)
         {
             break;
         }
@@ -381,10 +361,11 @@ double DewPoint::Calculation()
 
 bool DewPoint::Condition(double tol)
 {
-    unsigned int n = this->XiNew.size();
+    int n = this->XiNew.size();
     double s = 0.0;
-
-    for (unsigned int i = 0; i < n; i++)
+    
+    #pragma omp parallel for
+    for (int i = 0; i < n; ++i)
     {
         s += (pow(this->Xi[i] - this->XiNew[i], 2) / this->XiNew[i]) / n;
     }
@@ -392,12 +373,12 @@ bool DewPoint::Condition(double tol)
 }
 
 DewPoint::DewPoint(
-    double pressure,
-    std::vector<double> yi,
-    std::vector<double> tc,
-    std::vector<double> pc,
-    std::vector<double> af,
-    std::vector<double> volc)
+    const double &pressure,
+    const std::vector<double> &yi,
+    const std::vector<double> &tc,
+    const std::vector<double> &pc,
+    const std::vector<double> &af,
+    const std::vector<double> &volc)
 {
     UnitsConverter uc;
     ValuesConverter vc;
@@ -407,7 +388,7 @@ DewPoint::DewPoint(
     this->Af = af;
     this->Vc = volc;
 
-    unsigned int size = yi.size();
+    int size = yi.size();
 
     this->Tc.resize(size);
     this->Pc.resize(size);
@@ -415,8 +396,28 @@ DewPoint::DewPoint(
     this->Pr.resize(size);
     this->Xi.resize(size);
     this->XiNew.resize(size);
+    this->Alpha.resize(size);
+    this->Ap.resize(size);
+    this->Bp.resize(size);
+    
+    this->Ab.resize(size);
+    this->Kij.resize(size);
+    for (int i = 0; i < size; ++i)
+    {
+        this->Ab[i].resize(size);
+        this->Kij[i].resize(size);
+    }
 
-    for (unsigned int i = 0; i < size; i++)
+    this->Ki.resize(size);
+    this->M.resize(size);
+    this->Ai.resize(size);
+    this->Bi.resize(size);
+    this->Di.resize(size);
+    this->Fiv.resize(size);
+    this->Fil.resize(size);
+
+    #pragma omp parallel for
+    for (int i = 0; i < size; ++i)
     {
         this->Tc[i] = uc.TemperatureUnits.CelciusToRankine(tc[i]);
         this->Pc[i] = uc.PressureUnits.kPaToPsi(pc[i]);
@@ -424,25 +425,27 @@ DewPoint::DewPoint(
     this->Pr = vc.ReducedParam(this->Pressure, this->Pc);
 }
 
-std::vector<double> DewPoint::EstimateKi(double t)
+void DewPoint::EstimateKi(double t)
 {
-    std::vector<double> Result(this->Yi.size());
-    for (unsigned int i = 0; i < this->Yi.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < this->Yi.size(); ++i)
     {
-        Result[i] = exp(
+        this->Ki[i] = exp(
             log(this->Pc[i] / this->Pressure)
             + log(10) * (7. / 3.) * (1. + this->Af[i])
             * (1. - this->Tc[i] / t)
         );
     }
-    return Result;
 }
 
 double DewPoint::EstimateTFromXiAndTSati(
-    std::vector<double> xi, std::vector<double> tsati)
+    const std::vector<double> &xi, 
+    const std::vector<double> &tsati)
 {
     double Result = 0.0;
-    for (unsigned int i = 0; i < xi.size(); i++)
+
+    #pragma omp parallel for
+    for (int i = 0; i < xi.size(); ++i)
     {
         Result += xi[i] * tsati[i];
     }
@@ -452,7 +455,9 @@ double DewPoint::EstimateTFromXiAndTSati(
 std::vector<double> DewPoint::EstimateTSati()
 {
     std::vector<double> Result(this->Yi.size());
-    for (unsigned int i = 0; i < Result.size(); i++)
+
+    #pragma omp parallel for
+    for (int i = 0; i < Result.size(); ++i)
     {
         Result[i] = (
             this->Tc[i] / (1. - 3. * log(this->Pressure / this->Pc[i])
@@ -465,94 +470,91 @@ std::vector<double> DewPoint::EstimateTSati()
 
 double DewPoint::ForInitialTValue(double t)
 {
-    std::vector<double> ki = this->EstimateKi(t);
-    std::vector<double> xi = this->CalculateXi(ki);
+    this->EstimateKi(t);
+    this->CalculateXi();
     std::vector<double> tasti = this->EstimateTSati();
-    double t_ = this->EstimateTFromXiAndTSati(xi, tasti);
+    double t_ = this->EstimateTFromXiAndTSati(this->Xi, tasti);
     return t - t_;
 }
 
-double DewPoint::InsideJob(
-    double t, std::vector<std::vector<double>> kij,
-    std::vector<double> m, std::vector<double> xi)
+double DewPoint::InsideJob(const double &t)
 {
     double xSum = 0.0;
-    for (unsigned int i = 0; i < xi.size(); i++)
+
+    #pragma omp parallel for
+    for (int i = 0; i < this->XiNew.size(); ++i)
     {
-        xSum += xi[i];
+        xSum += this->XiNew[i];
+        this->Xi[i] = this->XiNew[i];
     }
     if (xSum != 1.0)
     {
-        for (unsigned int i = 0; i < xi.size(); i++)
+        for (int i = 0; i < this->XiNew.size(); ++i)
         {
-            xi[i] /= xSum;
+            this->XiNew[i] /= xSum;
         }
     }
 
     ValuesConverter vc;
-    std::vector<double> Tr = vc.ReducedParam(t, this->Tc);
-    std::vector<double> Alpha = this->CalculateAlpha(m, Tr);
-    std::vector<double> Ap = this->CalculateAp(Alpha, Tr, this->Pr);
-    std::vector<double> Bp = this->CalculateBp(this->Pr, Tr);
-    std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
+    this->Tr = vc.ReducedParam(t, this->Tc);
+    this->CalculateAlpha();
+    this->CalculateAp();
+    this->CalculateBp();
+    this->CalculateAb();
     
-    double Av = this->CalculateAv(this->Yi, Ab);
-    double Bv = this->CalculateBv(this->Yi, Bp);
-    double Zv = this->CalculateZv(Av, Bv);
-    double Al = this->CalculateAl(xi, Ab);
-    double Bl = this->CalculateBl(xi, Bp);
-    double Zl = this->CalculateZl(Al, Bl);
+    this->CalculateAv();
+    this->CalculateBv();
+    this->CalculateZv();
+    this->CalculateAl(this->XiNew);
+    this->CalculateBl(this->XiNew);
+    this->CalculateZl();
 
-    std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
-    std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
+    this->CalculateFiv();
+    this->CalculateFil(this->XiNew);
 
     double s = 0.0;
-    std::vector<double> XiNew(m.size());
-    for (unsigned int i = 0; i < m.size(); i++)
+
+    #pragma omp parallel for
+    for (int i = 0; i < this->M.size(); ++i)
     {
-        XiNew[i] = this->Yi[i] * Fiv[i] / Fil[i];
-        s += XiNew[i];
+        this->XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
+        s += this->XiNew[i];
     }
-    
-    this->Xi = xi;
-    this->XiNew = XiNew;
     
     return 1.0 - s;
 }
 
-void DewPoint::PreCalculation(double t, std::vector<std::vector<double>> kij,
-    std::vector<double> m)
+void DewPoint::PreCalculation(
+    double t, const std::vector<std::vector<double>> &kij,
+    const std::vector<double> &m)
 {
     ValuesConverter vc;
-    std::vector<double> Tr = vc.ReducedParam(t, this->Tc);
-    std::vector<double> Alpha = this->CalculateAlpha(m, Tr);
-    std::vector<double> Ap = this->CalculateAp(Alpha, Tr, this->Pr);
-    std::vector<double> Bp = this->CalculateBp(this->Pr, Tr);
-    std::vector<std::vector<double>> Ab = this->CalculateAb(kij, Ap);
-    std::vector<double> ki = this->EstimateKi(t);
-    std::vector<double> xi = this->CalculateXi(ki);
+    this->Tr = vc.ReducedParam(t, this->Tc);
+    this->CalculateAlpha();
+    this->CalculateAp();
+    this->CalculateBp();
+    this->CalculateAb();
+    this->EstimateKi(t);
+    this->CalculateXi();
     
-    double Av = this->CalculateAv(this->Yi, Ab);
-    double Bv = this->CalculateBv(this->Yi, Bp);
-    double Zv = this->CalculateZv(Av, Bv);
-    double Al = this->CalculateAl(xi, Ab);
-    double Bl = this->CalculateBl(xi, Bp);
-    double Zl = this->CalculateZl(Al, Bl);
-    std::vector<double> Fiv = this->CalculateFiv(Ab, this->Yi, Zv, Bp, Av, Bv);
-    std::vector<double> Fil = this->CalculateFil(Ab, xi, Zl, Bp, Al, Bl);
+    this->CalculateAv();
+    this->CalculateBv();
+    this->CalculateZv();
+    this->CalculateAl(this->Xi);
+    this->CalculateBl(this->Xi);
+    this->CalculateZl();
+    this->CalculateFiv();
+    this->CalculateFil(this->Xi);
 
-    std::vector<double> XiNew(m.size());
-    for (unsigned int i = 0; i < m.size(); i++)
+    #pragma omp parallel for
+    for (int i = 0; i < m.size(); ++i)
     {
-        XiNew[i] = this->Yi[i] * Fiv[i] / Fil[i];
+        this->XiNew[i] = this->Yi[i] * this->Fiv[i] / this->Fil[i];
     }
-
-    this->Xi = xi;
-    this->XiNew = XiNew;
 }
 
 double DewPoint::SelectCubicEquationRoot(
-    double z1, double z2, double z3, 
+    const double &z1, const double &z2, const double &z3, 
     std::function<double (std::vector<double>)> foo)
 {
     std::vector<double> roots{z1, z2, z3};
