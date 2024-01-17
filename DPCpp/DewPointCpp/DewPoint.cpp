@@ -123,12 +123,11 @@ void DewPoint::CalculateBl(const std::vector<double> &x)
     }
 }
 
-void DewPoint::CalculateBp(const std::vector<double> &pr,
-    const std::vector<double> &tr)
+void DewPoint::CalculateBp()
 {
-    for (size_t i = 0; i < pr.size(); ++i)
+    for (size_t i = 0; i < this->Pr.size(); ++i)
     {
-        this->Bp[i] = 0.07796074 * pr[i] / tr[i];
+        this->Bp[i] = 0.07796074 * this->Pr[i] / this->Tr[i];
     }
 }
 
@@ -474,7 +473,7 @@ double DewPoint::InsideJob(const double &t)
     this->Tr = vc.ReducedParam(t, this->Tc);
     this->CalculateAlpha();
     this->CalculateAp();
-    this->CalculateBp(this->Pr, this->Tr);
+    this->CalculateBp();
     this->CalculateAb(this->Kij, this->Ap);
     
     this->CalculateAv();
@@ -505,7 +504,7 @@ void DewPoint::PreCalculation(
     this->Tr = vc.ReducedParam(t, this->Tc);
     this->CalculateAlpha();
     this->CalculateAp();
-    this->CalculateBp(this->Pr, this->Tr);
+    this->CalculateBp();
     this->CalculateAb(kij, this->Ap);
     std::vector<double> ki = this->EstimateKi(t);
     this->CalculateXi(ki);

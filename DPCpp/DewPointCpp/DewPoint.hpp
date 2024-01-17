@@ -43,16 +43,13 @@ private:
     void CalculateM(const std::vector<double>&);
     void CalculateAlpha();
     void CalculateAp();
-    void CalculateBp(
-        const std::vector<double>&, const std::vector<double>&);
+    void CalculateBp();
     void CalculateAi(
         const std::vector<double>&, const std::vector<double>&);
     void CalculateBi(
         const std::vector<double>&, const std::vector<double>&);
     void CalculateDi(const std::vector<double>&);
-    void CalculateAb(
-        const std::vector<std::vector<double>>&, 
-        const std::vector<double>&);
+    void CalculateAb();
     void CalculateAv();
     void CalculateBv();
     void CalculateAl(const std::vector<double>&);
