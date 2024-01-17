@@ -5,22 +5,19 @@
 #include "Converters.hpp"
 #include <iostream>
 
-double DewPoint::CalculateAalpha(
-    const std::vector<double> &mf, 
-    const std::vector<std::vector<double>> &kij, 
-    const std::vector<double> &ai, const std::vector<double> &alpha)
+void DewPoint::CalculateAalpha(const std::vector<double> &mf)
 {
-    double Result = 0.0;
+    this->Aalpha = 0.0;
     for (size_t i = 0; i < mf.size(); ++i)
     {
         for (size_t j = 0; j < mf.size(); ++j)
         {
-            Result += (
-                mf[i] * mf[j] * (1 - kij[i][j])
-                * pow(ai[i] * alpha[i] * ai[j] * alpha[j], 0.5));
+            this->Aalpha += (
+                mf[i] * mf[j] * (1 - this->Kij[i][j])
+                * pow(this->Ai[i] * this->Alpha[i] 
+                        * this->Ai[j] * this->Alpha[j], 0.5));
         }
     }
-    return Result;
 }
 
 void DewPoint::CalculateAb(
