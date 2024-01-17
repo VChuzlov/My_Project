@@ -20,16 +20,15 @@ void DewPoint::CalculateAalpha(const std::vector<double> &mf)
     }
 }
 
-void DewPoint::CalculateAb(
-    const std::vector<std::vector<double>> &kij, 
-    const std::vector<double> &ap)
+void DewPoint::CalculateAb()
 {
-    size_t size = ap.size();
+    size_t size = this->Ap.size();
     for (size_t i = 0; i < size; ++i)
     {
         for (size_t j = 0; j < size; ++j)
         {
-            this->Ab[i][j] = (1 - kij[i][j]) * pow(ap[i] * ap[j], 0.5);
+            this->Ab[i][j] = (
+                1 - this->Kij[i][j]) * pow(this->Ap[i] * this->Ap[j], 0.5);
         }
     }
 }
@@ -474,7 +473,7 @@ double DewPoint::InsideJob(const double &t)
     this->CalculateAlpha();
     this->CalculateAp();
     this->CalculateBp();
-    this->CalculateAb(this->Kij, this->Ap);
+    this->CalculateAb();
     
     this->CalculateAv();
     this->CalculateBv();
@@ -505,7 +504,7 @@ void DewPoint::PreCalculation(
     this->CalculateAlpha();
     this->CalculateAp();
     this->CalculateBp();
-    this->CalculateAb(kij, this->Ap);
+    this->CalculateAb();
     std::vector<double> ki = this->EstimateKi(t);
     this->CalculateXi(ki);
     
