@@ -46,18 +46,16 @@ void DewPoint::CalculateAi(const std::vector<double> &tc,
     }
 }
 
-double DewPoint::CalculateAl(const std::vector<double> &x,
-    const std::vector<std::vector<double>> &ab)
+void DewPoint::CalculateAl(const std::vector<double> &x)
 {
-    double Result = 0.0;
+    this->Al = 0.0;
     for (size_t i = 0; i < x.size(); ++i)
     {
         for (size_t j = 0; j < x.size(); ++j)
         {
-            Result += x[i] * x[j] * ab[i][j];
+            this->Al += x[i] * x[j] * this->Ab[i][j];
         }
     }
-    return Result;
 }
 
 void DewPoint::CalculateAlpha(const std::vector<double> &m,
@@ -511,14 +509,14 @@ double DewPoint::InsideJob(
     this->CalculateAv();
     this->CalculateBv();
     double Zv = this->CalculateZv(this->Av, this->Bv);
-    double Al = this->CalculateAl(xi, this->Ab);
-    double Bl = this->CalculateBl(xi, Bp);
-    double Zl = this->CalculateZl(Al, Bl);
+    this->CalculateAl(xi);
+    double Bl = this->CalculateBl(xi, this->Bp);
+    double Zl = this->CalculateZl(this->Al, Bl);
 
     std::vector<double> Fiv = this->CalculateFiv(
         this->Ab, this->Yi, Zv, this->Bp, this->Av, this->Bv);
     std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, Zl, this->Bp, Al, Bl);
+        this->Ab, xi, Zl, this->Bp, this->Al, Bl);
 
     double s = 0.0;
     std::vector<double> XiNew(m.size());
@@ -550,13 +548,13 @@ void DewPoint::PreCalculation(
     this->CalculateAv();
     this->CalculateBv();
     double Zv = this->CalculateZv(this->Av, this->Bv);
-    double Al = this->CalculateAl(xi, this->Ab);
-    double Bl = this->CalculateBl(xi, Bp);
-    double Zl = this->CalculateZl(Al, Bl);
+    this->CalculateAl(xi);
+    double Bl = this->CalculateBl(xi, this->Bp);
+    double Zl = this->CalculateZl(this->Al, Bl);
     std::vector<double> Fiv = this->CalculateFiv(
-        this->Ab, this->Yi, Zv, Bp, this->Av, this->Bv);
+        this->Ab, this->Yi, Zv, this->Bp, this->Av, this->Bv);
     std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, Zl, this->Bp, Al, Bl);
+        this->Ab, xi, Zl, this->Bp, this->Al, Bl);
 
     std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
