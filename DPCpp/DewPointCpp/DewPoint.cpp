@@ -140,8 +140,7 @@ void DewPoint::CalculateBp(const std::vector<double> &pr,
     }
 }
 
-void DewPoint::CalculateBv(const std::vector<double> &y, 
-    const std::vector<double> &bp)
+void DewPoint::CalculateBv()
 {
     this->Bv = 0;
     for (size_t i = 0; i < this->Yi.size(); ++i)
@@ -510,7 +509,7 @@ double DewPoint::InsideJob(
     this->CalculateAb(kij, this->Ap);
     
     this->CalculateAv();
-    this->CalculateBv(this->Yi, this->Bp);
+    this->CalculateBv();
     double Zv = this->CalculateZv(this->Av, this->Bv);
     double Al = this->CalculateAl(xi, this->Ab);
     double Bl = this->CalculateBl(xi, Bp);
@@ -549,7 +548,7 @@ void DewPoint::PreCalculation(
     std::vector<double> xi = this->CalculateXi(ki);
     
     this->CalculateAv();
-    this->CalculateBv(this->Yi, this->Bp);
+    this->CalculateBv();
     double Zv = this->CalculateZv(this->Av, this->Bv);
     double Al = this->CalculateAl(xi, this->Ab);
     double Bl = this->CalculateBl(xi, Bp);
