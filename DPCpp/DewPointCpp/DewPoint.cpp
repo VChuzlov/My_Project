@@ -403,18 +403,16 @@ DewPoint::DewPoint(
     this->Pr = vc.ReducedParam(this->Pressure, this->Pc);
 }
 
-std::vector<double> DewPoint::EstimateKi(double t)
+void DewPoint::EstimateKi(double t)
 {
-    std::vector<double> Result(this->Yi.size());
     for (size_t i = 0; i < this->Yi.size(); ++i)
     {
-        Result[i] = exp(
+        this->Ki[i] = exp(
             log(this->Pc[i] / this->Pressure)
             + log(10) * (7. / 3.) * (1. + this->Af[i])
             * (1. - this->Tc[i] / t)
         );
     }
-    return Result;
 }
 
 double DewPoint::EstimateTFromXiAndTSati(
@@ -445,8 +443,8 @@ std::vector<double> DewPoint::EstimateTSati()
 
 double DewPoint::ForInitialTValue(double t)
 {
-    std::vector<double> ki = this->EstimateKi(t);
-    this->CalculateXi(ki);
+    this->EstimateKi(t);
+    this->CalculateXi(this->Ki);
     std::vector<double> tasti = this->EstimateTSati();
     double t_ = this->EstimateTFromXiAndTSati(this->Xi, tasti);
     return t - t_;
@@ -505,8 +503,8 @@ void DewPoint::PreCalculation(
     this->CalculateAp();
     this->CalculateBp();
     this->CalculateAb();
-    std::vector<double> ki = this->EstimateKi(t);
-    this->CalculateXi(ki);
+    this->EstimateKi(t);
+    this->CalculateXi(this->Ki);
     
     this->CalculateAv();
     this->CalculateBv();
