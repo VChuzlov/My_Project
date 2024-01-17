@@ -78,8 +78,7 @@ void DewPoint::CalculateAp(const std::vector<double> &alpha,
     }
 }
 
-void DewPoint::CalculateAv(const std::vector<double> &y,
-    const std::vector<std::vector<double>> &ab)
+void DewPoint::CalculateAv()
 {
     this->Av = 0.0;
     for (size_t i = 0; i < this->Yi.size(); ++i)
@@ -510,7 +509,7 @@ double DewPoint::InsideJob(
     this->CalculateBp(this->Pr, Tr);
     this->CalculateAb(kij, this->Ap);
     
-    this->CalculateAv(this->Yi, this->Ab);
+    this->CalculateAv();
     this->CalculateBv(this->Yi, this->Bp);
     double Zv = this->CalculateZv(this->Av, this->Bv);
     double Al = this->CalculateAl(xi, this->Ab);
@@ -549,7 +548,7 @@ void DewPoint::PreCalculation(
     std::vector<double> ki = this->EstimateKi(t);
     std::vector<double> xi = this->CalculateXi(ki);
     
-    this->CalculateAv(this->Yi, this->Ab);
+    this->CalculateAv();
     this->CalculateBv(this->Yi, this->Bp);
     double Zv = this->CalculateZv(this->Av, this->Bv);
     double Al = this->CalculateAl(xi, this->Ab);
