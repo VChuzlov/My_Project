@@ -35,6 +35,7 @@ private:
     double Bbl;
     double Bbv;
     double Aalpha;
+    double D;
 
     std::vector<double> Fiv;
     std::vector<double> Fil;
@@ -62,7 +63,7 @@ private:
     void CalculateBbl(const std::vector<double>&);
     void CalculateBbv();
     void CalculateAalpha(const std::vector<double>&);
-    double CalculateD(
+    void CalculateD(
         const std::vector<double>&, const std::vector<double>&,
         const std::vector<std::vector<double>>&, const std::vector<double>&,
         const std::vector<double>&, const std::vector<double>&);

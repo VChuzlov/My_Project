@@ -140,24 +140,24 @@ void DewPoint::CalculateBv()
     }
 }
 
-double DewPoint::CalculateD(
+void DewPoint::CalculateD(
     const std::vector<double> &mf, const std::vector<double> &m,
     const std::vector<std::vector<double>> &kij, 
     const std::vector<double> &ai,
     const std::vector<double> &alpha, const std::vector<double> &tr)
 {
-    double Result = 0.0;
-    for (size_t i = 0; i < m.size(); ++i)
+    this->D = 0.0;
+    for (size_t i = 0; i < mf.size(); ++i)
     {
-        for (size_t j = 0; j < m.size(); ++j)
+        for (size_t j = 0; j < mf.size(); ++j)
         {
-            Result += (
-                mf[i] * mf[j] * m[j] * (1 - kij[i][j])
-                * pow(ai[i] * alpha[i] * alpha[j] * tr[j], 0.5) 
+            this->D += (
+                mf[i] * mf[j] * this->M[j] * (1 - this->Kij[i][j])
+                * pow(this->Ai[i] * this->Alpha[i] 
+                        * this->Alpha[j] * tr[j], 0.5) 
             );
         }
     }
-    return Result;
 }
 
 void DewPoint::CalculateDi(const std::vector<double> &tr)
