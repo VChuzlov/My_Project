@@ -71,8 +71,7 @@ private:
     void CalculateZv(
         std::function<std::vector<double>
         (double, double, double)> = VietaMethod);
-    double CalculateZl(
-        const double&, const double&,
+    void CalculateZl(
         std::function<std::vector<double>
         (double, double, double)> = VietaMethod);
     std::vector<double> CalculateFiv(

@@ -293,19 +293,17 @@ std::vector<double> DewPoint::CalculateXi(const std::vector<double> &ki)
     return Result;
 }
 
-double DewPoint::CalculateZl(
-    const double &al, const double &bl, 
+void DewPoint::CalculateZl( 
     std::function<std::vector<double> (double, double, double)> method)
 {
-    double Result = 0.0;
+    this->Zl = 0.0;
     std::vector<double> roots(3);
     roots = method(
-        bl - 1.,
-        al - 2. * bl - 3. * pow(bl, 2.),
-        (-al + pow(bl, 2.) + bl) * bl
+        this->Bl - 1.,
+        this->Al - 2. * this->Bl - 3. * pow(this->Bl, 2.),
+        (-this->Al + pow(this->Bl, 2.) + this->Bl) * this->Bl
     );
-    Result = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Min);
-    return Result;
+    this->Zl = this->SelectCubicEquationRoot(roots[0], roots[1], roots[2], Min);
 }
 
 void DewPoint::CalculateZv(
@@ -499,12 +497,12 @@ double DewPoint::InsideJob(
     this->CalculateZv();
     this->CalculateAl(xi);
     this->CalculateBl(xi);
-    double Zl = this->CalculateZl(this->Al, this->Bl);
+    this->CalculateZl();
 
     std::vector<double> Fiv = this->CalculateFiv(
         this->Ab, this->Yi, this->Zv, this->Bp, this->Av, this->Bv);
     std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, Zl, this->Bp, this->Al, this->Bl);
+        this->Ab, xi, this->Zl, this->Bp, this->Al, this->Bl);
 
     double s = 0.0;
     std::vector<double> XiNew(m.size());
@@ -538,11 +536,11 @@ void DewPoint::PreCalculation(
     this->CalculateZv();
     this->CalculateAl(xi);
     this->CalculateBl(xi);
-    double Zl = this->CalculateZl(this->Al, this->Bl);
+    this->CalculateZl();
     std::vector<double> Fiv = this->CalculateFiv(
         this->Ab, this->Yi, this->Zv, this->Bp, this->Av, this->Bv);
     std::vector<double> Fil = this->CalculateFil(
-        this->Ab, xi, Zl, this->Bp, this->Al, this->Bl);
+        this->Ab, xi, this->Zl, this->Bp, this->Al, this->Bl);
 
     std::vector<double> XiNew(m.size());
     for (size_t i = 0; i < m.size(); ++i)
